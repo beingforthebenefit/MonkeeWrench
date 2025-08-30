@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -24,17 +25,18 @@ enum AuditAction {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  name      String?
-  email     String?   @unique
-  image     String?
-  isAdmin   Boolean   @default(false)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  accounts  Account[]
-  sessions  Session[]
-  proposals Proposal[]
-  votes     Vote[]
+  id            String     @id @default(cuid())
+  name          String?
+  email         String?    @unique
+  emailVerified DateTime?
+  image         String?
+  isAdmin       Boolean    @default(false)
+  accounts      Account[]
+  sessions      Session[]
+  proposals     Proposal[] @relation("Proposer")
+  votes         Vote[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 }
 
 model Proposal {
@@ -45,7 +47,7 @@ model Proposal {
   lyricsUrl  String?
   youtubeUrl String?
   status     ProposalStatus @default(PENDING)
-  proposer   User           @relation(fields: [proposerId], references: [id])
+  proposer   User           @relation("Proposer", fields: [proposerId], references: [id])
   proposerId String
   votes      Vote[]
   createdAt  DateTime       @default(now())
@@ -64,9 +66,9 @@ model Vote {
 }
 
 model Settings {
-  id              Int      @id @default(1)
-  voteThreshold   Int      @default(2)
-  adminAllowlist  String[] @db.Text
+  id             Int      @id @default(1)
+  voteThreshold  Int      @default(2)
+  adminAllowlist String[] @db.Text
 }
 
 model AuditLog {
@@ -79,20 +81,20 @@ model AuditLog {
 
 // NextAuth models
 model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String? @db.Text
+  session_state      String?
   oauth_token_secret String?
-  oauth_token       String?
+  oauth_token        String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
