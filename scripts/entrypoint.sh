@@ -20,5 +20,11 @@ done
 npx prisma migrate deploy
 node prisma/seed.mjs || true
 
-# Start Next.js
-npm run start
+# Start Next in dev or prod mode
+if [[ "${APP_ENV:-production}" == "development" ]]; then
+  echo "Starting Next in DEV mode (hot reload)"
+  exec npm run dev
+else
+  echo "Starting Next in PROD mode"
+  exec npm run start
+fi
