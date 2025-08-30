@@ -1,0 +1,23 @@
+services:
+  app:
+    build:
+      context: .
+      args:
+        APP_ENV: development
+    environment:
+      APP_ENV: development
+      NODE_ENV: development
+      NEXTAUTH_URL: http://localhost:3002
+      DATABASE_URL: postgresql://monkee:monkee@db:5432/monkee?schema=public
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      ADMIN_ALLOWLIST: ${ADMIN_ALLOWLIST}
+      VOTE_THRESHOLD: ${VOTE_THRESHOLD}
+      CHOKIDAR_USEPOLLING: "true"   # robust watching in Docker
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "3002:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules

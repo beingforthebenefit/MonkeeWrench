@@ -16,7 +16,8 @@ COPY . .
 RUN chmod +x /app/scripts/entrypoint.sh && \
     sed -i 's/\r$//' /app/scripts/entrypoint.sh
 
-RUN npm run build
+ARG APP_ENV=production
+RUN if [ "$APP_ENV" = "production" ]; then npm run build; else echo "Skipping build for dev image"; fi
 
 EXPOSE 3000
 ENTRYPOINT ["/app/scripts/entrypoint.sh"]
