@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16
+    container_name: mw_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: monkee
+      POSTGRES_PASSWORD: monkee
+      POSTGRES_DB: monkee
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U monkee -d monkee"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  app:
+    build: .
+    container_name: mw_app
+    ports:
+      - "3002:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://monkee:monkee@db:5432/monkee?schema=public
+      NEXTAUTH_URL: http://localhost:3002
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      ADMIN_ALLOWLIST: ${ADMIN_ALLOWLIST}
+      VOTE_THRESHOLD: ${VOTE_THRESHOLD}
+volumes:
+  pgdata:
