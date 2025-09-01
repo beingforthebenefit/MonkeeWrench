@@ -1,35 +1,42 @@
-export const dynamic = 'force-dynamic';
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
-import { prisma } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+export const dynamic = "force-dynamic";
 
-export const GET = async () => {
-  const session = await getServerSession(authOptions)
-  const email = session?.user?.email || ''
-  const me = email ? await prisma.user.findUnique({ where: { email } }) : null
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) return NextResponse.json([], { status: 401 });
 
-  const settings = await prisma.settings.findUnique({ where: { id: 1 } })
-  const threshold = settings?.voteThreshold ?? 2
-
-  // Query includes votes; give rows an explicit structural type to avoid implicit any
+  // only PENDING + not archived
   const rows = await prisma.proposal.findMany({
-    where: { status: 'PENDING' },
-    orderBy: { createdAt: 'desc' },
-    include: { votes: true },
-  })
+    where: { status: "PENDING" },
+    orderBy: [{ updatedAt: "desc" }],
+    select: {
+      id: true,
+      title: true,
+      artist: true,
+      _count: { select: { votes: true } },
+      votes: {
+        where: { user: { email: session.user.email } },
+        select: { id: true },
+      },
+    },
+  });
 
-  type Row = { id: string; title: string; artist: string; votes: { userId: string }[] }
+  // read threshold once
+  const settings = await prisma.settings.findUnique({ where: { id: 1 } });
+  const threshold = settings?.voteThreshold ?? Number(process.env.VOTE_THRESHOLD ?? 3);
 
-  const data = (rows as Row[]).map((r: Row) => ({
+  const data = rows.map(r => ({
     id: r.id,
     title: r.title,
     artist: r.artist,
-    votes: r.votes.length,
-    // avoid non-null assertions; be explicit:
-    mine: me ? r.votes.some((v) => v.userId === me.id) : false,
+    votes: r._count.votes,
+    mine: r.votes.length > 0,
     threshold,
-  }))
+  }));
 
-  return Response.json(data)
+  return NextResponse.json(data);
 }
