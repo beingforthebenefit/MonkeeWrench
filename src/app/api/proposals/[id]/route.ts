@@ -18,8 +18,16 @@ export const PATCH = async (req: Request, { params }: { params: { id: string } }
 };
 
 export const DELETE = async (_req: Request, { params }: { params: { id: string } }) => {
-  await requireAdmin();
-  // Cascade deletes votes via schema
-  await prisma.proposal.delete({ where: { id: params.id } });
+  const admin = await requireAdmin();
+
+  await prisma.$transaction(async (tx) => {
+    // record audit
+    await tx.auditLog.create({
+      data: { userId: admin.id, action: "ADMIN_DELETE", targetId: params.id },
+    });
+    // Cascade deletes votes via schema
+    await tx.proposal.delete({ where: { id: params.id } });
+  });
+
   return new Response(null, { status: 204 });
 };
