@@ -15,7 +15,6 @@ import ListAltIcon from "@mui/icons-material/ListAlt";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 
-// tiny fetcher
 const fetcher = (u: string) => fetch(u, { cache: "no-store" }).then(r => r.json()).catch(() => []);
 
 export default function Nav() {
@@ -33,16 +32,22 @@ export default function Nav() {
   const handleOpen = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
   const handleClose = () => setAnchorEl(null);
 
-  const link = (to: string, label: string, icon: React.ReactNode, badge?: number) => {
+  function NavLink({
+    to, label, icon, badge,
+  }: { to: string; label: string; icon: React.ReactNode; badge?: number }) {
     const active = pathname === to;
     const base =
-      "px-3 py-1 rounded-md text-sm font-medium transition-colors";
+      "px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center";
     const cls = active
-      ? "bg-monkee-red text-white"
+      ? "bg-[#B71C1C] text-white font-semibold ring-1 ring-[#B71C1C]/60"
       : "hover:bg-[#222224] text-gray-200";
 
     return (
-      <Link key={to} href={to} className={`${base} ${cls} flex items-center`}>
+      <Link
+        href={to}
+        className={`${base} ${cls}`}
+        aria-current={active ? "page" : undefined}
+      >
         {badge && badge > 0 ? (
           <Badge badgeContent={badge} color="error" sx={{ mr: 1 }}>
             <span className="inline-flex items-center">{icon}</span>
@@ -53,7 +58,7 @@ export default function Nav() {
         <span>{label}</span>
       </Link>
     );
-  };
+  }
 
   return (
     <AppBar position="sticky" elevation={6} sx={{ background: "#161617", borderBottom: "1px solid #222224" }}>
@@ -69,11 +74,10 @@ export default function Nav() {
 
           {/* Nav links */}
           <Box className="hidden md:flex items-center space-x-2 ml-6">
-            {link("/", "Dashboard", <LibraryMusicIcon fontSize="small" />)}
-            {link("/propose", "Propose", <PlaylistAddIcon fontSize="small" />)}
-            {link("/vote", "Vote", <HowToVoteIcon fontSize="small" />, pendingCount)}
-            {link("/setlist", "Setlist", <ListAltIcon fontSize="small" />)}
-            {isAdmin && link("/admin", "Admin", <SettingsIcon fontSize="small" />)}
+            <NavLink to="/"        label="Dashboard" icon={<LibraryMusicIcon fontSize="small" />} />
+            <NavLink to="/propose" label="Propose"   icon={<PlaylistAddIcon   fontSize="small" />} />
+            <NavLink to="/vote"    label="Vote"      icon={<HowToVoteIcon     fontSize="small" />} badge={pendingCount} />
+            <NavLink to="/setlist" label="Setlist"   icon={<ListAltIcon       fontSize="small" />} />
           </Box>
 
           <Box sx={{ flex: 1 }} />
@@ -116,11 +120,11 @@ export default function Nav() {
 
         {/* Mobile nav */}
         <Box className="md:hidden flex px-2 pb-2 space-x-2">
-          {link("/", "Dashboard", <LibraryMusicIcon fontSize="small" />)}
-          {link("/propose", "Propose", <PlaylistAddIcon fontSize="small" />)}
-          {link("/vote", "Vote", <HowToVoteIcon fontSize="small" />, pendingCount)}
-          {link("/setlist", "Setlist", <ListAltIcon fontSize="small" />)}
-          {isAdmin && link("/admin", "Admin", <SettingsIcon fontSize="small" />)}
+          <NavLink to="/"        label="Dashboard" icon={<LibraryMusicIcon fontSize="small" />} />
+          <NavLink to="/propose" label="Propose"   icon={<PlaylistAddIcon   fontSize="small" />} />
+          <NavLink to="/vote"    label="Vote"      icon={<HowToVoteIcon     fontSize="small" />} badge={pendingCount} />
+          <NavLink to="/setlist" label="Setlist"   icon={<ListAltIcon       fontSize="small" />} />
+          {isAdmin && <NavLink to="/admin" label="Admin" icon={<SettingsIcon fontSize="small" />} />}
         </Box>
       </Container>
     </AppBar>
