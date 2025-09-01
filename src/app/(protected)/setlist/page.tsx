@@ -15,6 +15,8 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import YouTubeIcon from '@mui/icons-material/YouTube'
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks'
 import DescriptionIcon from '@mui/icons-material/Description'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import { useSession } from 'next-auth/react'
 
 type Item = {
   id: string
@@ -27,7 +29,17 @@ type Item = {
   setlistOrder: number | null
 }
 
-function Row({ item, editing }: { item: Item; editing: boolean }) {
+function Row({
+  item,
+  editing,
+  isAdmin,
+  onDelete,
+}: {
+  item: Item
+  editing: boolean
+  isAdmin: boolean
+  onDelete: (id: string) => void
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -67,11 +79,31 @@ function Row({ item, editing }: { item: Item; editing: boolean }) {
           )}
         </Stack>
       </TableCell>
+
+      {isAdmin && (
+        <TableCell align="right" sx={{ width: 0, whiteSpace: 'nowrap' }}>
+          <Tooltip title="Delete song">
+            <span>
+              <IconButton
+                size="small"
+                onClick={() => onDelete(item.id)}
+                disabled={editing} // don’t allow delete while reordering to avoid weird states
+                aria-label={`Delete ${item.title}`}
+              >
+                <DeleteOutlineIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </TableCell>
+      )}
     </TableRow>
   )
 }
 
 export default function SetlistPage() {
+  const { data: session } = useSession()
+  const isAdmin = Boolean((session?.user as any)?.isAdmin)
+
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<Item[]>([])
   const [editing, setEditing] = useState(false)
@@ -141,6 +173,21 @@ export default function SetlistPage() {
     }
   }
 
+  async function handleDelete(id: string) {
+    if (!isAdmin) return
+    const name = items.find(i => i.id === id)?.title
+    if (!confirm(`Delete "${name ?? 'this song'}" from the setlist? This cannot be undone.`)) return
+    const prev = items
+    setItems(items.filter(i => i.id !== id)) // optimistic
+    try {
+      const res = await fetch(`/api/proposals/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error()
+    } catch {
+      setItems(prev) // revert on failure
+      alert('Delete failed.')
+    }
+  }
+
   const ids = useMemo(() => items.map(i => i.id), [items])
 
   return (
@@ -178,13 +225,22 @@ export default function SetlistPage() {
                       <TableCell width="40%">Title</TableCell>
                       <TableCell width="30%">Artist</TableCell>
                       <TableCell>Links</TableCell>
+                      {isAdmin && <TableCell align="right" sx={{ width: 0 }}>Actions</TableCell>}
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {loading ? (
-                      <TableRow><TableCell colSpan={4}><Typography sx={{ p: 2 }}>Loading…</Typography></TableCell></TableRow>
+                      <TableRow><TableCell colSpan={isAdmin ? 5 : 4}><Typography sx={{ p: 2 }}>Loading…</Typography></TableCell></TableRow>
                     ) : (
-                      items.map(i => <Row key={i.id} item={i} editing={editing} />)
+                      items.map(i => (
+                        <Row
+                          key={i.id}
+                          item={i}
+                          editing={editing}
+                          isAdmin={isAdmin}
+                          onDelete={handleDelete}
+                        />
+                      ))
                     )}
                   </TableBody>
                 </Table>
