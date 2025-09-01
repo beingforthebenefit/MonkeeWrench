@@ -3,12 +3,20 @@ import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from './db'
 import type { NextAuthOptions } from 'next-auth'
 
-function getSettingsAllowlistFallback() {
-  const raw = (process.env.ADMIN_ALLOWLIST || '')
+function splitCsv(raw?: string) {
+  return (raw || '')
     .split(',')
     .map(s => s.trim())
     .filter(Boolean)
-  return raw
+}
+
+function getSettingsAllowlistFallback() {
+  return splitCsv(process.env.ADMIN_ALLOWLIST)
+}
+
+function getUserAllowlistEnv() {
+  // NEW: non-admin users who are allowed to sign in
+  return splitCsv(process.env.USER_ALLOWLIST)
 }
 
 export const authOptions: NextAuthOptions = {
@@ -33,6 +41,18 @@ export const authOptions: NextAuthOptions = {
       const verified = (profile as any)?.email_verified
       if (!email) return false
       if (verified === false) return false
+
+      // Gate access: only allow emails on admin or user allowlists
+      const settings = await prisma.settings.findUnique({ where: { id: 1 } })
+      const adminAllow = settings?.adminAllowlist?.length
+        ? settings.adminAllowlist
+        : getSettingsAllowlistFallback()
+      const userAllow = getUserAllowlistEnv()
+
+      const isAdminEmail = adminAllow.includes(email)
+      const isAllowedUser = isAdminEmail || userAllow.includes(email)
+      if (!isAllowedUser) return false
+
       // Do NOT create users here. Return true to proceed; adapter will create/link.
       return true
     },
@@ -62,6 +82,5 @@ export const authOptions: NextAuthOptions = {
     },
   },
 
-  // DO NOT enable this unless you fully understand the risks:
   // allowDangerousEmailAccountLinking: true,
 }
