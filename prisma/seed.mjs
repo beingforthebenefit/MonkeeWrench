@@ -25,7 +25,7 @@ async function main() {
 
   // Seed a few proposals
   const demo = [
-    { title: "I’m a Believer", artist: DEFAULT_ARTIST, youtubeUrl: "https://www.youtube.com/watch?v=XfuBREMXxts" },
+    { title: "I'm a Believer", artist: DEFAULT_ARTIST, youtubeUrl: "https://www.youtube.com/watch?v=XfuBREMXxts" },
     { title: "Daydream Believer", artist: DEFAULT_ARTIST, youtubeUrl: "https://www.youtube.com/watch?v=sUzs5dlLrm0" },
     { title: "Pleasant Valley Sunday", artist: DEFAULT_ARTIST },
     { title: "Last Train to Clarksville", artist: DEFAULT_ARTIST }
