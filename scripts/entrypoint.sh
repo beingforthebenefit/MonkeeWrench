@@ -16,12 +16,14 @@ until PGCONNECT_TIMEOUT=3 psql "$CLEAN_URL" -c 'select 1' >/dev/null 2>&1; do
   sleep 1
 done
 
-# In development, ensure dependencies are installed inside the container
+# In development, ensure dependencies and Prisma Client are up-to-date
 if [[ "${APP_ENV:-production}" == "development" ]]; then
   if [[ ! -d node_modules || ! -f node_modules/.bin/next ]]; then
     echo "Installing dev dependencies (npm ci)"
     npm ci --no-audit --no-fund
   fi
+  echo "Generating Prisma Client"
+  npx prisma generate
 fi
 
 # Migrate & seed
