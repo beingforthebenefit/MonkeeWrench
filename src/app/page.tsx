@@ -46,7 +46,7 @@ export default async function DashboardPage() {
         <h2 className="text-2xl font-bold text-white">Dashboard</h2>
         <Link
           href="/propose"
-          className="inline-flex items-center space-x-1 px-4 py-2 rounded-full bg-monkee-red text-white font-semibold hover:bg-red-800 transition"
+          className="inline-flex items-center space-x-1 px-4 py-2 rounded-full bg-red-800 text-white font-semibold transition duration-150 hover:brightness-110 hover:ring-2 hover:ring-red-400/60 hover:shadow-lg"
         >
           <span>Propose Song</span>
         </Link>
@@ -70,18 +70,24 @@ export default async function DashboardPage() {
       <div className="flex flex-wrap gap-4 mt-8">
         <Link
           href="/vote"
-          className="flex-1 min-w-[160px] flex flex-col items-center p-4 rounded-xl bg-[#19191c] hover:bg-monkee-red hover:text-white transition shadow group"
+          className="group flex-1 min-w-[160px] flex flex-col items-center p-4 rounded-xl bg-red-900/15 border border-red-500/30 cursor-pointer shadow-md ring-1 ring-red-500/20 transition duration-150 hover:bg-monkee-red hover:text-white hover:shadow-red-500/30 hover:border-red-500/50 hover:-translate-y-0.5 hover:ring-2 hover:ring-red-400/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70"
         >
-          <span className="font-semibold">Vote</span>
+          <span className="font-semibold inline-flex items-center">
+            Vote
+            <span className="ml-2 opacity-70 translate-x-0 group-hover:opacity-100 group-hover:translate-x-1 transition">→</span>
+          </span>
           <span className="text-xs text-gray-400 group-hover:text-white">
             Pending songs need your vote!
           </span>
         </Link>
         <Link
           href="/setlist"
-          className="flex-1 min-w-[160px] flex flex-col items-center p-4 rounded-xl bg-[#19191c] hover:bg-monkee-red hover:text-white transition shadow group"
+          className="group flex-1 min-w-[160px] flex flex-col items-center p-4 rounded-xl bg-red-900/15 border border-red-500/30 cursor-pointer shadow-md ring-1 ring-red-500/20 transition duration-150 hover:bg-monkee-red hover:text-white hover:shadow-red-500/30 hover:border-red-500/50 hover:-translate-y-0.5 hover:ring-2 hover:ring-red-400/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70"
         >
-          <span className="font-semibold">Setlist</span>
+          <span className="font-semibold inline-flex items-center">
+            Setlist
+            <span className="ml-2 opacity-70 translate-x-0 group-hover:opacity-100 group-hover:translate-x-1 transition">→</span>
+          </span>
           <span className="text-xs text-gray-400 group-hover:text-white">
             See approved songs
           </span>
