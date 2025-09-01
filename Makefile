@@ -7,7 +7,7 @@ SHELL := /bin/bash
 COMPOSE        ?= docker compose
 COMPOSE_DEV    ?= $(COMPOSE) -f docker-compose.yml -f docker-compose.dev.yml
 
-# Container names (from your compose files)
+# Service names (must match docker-compose services, not container_name)
 APP_SVC        ?= app
 DB_SVC         ?= db
 
@@ -19,7 +19,9 @@ DB_SVC         ?= db
 help:
 	@echo "Targets:"
 	@echo "  dev            Build & run in dev (hot-reload)"
+	@echo "  dev-d          Build & run dev detached"
 	@echo "  dev-up         Run in dev without rebuild"
+	@echo "  dev-up-d       Run dev detached without rebuild"
 	@echo "  dev-restart    Restart dev containers"
 	@echo "  prod           Build & run in prod (optimized)"
 	@echo "  prod-up        Run in prod without rebuild"
@@ -33,6 +35,7 @@ help:
 	@echo "  seed           Run seed script"
 	@echo "  lint           Lint code"
 	@echo "  test           Run tests"
+	@echo "  deps           Install node modules inside app container"
 	@echo "  down           Stop all containers"
 	@echo "  nuke           Stop and remove volumes (DANGER)"
 	@echo "  env            Print key env vars from app container"
@@ -45,9 +48,17 @@ help:
 dev:  ## Build & run dev image (hot-reload) with override compose
 	$(COMPOSE_DEV) up --build
 
+.PHONY: dev-d
+dev-d: ## Build & run dev detached
+	$(COMPOSE_DEV) up --build -d
+
 .PHONY: dev-up
 dev-up: ## Run dev stack without rebuild
 	$(COMPOSE_DEV) up
+
+.PHONY: dev-up-d
+dev-up-d: ## Run dev stack detached without rebuild
+	$(COMPOSE_DEV) up -d
 
 .PHONY: dev-restart
 dev-restart:
@@ -115,6 +126,14 @@ lint:
 .PHONY: test
 test:
 	$(COMPOSE_DEV) exec $(APP_SVC) npm test --silent || true
+
+# ------------------------------------------------------------------------------
+# Dependencies
+# ------------------------------------------------------------------------------
+
+.PHONY: deps
+deps: ## Install dependencies inside the app container based on lockfile
+	$(COMPOSE_DEV) exec $(APP_SVC) npm ci --no-audit --no-fund
 
 # ------------------------------------------------------------------------------
 # Teardown / Env
