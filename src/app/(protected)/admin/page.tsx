@@ -12,6 +12,7 @@ import {
   Alert,
   FormHelperText,
 } from '@mui/material'
+import {isHttpUrl, suggestHttpUrls, httpUrlError} from '@/lib/url'
 
 // --- helpers ---------------------------------------------------------------
 
@@ -22,15 +23,7 @@ function splitAllowlist(raw: string): string[] {
     .filter(Boolean)
 }
 
-function urlLooksValid(url?: string): boolean {
-  if (!url) return true // empty is allowed
-  try {
-    const u = new URL(url)
-    return u.protocol === 'http:' || u.protocol === 'https:'
-  } catch {
-    return false
-  }
-}
+// URL validation centralized in '@/lib/url'
 
 // --- component -------------------------------------------------------------
 
@@ -58,16 +51,28 @@ export default function Admin() {
 
   // Derived URL warnings (non-blocking)
   const chartWarn = useMemo(
-    () => !!chartUrl && !urlLooksValid(chartUrl),
+    () => !!chartUrl && !isHttpUrl(chartUrl),
     [chartUrl],
   )
+  const chartSuggestions = useMemo(
+    () => (chartWarn ? suggestHttpUrls(chartUrl) : []),
+    [chartWarn, chartUrl],
+  )
   const lyricsWarn = useMemo(
-    () => !!lyricsUrl && !urlLooksValid(lyricsUrl),
+    () => !!lyricsUrl && !isHttpUrl(lyricsUrl),
     [lyricsUrl],
   )
+  const lyricsSuggestions = useMemo(
+    () => (lyricsWarn ? suggestHttpUrls(lyricsUrl) : []),
+    [lyricsWarn, lyricsUrl],
+  )
   const youtubeWarn = useMemo(
-    () => !!youtubeUrl && !urlLooksValid(youtubeUrl),
+    () => !!youtubeUrl && !isHttpUrl(youtubeUrl),
     [youtubeUrl],
+  )
+  const youtubeSuggestions = useMemo(
+    () => (youtubeWarn ? suggestHttpUrls(youtubeUrl) : []),
+    [youtubeWarn, youtubeUrl],
   )
 
   async function loadSettings() {
@@ -252,10 +257,21 @@ export default function Admin() {
               error={chartWarn}
             />
             {chartUrl && chartWarn && (
-              <FormHelperText error>
-                This doesn&apos;t look like a valid URL. Submission will still
-                proceed.
-              </FormHelperText>
+              <>
+                <FormHelperText error>
+                  {httpUrlError(chartUrl) || "This doesn’t look like a valid URL."} Submission will still
+                  proceed.
+                </FormHelperText>
+                {chartSuggestions.length > 0 && (
+                  <Stack direction="row" spacing={1}>
+                    {chartSuggestions.map((s) => (
+                      <Button key={s} size="small" variant="text" onClick={() => setChartUrl(s)}>
+                        Use {s}
+                      </Button>
+                    ))}
+                  </Stack>
+                )}
+              </>
             )}
 
             <TextField
@@ -265,10 +281,21 @@ export default function Admin() {
               error={lyricsWarn}
             />
             {lyricsUrl && lyricsWarn && (
-              <FormHelperText error>
-                This doesn&apos;t look like a valid URL. Submission will still
-                proceed.
-              </FormHelperText>
+              <>
+                <FormHelperText error>
+                  {httpUrlError(lyricsUrl) || "This doesn’t look like a valid URL."} Submission will still
+                  proceed.
+                </FormHelperText>
+                {lyricsSuggestions.length > 0 && (
+                  <Stack direction="row" spacing={1}>
+                    {lyricsSuggestions.map((s) => (
+                      <Button key={s} size="small" variant="text" onClick={() => setLyricsUrl(s)}>
+                        Use {s}
+                      </Button>
+                    ))}
+                  </Stack>
+                )}
+              </>
             )}
 
             <TextField
@@ -278,10 +305,21 @@ export default function Admin() {
               error={youtubeWarn}
             />
             {youtubeUrl && youtubeWarn && (
-              <FormHelperText error>
-                This doesn&apos;t look like a valid URL. Submission will still
-                proceed.
-              </FormHelperText>
+              <>
+                <FormHelperText error>
+                  {httpUrlError(youtubeUrl) || "This doesn’t look like a valid URL."} Submission will still
+                  proceed.
+                </FormHelperText>
+                {youtubeSuggestions.length > 0 && (
+                  <Stack direction="row" spacing={1}>
+                    {youtubeSuggestions.map((s) => (
+                      <Button key={s} size="small" variant="text" onClick={() => setYoutubeUrl(s)}>
+                        Use {s}
+                      </Button>
+                    ))}
+                  </Stack>
+                )}
+              </>
             )}
 
             <Stack direction="row" spacing={1}>

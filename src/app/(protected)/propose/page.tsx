@@ -1,15 +1,7 @@
 'use client'
 import {useMemo, useState} from 'react'
 import {TextField, Button, Stack, Alert, FormHelperText} from '@mui/material'
-
-function looksLikeHttpUrl(u: string) {
-  try {
-    const url = new URL(u)
-    return url.protocol === 'http:' || url.protocol === 'https:'
-  } catch {
-    return false
-  }
-}
+import {isHttpUrl, httpUrlError, suggestHttpUrls} from '@/lib/url'
 
 export default function Propose() {
   const [title, setTitle] = useState('')
@@ -22,16 +14,28 @@ export default function Propose() {
 
   // If any link is non-empty, it must be a valid http(s) URL
   const chartInvalid = useMemo(
-    () => chartUrl.trim() !== '' && !looksLikeHttpUrl(chartUrl.trim()),
+    () => chartUrl.trim() !== '' && !isHttpUrl(chartUrl.trim()),
     [chartUrl],
   )
+  const chartSuggestions = useMemo(
+    () => (chartInvalid ? suggestHttpUrls(chartUrl) : []),
+    [chartInvalid, chartUrl],
+  )
   const lyricsInvalid = useMemo(
-    () => lyricsUrl.trim() !== '' && !looksLikeHttpUrl(lyricsUrl.trim()),
+    () => lyricsUrl.trim() !== '' && !isHttpUrl(lyricsUrl.trim()),
     [lyricsUrl],
   )
+  const lyricsSuggestions = useMemo(
+    () => (lyricsInvalid ? suggestHttpUrls(lyricsUrl) : []),
+    [lyricsInvalid, lyricsUrl],
+  )
   const youtubeInvalid = useMemo(
-    () => youtubeUrl.trim() !== '' && !looksLikeHttpUrl(youtubeUrl.trim()),
+    () => youtubeUrl.trim() !== '' && !isHttpUrl(youtubeUrl.trim()),
     [youtubeUrl],
+  )
+  const youtubeSuggestions = useMemo(
+    () => (youtubeInvalid ? suggestHttpUrls(youtubeUrl) : []),
+    [youtubeInvalid, youtubeUrl],
   )
 
   const formInvalid =
@@ -100,7 +104,20 @@ export default function Propose() {
         error={chartInvalid}
       />
       {chartInvalid && (
-        <FormHelperText error>Must be a valid http(s) URL</FormHelperText>
+        <>
+          <FormHelperText error>
+            {httpUrlError(chartUrl) || 'Must be a valid http(s) URL'}
+          </FormHelperText>
+          {chartSuggestions.length > 0 && (
+            <Stack direction="row" spacing={1}>
+              {chartSuggestions.map((s) => (
+                <Button key={s} size="small" variant="text" onClick={() => setChartUrl(s)}>
+                  Use {s}
+                </Button>
+              ))}
+            </Stack>
+          )}
+        </>
       )}
 
       <TextField
@@ -111,7 +128,20 @@ export default function Propose() {
         error={lyricsInvalid}
       />
       {lyricsInvalid && (
-        <FormHelperText error>Must be a valid http(s) URL</FormHelperText>
+        <>
+          <FormHelperText error>
+            {httpUrlError(lyricsUrl) || 'Must be a valid http(s) URL'}
+          </FormHelperText>
+          {lyricsSuggestions.length > 0 && (
+            <Stack direction="row" spacing={1}>
+              {lyricsSuggestions.map((s) => (
+                <Button key={s} size="small" variant="text" onClick={() => setLyricsUrl(s)}>
+                  Use {s}
+                </Button>
+              ))}
+            </Stack>
+          )}
+        </>
       )}
 
       <TextField
@@ -122,7 +152,20 @@ export default function Propose() {
         error={youtubeInvalid}
       />
       {youtubeInvalid && (
-        <FormHelperText error>Must be a valid http(s) URL</FormHelperText>
+        <>
+          <FormHelperText error>
+            {httpUrlError(youtubeUrl) || 'Must be a valid http(s) URL'}
+          </FormHelperText>
+          {youtubeSuggestions.length > 0 && (
+            <Stack direction="row" spacing={1}>
+              {youtubeSuggestions.map((s) => (
+                <Button key={s} size="small" variant="text" onClick={() => setYoutubeUrl(s)}>
+                  Use {s}
+                </Button>
+              ))}
+            </Stack>
+          )}
+        </>
       )}
 
       <Button

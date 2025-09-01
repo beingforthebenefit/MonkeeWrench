@@ -3,12 +3,13 @@ export const dynamic = 'force-dynamic'
 import {prisma} from '@/lib/db'
 import {requireAdmin} from '@/lib/guard'
 import {z} from 'zod'
+import {isHttpUrl} from '@/lib/url'
 import {bus, EVENTS} from '@/lib/events'
 
 // Accept: valid URL string OR "" OR null OR undefined -> normalize to undefined
 const Url = z.preprocess(
   (v) => (v === '' || v === null ? undefined : v),
-  z.string().url().optional(),
+  z.string().trim().refine(isHttpUrl, 'Must be http(s) URL').optional(),
 )
 
 const Body = z.object({

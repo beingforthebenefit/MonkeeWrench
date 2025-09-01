@@ -3,14 +3,30 @@ export const dynamic = 'force-dynamic'
 import {prisma} from '@/lib/db'
 import {requireAdmin} from '@/lib/guard'
 import {z} from 'zod'
+import {isHttpUrl} from '@/lib/url'
 
 const PatchBody = z.object({
   title: z.string().trim().min(1).optional(),
   artist: z.string().trim().min(1).optional(),
   status: z.enum(['PENDING', 'APPROVED', 'ARCHIVED']).optional(),
-  chartUrl: z.string().url().nullable().optional(),
-  lyricsUrl: z.string().url().nullable().optional(),
-  youtubeUrl: z.string().url().nullable().optional(),
+  chartUrl: z
+    .string()
+    .trim()
+    .refine(isHttpUrl, 'Must be http(s) URL')
+    .nullable()
+    .optional(),
+  lyricsUrl: z
+    .string()
+    .trim()
+    .refine(isHttpUrl, 'Must be http(s) URL')
+    .nullable()
+    .optional(),
+  youtubeUrl: z
+    .string()
+    .trim()
+    .refine(isHttpUrl, 'Must be http(s) URL')
+    .nullable()
+    .optional(),
 })
 
 export const PATCH = async (req: Request, {params}: {params: {id: string}}) => {

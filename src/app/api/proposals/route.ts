@@ -3,17 +3,11 @@ export const dynamic = 'force-dynamic'
 import {prisma} from '@/lib/db'
 import {requireSession} from '@/lib/guard'
 import {z} from 'zod'
+import {isHttpUrl} from '@/lib/url'
 import {bus, EVENTS} from '@/lib/events'
 
 // Helper: only allow http(s) URLs, and allow empty string -> undefined
-const httpUrl = z
-  .string()
-  .trim()
-  .url()
-  .refine(
-    (s) => s.startsWith('http://') || s.startsWith('https://'),
-    'Must be http(s) URL',
-  )
+const httpUrl = z.string().trim().refine(isHttpUrl, 'Must be http(s) URL')
 
 const Url = z
   .union([httpUrl, z.literal('').transform(() => undefined)])
