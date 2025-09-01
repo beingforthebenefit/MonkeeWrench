@@ -1,7 +1,9 @@
 import GoogleProvider from 'next-auth/providers/google'
+import type {GoogleProfile} from 'next-auth/providers/google'
 import {PrismaAdapter} from '@next-auth/prisma-adapter'
 import {prisma} from './db'
 import type {NextAuthOptions} from 'next-auth'
+import type {Adapter} from 'next-auth/adapters'
 
 function splitCsv(raw?: string) {
   return (raw || '')
@@ -20,7 +22,7 @@ function getUserAllowlistEnv() {
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as any,
+  adapter: PrismaAdapter(prisma) as Adapter,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -37,8 +39,9 @@ export const authOptions: NextAuthOptions = {
     async signIn({account, profile}) {
       // Enforce Google-only and verified email
       if (!account || account.provider !== 'google') return false
-      const email = (profile as any)?.email as string | undefined
-      const verified = (profile as any)?.email_verified
+      const gp = profile as GoogleProfile
+      const email = gp?.email
+      const verified = gp?.email_verified
       if (!email) return false
       if (verified === false) return false
 
@@ -61,7 +64,7 @@ export const authOptions: NextAuthOptions = {
         const u = await prisma.user.findUnique({
           where: {email: session.user.email},
         })
-        if (u) (session.user as any).isAdmin = u.isAdmin
+        if (u) session.user.isAdmin = u.isAdmin
       }
       return session
     },

@@ -109,10 +109,11 @@ export default function Admin() {
       }
       setSettingsMsg({type: 'success', text: 'Settings saved.'})
       await loadSettings()
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error'
       setSettingsMsg({
         type: 'error',
-        text: `Save failed: ${e?.message || 'Unknown error'}`,
+        text: `Save failed: ${message}`,
       })
     } finally {
       setSavingSettings(false)
@@ -154,10 +155,11 @@ export default function Admin() {
       setChartUrl('')
       setLyricsUrl('')
       setYoutubeUrl('')
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error'
       setAddMsg({
         type: 'error',
-        text: `Add failed: ${e?.message || 'Unknown error'}`,
+        text: `Add failed: ${message}`,
       })
     } finally {
       setAdding(false)
@@ -251,7 +253,7 @@ export default function Admin() {
             />
             {chartUrl && chartWarn && (
               <FormHelperText error>
-                This doesn't look like a valid URL. Submission will still
+                This doesn&apos;t look like a valid URL. Submission will still
                 proceed.
               </FormHelperText>
             )}
@@ -264,7 +266,7 @@ export default function Admin() {
             />
             {lyricsUrl && lyricsWarn && (
               <FormHelperText error>
-                This doesn't look like a valid URL. Submission will still
+                This doesn&apos;t look like a valid URL. Submission will still
                 proceed.
               </FormHelperText>
             )}
@@ -277,7 +279,7 @@ export default function Admin() {
             />
             {youtubeUrl && youtubeWarn && (
               <FormHelperText error>
-                This doesn't look like a valid URL. Submission will still
+                This doesn&apos;t look like a valid URL. Submission will still
                 proceed.
               </FormHelperText>
             )}

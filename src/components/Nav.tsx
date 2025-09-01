@@ -34,7 +34,7 @@ const fetcher = (u: string) =>
 export default function Nav() {
   const pathname = usePathname()
   const {data: session} = useSession()
-  const isAdmin = Boolean((session?.user as any)?.isAdmin)
+  const isAdmin = Boolean(session?.user?.isAdmin)
   const userName = session?.user?.name ?? ''
   const userImg = session?.user?.image ?? undefined
 
@@ -157,12 +157,14 @@ export default function Nav() {
                 anchorOrigin={{horizontal: 'right', vertical: 'bottom'}}
               >
                 {isAdmin && (
-                  <MenuItem component={Link as any} href="/admin">
-                    <ListItemIcon>
-                      <SettingsIcon fontSize="small" />
-                    </ListItemIcon>
-                    Admin
-                  </MenuItem>
+                  <Link href="/admin" passHref legacyBehavior>
+                    <MenuItem component="a">
+                      <ListItemIcon>
+                        <SettingsIcon fontSize="small" />
+                      </ListItemIcon>
+                      Admin
+                    </MenuItem>
+                  </Link>
                 )}
                 <Divider />
                 <MenuItem onClick={() => signOut({callbackUrl: '/login'})}>

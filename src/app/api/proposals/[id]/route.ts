@@ -2,19 +2,23 @@ export const dynamic = 'force-dynamic'
 
 import {prisma} from '@/lib/db'
 import {requireAdmin} from '@/lib/guard'
+import {z} from 'zod'
+
+const PatchBody = z.object({
+  title: z.string().trim().min(1).optional(),
+  artist: z.string().trim().min(1).optional(),
+  status: z.enum(['PENDING', 'APPROVED', 'ARCHIVED']).optional(),
+  chartUrl: z.string().url().nullable().optional(),
+  lyricsUrl: z.string().url().nullable().optional(),
+  youtubeUrl: z.string().url().nullable().optional(),
+})
 
 export const PATCH = async (req: Request, {params}: {params: {id: string}}) => {
   await requireAdmin()
-  const body = await req.json()
-  const data: any = {}
-  if (body.title) data.title = String(body.title)
-  if (body.artist) data.artist = String(body.artist)
-  if (body.status && ['PENDING', 'APPROVED', 'ARCHIVED'].includes(body.status))
-    data.status = body.status
-  if (body.chartUrl !== undefined) data.chartUrl = body.chartUrl || null
-  if (body.lyricsUrl !== undefined) data.lyricsUrl = body.lyricsUrl || null
-  if (body.youtubeUrl !== undefined) data.youtubeUrl = body.youtubeUrl || null
-  await prisma.proposal.update({where: {id: params.id}, data})
+  const json = await req.json()
+  const parsed = PatchBody.safeParse(json)
+  if (!parsed.success) return new Response('Bad Request', {status: 400})
+  await prisma.proposal.update({where: {id: params.id}, data: parsed.data})
   return new Response(null, {status: 204})
 }
 

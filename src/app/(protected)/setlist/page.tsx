@@ -143,7 +143,7 @@ function Row({
 
 export default function SetlistPage() {
   const {data: session} = useSession()
-  const isAdmin = Boolean((session?.user as any)?.isAdmin)
+  const isAdmin = Boolean(session?.user?.isAdmin)
 
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<Item[]>([])

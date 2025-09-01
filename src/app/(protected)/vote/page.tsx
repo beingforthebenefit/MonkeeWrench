@@ -26,7 +26,7 @@ type Item = {
 
 export default function Vote() {
   const {data: session} = useSession()
-  const isAdmin = Boolean((session?.user as any)?.isAdmin)
+  const isAdmin = Boolean(session?.user?.isAdmin)
 
   const [items, setItems] = useState<Item[]>([])
   const [busyVote, setBusyVote] = useState<Record<string, boolean>>({})

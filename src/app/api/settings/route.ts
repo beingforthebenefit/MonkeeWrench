@@ -20,7 +20,9 @@ export const PATCH = async (req: Request) => {
   const adminAllowlist = Array.isArray(body.adminAllowlist)
     ? body.adminAllowlist.map(String)
     : undefined
-  const data: any = {voteThreshold}
+  const data: {voteThreshold: number; adminAllowlist?: string[]} = {
+    voteThreshold,
+  }
   if (adminAllowlist) data.adminAllowlist = adminAllowlist
   await prisma.settings.update({where: {id: 1}, data})
   return new Response(null, {status: 204})

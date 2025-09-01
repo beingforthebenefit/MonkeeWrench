@@ -67,8 +67,9 @@ export default function Propose() {
       setChartUrl('')
       setLyricsUrl('')
       setYoutubeUrl('')
-    } catch (e: any) {
-      setMsg(e?.message || 'Error')
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Error'
+      setMsg(message)
     } finally {
       setBusy(false)
     }
