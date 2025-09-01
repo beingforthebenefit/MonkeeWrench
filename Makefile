@@ -34,6 +34,7 @@ help:
 	@echo "  prisma-dev     Prisma migrate dev (create new migration)"
 	@echo "  seed           Run seed script"
 	@echo "  lint           Lint code"
+	@echo "  lint-fix       Lint code and fix issues"
 	@echo "  test           Run tests"
 	@echo "  deps           Install node modules inside app container"
 	@echo "  down           Stop all containers"
