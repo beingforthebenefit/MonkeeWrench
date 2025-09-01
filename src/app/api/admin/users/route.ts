@@ -26,7 +26,7 @@ export async function GET() {
     createdAt: u.createdAt,
     proposalsCount: u.proposals.length,
     votesCount: u.votes.length,
-    canDelete: u.proposals.length === 0 && u.votes.length === 0,
+    canDelete: true,
   }))
   return NextResponse.json(data)
 }
@@ -53,4 +53,3 @@ export async function POST(req: Request) {
   })
   return NextResponse.json(user, {status: 201})
 }
-

@@ -47,7 +47,7 @@ model Proposal {
   lyricsUrl  String?
   youtubeUrl String?
   status     ProposalStatus @default(PENDING)
-  proposer   User           @relation("Proposer", fields: [proposerId], references: [id])
+  proposer   User           @relation("Proposer", fields: [proposerId], references: [id], onDelete: Cascade)
   proposerId String
   votes      Vote[]
   setlistOrder Int?
@@ -59,7 +59,7 @@ model Proposal {
 
 model Vote {
   id         String   @id @default(cuid())
-  user       User     @relation(fields: [userId], references: [id])
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     String
   proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
   proposalId String

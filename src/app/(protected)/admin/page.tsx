@@ -269,6 +269,14 @@ export default function Admin() {
   }
 
   async function deleteUser(u: UserRow) {
+    if (
+      typeof window !== 'undefined' &&
+      !window.confirm(
+        `Delete ${u.email}? This will also delete ${u.proposalsCount} proposal(s) and ${u.votesCount} vote(s).`,
+      )
+    ) {
+      return
+    }
     setUsersMsg(null)
     try {
       const res = await fetch(`/api/admin/users/${u.id}`, {method: 'DELETE'})
@@ -357,16 +365,15 @@ export default function Admin() {
                     </Stack>
                     <Tooltip
                       title={
-                        u.canDelete
-                          ? 'Delete user'
-                          : 'Cannot delete: has proposals or votes'
+                        (u.proposalsCount || u.votesCount)
+                          ? `Delete user (and ${u.proposalsCount} proposal${u.proposalsCount === 1 ? '' : 's'}, ${u.votesCount} vote${u.votesCount === 1 ? '' : 's'})`
+                          : 'Delete user'
                       }
                     >
                       <span>
                         <IconButton
                           size="small"
                           onClick={() => deleteUser(u)}
-                          disabled={!u.canDelete}
                           aria-label="Delete user"
                         >
                           <DeleteIcon fontSize="small" />

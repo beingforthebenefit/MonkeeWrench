@@ -22,26 +22,11 @@ export async function PATCH(
   return NextResponse.json(user)
 }
 
-export async function DELETE(
-  _req: Request,
-  {params}: {params: {id: string}},
-) {
+export async function DELETE(_req: Request, {params}: {params: {id: string}}) {
   await requireAdmin()
   const id = params.id
-  const [proposalsCount, votesCount] = await Promise.all([
-    prisma.proposal.count({where: {proposerId: id}}),
-    prisma.vote.count({where: {userId: id}}),
-  ])
-  if (proposalsCount > 0 || votesCount > 0) {
-    return NextResponse.json(
-      {
-        error:
-          'Cannot delete: user has existing proposals or votes. Remove those first.',
-      },
-      {status: 400},
-    )
-  }
+  // With ON DELETE CASCADE on Proposal.proposerId and Vote.userId,
+  // deleting a user will also remove their proposals and votes.
   await prisma.user.delete({where: {id}})
   return new NextResponse(null, {status: 204})
 }
-
