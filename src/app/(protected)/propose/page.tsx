@@ -111,7 +111,12 @@ export default function Propose() {
           {chartSuggestions.length > 0 && (
             <Stack direction="row" spacing={1}>
               {chartSuggestions.map((s) => (
-                <Button key={s} size="small" variant="text" onClick={() => setChartUrl(s)}>
+                <Button
+                  key={s}
+                  size="small"
+                  variant="text"
+                  onClick={() => setChartUrl(s)}
+                >
                   Use {s}
                 </Button>
               ))}
@@ -135,7 +140,12 @@ export default function Propose() {
           {lyricsSuggestions.length > 0 && (
             <Stack direction="row" spacing={1}>
               {lyricsSuggestions.map((s) => (
-                <Button key={s} size="small" variant="text" onClick={() => setLyricsUrl(s)}>
+                <Button
+                  key={s}
+                  size="small"
+                  variant="text"
+                  onClick={() => setLyricsUrl(s)}
+                >
                   Use {s}
                 </Button>
               ))}
@@ -159,7 +169,12 @@ export default function Propose() {
           {youtubeSuggestions.length > 0 && (
             <Stack direction="row" spacing={1}>
               {youtubeSuggestions.map((s) => (
-                <Button key={s} size="small" variant="text" onClick={() => setYoutubeUrl(s)}>
+                <Button
+                  key={s}
+                  size="small"
+                  variant="text"
+                  onClick={() => setYoutubeUrl(s)}
+                >
                   Use {s}
                 </Button>
               ))}

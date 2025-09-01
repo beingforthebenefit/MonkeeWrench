@@ -123,6 +123,14 @@ seed:
 lint:
 	$(COMPOSE_DEV) exec $(APP_SVC) npm run lint --silent || true
 
+.PHONEY: lint-fix
+lint-fix:
+	$(COMPOSE_DEV) exec $(APP_SVC) npm run lint:eslint:fix --silent || true
+
+.PHONEY: format
+format:
+	$(COMPOSE_DEV) exec $(APP_SVC) npm run format --silent || true
+
 .PHONY: test
 test:
 	$(COMPOSE_DEV) exec $(APP_SVC) npm test --silent || true

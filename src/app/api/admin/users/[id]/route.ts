@@ -2,10 +2,7 @@ import {NextResponse} from 'next/server'
 import {requireAdmin} from '@/lib/guard'
 import {prisma} from '@/lib/db'
 
-export async function PATCH(
-  req: Request,
-  {params}: {params: {id: string}},
-) {
+export async function PATCH(req: Request, {params}: {params: {id: string}}) {
   await requireAdmin()
   const id = params.id
   const body = (await req.json().catch(() => ({}))) as {

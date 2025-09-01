@@ -1,6 +1,6 @@
 'use client'
 
-import {useEffect, useState, useMemo} from 'react'
+import {useEffect, useState, useMemo, useCallback} from 'react'
 import {
   TextField,
   Button,
@@ -104,7 +104,7 @@ export default function Admin() {
     [youtubeWarn, youtubeUrl],
   )
 
-  async function loadSettings() {
+  const loadSettings = useCallback(async () => {
     setSettingsMsg(null)
     const res = await fetch('/api/settings', {cache: 'no-store'})
     if (!res.ok) {
@@ -117,13 +117,30 @@ export default function Admin() {
     const j = await res.json()
     setThreshold(j.voteThreshold)
     setAllowlist((j.adminAllowlist || []).join(', '))
-  }
+  }, [])
+
+  // --- Users management ---------------------------------------------------
+  const loadUsers = useCallback(async () => {
+    setLoadingUsers(true)
+    setUsersMsg(null)
+    try {
+      const res = await fetch('/api/admin/users', {cache: 'no-store'})
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = (await res.json()) as UserRow[]
+      setUsers(data)
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error'
+      setUsersMsg({type: 'error', text: `Failed to load users: ${message}`})
+    } finally {
+      setLoadingUsers(false)
+    }
+  }, [])
 
   useEffect(() => {
     // first paint load
-    loadSettings()
-    loadUsers()
-  }, [])
+    void loadSettings()
+    void loadUsers()
+  }, [loadSettings, loadUsers])
 
   async function saveSettings() {
     setSavingSettings(true)
@@ -202,21 +219,6 @@ export default function Admin() {
   }
 
   // --- Users management ---------------------------------------------------
-  async function loadUsers() {
-    setLoadingUsers(true)
-    setUsersMsg(null)
-    try {
-      const res = await fetch('/api/admin/users', {cache: 'no-store'})
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = (await res.json()) as UserRow[]
-      setUsers(data)
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Unknown error'
-      setUsersMsg({type: 'error', text: `Failed to load users: ${message}`})
-    } finally {
-      setLoadingUsers(false)
-    }
-  }
 
   async function addUser() {
     setAddingUser(true)
@@ -301,9 +303,15 @@ export default function Admin() {
         <CardContent>
           <Stack spacing={2}>
             <Typography variant="h6">Manage Users</Typography>
-            {usersMsg && <Alert severity={usersMsg.type}>{usersMsg.text}</Alert>}
+            {usersMsg && (
+              <Alert severity={usersMsg.type}>{usersMsg.text}</Alert>
+            )}
 
-            <Stack direction={{xs: 'column', sm: 'row'}} spacing={2} alignItems={{sm: 'center'}}>
+            <Stack
+              direction={{xs: 'column', sm: 'row'}}
+              spacing={2}
+              alignItems={{sm: 'center'}}
+            >
               <TextField
                 label="Email"
                 value={addUserEmail}
@@ -324,7 +332,11 @@ export default function Admin() {
                 />
                 <Typography variant="body2">Admin</Typography>
               </Stack>
-              <Button variant="contained" onClick={addUser} disabled={addingUser}>
+              <Button
+                variant="contained"
+                onClick={addUser}
+                disabled={addingUser}
+              >
                 {addingUser ? 'Saving…' : 'Add / Update'}
               </Button>
             </Stack>
@@ -344,7 +356,10 @@ export default function Admin() {
                     alignItems="center"
                     sx={{p: 1, borderRadius: 1, bgcolor: '#18191a'}}
                   >
-                    <Avatar src={u.image || undefined} sx={{width: 28, height: 28}}>
+                    <Avatar
+                      src={u.image || undefined}
+                      sx={{width: 28, height: 28}}
+                    >
                       {(u.name || u.email || '?').charAt(0).toUpperCase()}
                     </Avatar>
                     <Stack sx={{flex: 1}}>
@@ -365,7 +380,7 @@ export default function Admin() {
                     </Stack>
                     <Tooltip
                       title={
-                        (u.proposalsCount || u.votesCount)
+                        u.proposalsCount || u.votesCount
                           ? `Delete user (and ${u.proposalsCount} proposal${u.proposalsCount === 1 ? '' : 's'}, ${u.votesCount} vote${u.votesCount === 1 ? '' : 's'})`
                           : 'Delete user'
                       }
@@ -472,13 +487,19 @@ export default function Admin() {
             {chartUrl && chartWarn && (
               <>
                 <FormHelperText error>
-                  {httpUrlError(chartUrl) || "This doesn’t look like a valid URL."} Submission will still
-                  proceed.
+                  {httpUrlError(chartUrl) ||
+                    'This doesn’t look like a valid URL.'}{' '}
+                  Submission will still proceed.
                 </FormHelperText>
                 {chartSuggestions.length > 0 && (
                   <Stack direction="row" spacing={1}>
                     {chartSuggestions.map((s) => (
-                      <Button key={s} size="small" variant="text" onClick={() => setChartUrl(s)}>
+                      <Button
+                        key={s}
+                        size="small"
+                        variant="text"
+                        onClick={() => setChartUrl(s)}
+                      >
                         Use {s}
                       </Button>
                     ))}
@@ -496,13 +517,19 @@ export default function Admin() {
             {lyricsUrl && lyricsWarn && (
               <>
                 <FormHelperText error>
-                  {httpUrlError(lyricsUrl) || "This doesn’t look like a valid URL."} Submission will still
-                  proceed.
+                  {httpUrlError(lyricsUrl) ||
+                    'This doesn’t look like a valid URL.'}{' '}
+                  Submission will still proceed.
                 </FormHelperText>
                 {lyricsSuggestions.length > 0 && (
                   <Stack direction="row" spacing={1}>
                     {lyricsSuggestions.map((s) => (
-                      <Button key={s} size="small" variant="text" onClick={() => setLyricsUrl(s)}>
+                      <Button
+                        key={s}
+                        size="small"
+                        variant="text"
+                        onClick={() => setLyricsUrl(s)}
+                      >
                         Use {s}
                       </Button>
                     ))}
@@ -520,13 +547,19 @@ export default function Admin() {
             {youtubeUrl && youtubeWarn && (
               <>
                 <FormHelperText error>
-                  {httpUrlError(youtubeUrl) || "This doesn’t look like a valid URL."} Submission will still
-                  proceed.
+                  {httpUrlError(youtubeUrl) ||
+                    'This doesn’t look like a valid URL.'}{' '}
+                  Submission will still proceed.
                 </FormHelperText>
                 {youtubeSuggestions.length > 0 && (
                   <Stack direction="row" spacing={1}>
                     {youtubeSuggestions.map((s) => (
-                      <Button key={s} size="small" variant="text" onClick={() => setYoutubeUrl(s)}>
+                      <Button
+                        key={s}
+                        size="small"
+                        variant="text"
+                        onClick={() => setYoutubeUrl(s)}
+                      >
                         Use {s}
                       </Button>
                     ))}

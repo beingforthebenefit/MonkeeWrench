@@ -146,7 +146,11 @@ export default function Nav() {
                 sx={{ml: 1}}
                 aria-label="Account menu"
               >
-                <Avatar src={userImg} alt={userName || userEmail || 'User'} sx={{width: 32, height: 32}}>
+                <Avatar
+                  src={userImg}
+                  alt={userName || userEmail || 'User'}
+                  sx={{width: 32, height: 32}}
+                >
                   {(userName || userEmail || '?').charAt(0).toUpperCase()}
                 </Avatar>
               </IconButton>

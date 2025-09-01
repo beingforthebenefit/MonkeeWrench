@@ -73,7 +73,8 @@ export function httpUrlError(value: string): string | null {
     const info = parseDomain(host)
     if (info.isIp) return null
     if (!(info.isIcann && info.domain && info.publicSuffix)) {
-      if (!host.includes('.')) return 'Domain must contain a dot or be localhost'
+      if (!host.includes('.'))
+        return 'Domain must contain a dot or be localhost'
       return 'Invalid domain/TLD'
     }
     return null

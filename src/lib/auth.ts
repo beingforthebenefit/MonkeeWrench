@@ -50,7 +50,10 @@ export const authOptions: NextAuthOptions = {
       const settings = await prisma.settings.findUnique({where: {id: 1}})
       // Merge DB and env allowlists so either source grants access
       const adminAllow = Array.from(
-        new Set([...(settings?.adminAllowlist ?? []), ...getSettingsAllowlistFallback()]),
+        new Set([
+          ...(settings?.adminAllowlist ?? []),
+          ...getSettingsAllowlistFallback(),
+        ]),
       )
       const userAllow = getUserAllowlistEnv()
 
@@ -60,7 +63,8 @@ export const authOptions: NextAuthOptions = {
       })
 
       const isAdminEmail = adminAllow.includes(email)
-      const isAllowedUser = Boolean(existingUser) || isAdminEmail || userAllow.includes(email)
+      const isAllowedUser =
+        Boolean(existingUser) || isAdminEmail || userAllow.includes(email)
       if (!isAllowedUser) return false
 
       // Attempt to pre-link Google account to existing user by email to avoid
@@ -86,19 +90,28 @@ export const authOptions: NextAuthOptions = {
                 token_type: account.token_type ?? undefined,
                 scope: account.scope ?? undefined,
                 id_token: account.id_token ?? undefined,
-                session_state: (account as any).session_state ?? undefined,
+                // Some providers add non-standard fields like `session_state`.
+                // Safely extract a string value if present without using `any`.
+                session_state:
+                  typeof (account as Record<string, unknown>)?.[
+                    'session_state'
+                  ] === 'string'
+                    ? ((account as Record<string, unknown>)[
+                        'session_state'
+                      ] as string)
+                    : undefined,
               },
             })
           }
         }
-      } catch (_) {
+      } catch {
         // Best-effort link; ignore failures and let NextAuth handle.
       }
 
       // Best-effort: sync basic profile fields onto the user
       try {
-        const name = (gp as any)?.name as string | undefined
-        const picture = (gp as any)?.picture as string | undefined
+        const name = gp?.name as string | undefined
+        const picture = gp?.picture as string | undefined
         if (existingUser && (name || picture)) {
           await prisma.user.update({
             where: {id: existingUser.id},
@@ -108,7 +121,7 @@ export const authOptions: NextAuthOptions = {
             },
           })
         }
-      } catch (_) {
+      } catch {
         // ignore
       }
 
@@ -152,7 +165,7 @@ export const authOptions: NextAuthOptions = {
       try {
         if (account?.provider === 'google') {
           const gp = profile as GoogleProfile | undefined
-          const googleImage = (gp as any)?.picture as string | undefined
+          const googleImage = gp?.picture as string | undefined
           if (user?.id && googleImage) {
             const existing = await prisma.user.findUnique({
               where: {id: user.id},
@@ -166,7 +179,7 @@ export const authOptions: NextAuthOptions = {
             }
           }
         }
-      } catch (_) {
+      } catch {
         // Best-effort sync; ignore failures
       }
     },
