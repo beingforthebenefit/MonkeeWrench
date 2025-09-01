@@ -11,7 +11,13 @@ import {
   Divider,
   Alert,
   FormHelperText,
+  Avatar,
+  IconButton,
+  Switch,
+  Tooltip,
 } from '@mui/material'
+import DeleteIcon from '@mui/icons-material/Delete'
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
 import {isHttpUrl, suggestHttpUrls, httpUrlError} from '@/lib/url'
 
 // --- helpers ---------------------------------------------------------------
@@ -48,6 +54,29 @@ export default function Admin() {
     type: 'success' | 'error'
     text: string
   } | null>(null)
+
+  // Users management state
+  type UserRow = {
+    id: string
+    name: string | null
+    email: string | null
+    image: string | null
+    isAdmin: boolean
+    createdAt: string
+    proposalsCount: number
+    votesCount: number
+    canDelete: boolean
+  }
+  const [users, setUsers] = useState<UserRow[]>([])
+  const [usersMsg, setUsersMsg] = useState<{
+    type: 'success' | 'error'
+    text: string
+  } | null>(null)
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [addUserEmail, setAddUserEmail] = useState('')
+  const [addUserName, setAddUserName] = useState('')
+  const [addUserAdmin, setAddUserAdmin] = useState(false)
+  const [addingUser, setAddingUser] = useState(false)
 
   // Derived URL warnings (non-blocking)
   const chartWarn = useMemo(
@@ -93,6 +122,7 @@ export default function Admin() {
   useEffect(() => {
     // first paint load
     loadSettings()
+    loadUsers()
   }, [])
 
   async function saveSettings() {
@@ -171,9 +201,185 @@ export default function Admin() {
     }
   }
 
+  // --- Users management ---------------------------------------------------
+  async function loadUsers() {
+    setLoadingUsers(true)
+    setUsersMsg(null)
+    try {
+      const res = await fetch('/api/admin/users', {cache: 'no-store'})
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = (await res.json()) as UserRow[]
+      setUsers(data)
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error'
+      setUsersMsg({type: 'error', text: `Failed to load users: ${message}`})
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
+
+  async function addUser() {
+    setAddingUser(true)
+    setUsersMsg(null)
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          email: addUserEmail,
+          name: addUserName || undefined,
+          isAdmin: addUserAdmin,
+        }),
+      })
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(text || `HTTP ${res.status}`)
+      }
+      setAddUserEmail('')
+      setAddUserName('')
+      setAddUserAdmin(false)
+      setUsersMsg({type: 'success', text: 'User added/updated.'})
+      await loadUsers()
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error'
+      setUsersMsg({type: 'error', text: `Add user failed: ${message}`})
+    } finally {
+      setAddingUser(false)
+    }
+  }
+
+  async function toggleAdmin(u: UserRow) {
+    setUsersMsg(null)
+    try {
+      const res = await fetch(`/api/admin/users/${u.id}`, {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({isAdmin: !u.isAdmin}),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      await loadUsers()
+      setUsersMsg({
+        type: 'success',
+        text: `${u.email} is now ${!u.isAdmin ? 'Admin' : 'User'}.`,
+      })
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error'
+      setUsersMsg({type: 'error', text: `Update failed: ${message}`})
+    }
+  }
+
+  async function deleteUser(u: UserRow) {
+    setUsersMsg(null)
+    try {
+      const res = await fetch(`/api/admin/users/${u.id}`, {method: 'DELETE'})
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(text || `HTTP ${res.status}`)
+      }
+      await loadUsers()
+      setUsersMsg({type: 'success', text: `Deleted ${u.email}.`})
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error'
+      setUsersMsg({type: 'error', text: `Delete failed: ${message}`})
+    }
+  }
+
   return (
     <Stack spacing={3}>
       <Typography variant="h5">Admin</Typography>
+
+      {/* Users management */}
+      <Card>
+        <CardContent>
+          <Stack spacing={2}>
+            <Typography variant="h6">Manage Users</Typography>
+            {usersMsg && <Alert severity={usersMsg.type}>{usersMsg.text}</Alert>}
+
+            <Stack direction={{xs: 'column', sm: 'row'}} spacing={2} alignItems={{sm: 'center'}}>
+              <TextField
+                label="Email"
+                value={addUserEmail}
+                onChange={(e) => setAddUserEmail(e.target.value)}
+                sx={{minWidth: 260}}
+              />
+              <TextField
+                label="Name (optional)"
+                value={addUserName}
+                onChange={(e) => setAddUserName(e.target.value)}
+                sx={{minWidth: 200}}
+              />
+              <Stack direction="row" spacing={1} alignItems="center">
+                <AdminPanelSettingsIcon fontSize="small" />
+                <Switch
+                  checked={addUserAdmin}
+                  onChange={(e) => setAddUserAdmin(e.target.checked)}
+                />
+                <Typography variant="body2">Admin</Typography>
+              </Stack>
+              <Button variant="contained" onClick={addUser} disabled={addingUser}>
+                {addingUser ? 'Saving…' : 'Add / Update'}
+              </Button>
+            </Stack>
+
+            <Divider />
+
+            <Stack spacing={1}>
+              <Typography variant="subtitle2" color="text.secondary">
+                {loadingUsers ? 'Loading users…' : `${users.length} users`}
+              </Typography>
+              <Stack spacing={1}>
+                {users.map((u) => (
+                  <Stack
+                    key={u.id}
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                    sx={{p: 1, borderRadius: 1, bgcolor: '#18191a'}}
+                  >
+                    <Avatar src={u.image || undefined} sx={{width: 28, height: 28}}>
+                      {(u.name || u.email || '?').charAt(0).toUpperCase()}
+                    </Avatar>
+                    <Stack sx={{flex: 1}}>
+                      <Typography variant="body2">{u.name || '—'}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {u.email}
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Typography variant="caption">User</Typography>
+                      <Switch
+                        size="small"
+                        checked={u.isAdmin}
+                        onChange={() => toggleAdmin(u)}
+                        inputProps={{'aria-label': 'Toggle admin'}}
+                      />
+                      <Typography variant="caption">Admin</Typography>
+                    </Stack>
+                    <Tooltip
+                      title={
+                        u.canDelete
+                          ? 'Delete user'
+                          : 'Cannot delete: has proposals or votes'
+                      }
+                    >
+                      <span>
+                        <IconButton
+                          size="small"
+                          onClick={() => deleteUser(u)}
+                          disabled={!u.canDelete}
+                          aria-label="Delete user"
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  </Stack>
+                ))}
+              </Stack>
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
 
       {/* Settings Card */}
       <Card>

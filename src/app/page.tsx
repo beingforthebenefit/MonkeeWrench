@@ -1,5 +1,8 @@
 import Link from 'next/link'
 import {prisma} from '@/lib/db'
+import {getServerSession} from 'next-auth'
+import {authOptions} from '@/lib/auth'
+import {redirect} from 'next/navigation'
 
 async function getPending() {
   // Call our API route from the server without re-auth cookies (public pending)
@@ -28,6 +31,10 @@ async function getPending() {
 }
 
 export default async function DashboardPage() {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.email) {
+    redirect('/login')
+  }
   const [{pending, nearCount}, approvedCount] = await Promise.all([
     getPending(),
     prisma.proposal.count({where: {status: 'APPROVED'}}),

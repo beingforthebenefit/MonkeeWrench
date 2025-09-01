@@ -36,6 +36,7 @@ export default function Nav() {
   const {data: session} = useSession()
   const isAdmin = Boolean(session?.user?.isAdmin)
   const userName = session?.user?.name ?? ''
+  const userEmail = session?.user?.email ?? ''
   const userImg = session?.user?.image ?? undefined
 
   const {data: pending = []} = useSWR(
@@ -145,7 +146,9 @@ export default function Nav() {
                 sx={{ml: 1}}
                 aria-label="Account menu"
               >
-                <Avatar src={userImg} sx={{width: 32, height: 32}} />
+                <Avatar src={userImg} alt={userName || userEmail || 'User'} sx={{width: 32, height: 32}}>
+                  {(userName || userEmail || '?').charAt(0).toUpperCase()}
+                </Avatar>
               </IconButton>
               <Menu
                 anchorEl={anchorEl}
