@@ -50,8 +50,11 @@ model Proposal {
   proposer   User           @relation("Proposer", fields: [proposerId], references: [id])
   proposerId String
   votes      Vote[]
+  setlistOrder Int?
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
+
+  @@index([status, setlistOrder])
 }
 
 model Vote {
