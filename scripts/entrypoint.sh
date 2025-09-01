@@ -16,6 +16,14 @@ until PGCONNECT_TIMEOUT=3 psql "$CLEAN_URL" -c 'select 1' >/dev/null 2>&1; do
   sleep 1
 done
 
+# In development, ensure dependencies are installed inside the container
+if [[ "${APP_ENV:-production}" == "development" ]]; then
+  if [[ ! -d node_modules || ! -f node_modules/.bin/next ]]; then
+    echo "Installing dev dependencies (npm ci)"
+    npm ci --no-audit --no-fund
+  fi
+fi
+
 # Migrate & seed
 npx prisma migrate deploy
 node prisma/seed.mjs || true
