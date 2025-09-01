@@ -8,8 +8,8 @@ COMPOSE        ?= docker compose
 COMPOSE_DEV    ?= $(COMPOSE) -f docker-compose.yml -f docker-compose.dev.yml
 
 # Container names (from your compose files)
-APP_SVC        ?= mw_app
-DB_SVC         ?= mw_db
+APP_SVC        ?= app
+DB_SVC         ?= db
 
 # ------------------------------------------------------------------------------
 # Help
