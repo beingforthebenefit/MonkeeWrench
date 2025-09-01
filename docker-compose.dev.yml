@@ -15,10 +15,12 @@ services:
       ADMIN_ALLOWLIST: ${ADMIN_ALLOWLIST}
       USER_ALLOWLIST: ${USER_ALLOWLIST}
       VOTE_THRESHOLD: ${VOTE_THRESHOLD}
-      CHOKIDAR_USEPOLLING: "true"   # robust watching in Docker
-      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: 'true' # robust watching in Docker
+      WATCHPACK_POLLING: 'true'
     ports:
-      - "3002:3000"
+      - '3002:3000'
     volumes:
       - .:/app
-      - /app/node_modules
+      - node_modules:/app/node_modules
+volumes:
+  node_modules:
