@@ -10,7 +10,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U monkee -d monkee"]
+      test: ['CMD-SHELL', 'pg_isready -U monkee -d monkee']
       interval: 5s
       timeout: 5s
       retries: 30
@@ -19,7 +19,7 @@ services:
     build: .
     container_name: mw_app
     ports:
-      - "3002:3000"
+      - '3002:3000'
     depends_on:
       db:
         condition: service_healthy

@@ -1,12 +1,12 @@
 import GoogleProvider from 'next-auth/providers/google'
-import { PrismaAdapter } from '@next-auth/prisma-adapter'
-import { prisma } from './db'
-import type { NextAuthOptions } from 'next-auth'
+import {PrismaAdapter} from '@next-auth/prisma-adapter'
+import {prisma} from './db'
+import type {NextAuthOptions} from 'next-auth'
 
 function splitCsv(raw?: string) {
   return (raw || '')
     .split(',')
-    .map(s => s.trim())
+    .map((s) => s.trim())
     .filter(Boolean)
 }
 
@@ -24,17 +24,17 @@ export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!
-    })
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
   ],
   pages: {
     signIn: '/login',
     error: '/login',
   },
-  session: { strategy: 'database' },
+  session: {strategy: 'database'},
 
   callbacks: {
-    async signIn({ account, profile }) {
+    async signIn({account, profile}) {
       // Enforce Google-only and verified email
       if (!account || account.provider !== 'google') return false
       const email = (profile as any)?.email as string | undefined
@@ -43,7 +43,7 @@ export const authOptions: NextAuthOptions = {
       if (verified === false) return false
 
       // Gate access: only allow emails on admin or user allowlists
-      const settings = await prisma.settings.findUnique({ where: { id: 1 } })
+      const settings = await prisma.settings.findUnique({where: {id: 1}})
       const adminAllow = settings?.adminAllowlist?.length
         ? settings.adminAllowlist
         : getSettingsAllowlistFallback()
@@ -56,9 +56,11 @@ export const authOptions: NextAuthOptions = {
       // Do NOT create users here. Return true to proceed; adapter will create/link.
       return true
     },
-    async session({ session }) {
+    async session({session}) {
       if (session.user?.email) {
-        const u = await prisma.user.findUnique({ where: { email: session.user.email } })
+        const u = await prisma.user.findUnique({
+          where: {email: session.user.email},
+        })
         if (u) (session.user as any).isAdmin = u.isAdmin
       }
       return session
@@ -67,16 +69,16 @@ export const authOptions: NextAuthOptions = {
 
   events: {
     // Runs only when a brand new user is created by the adapter
-    async createUser({ user }) {
-      const settings = await prisma.settings.findUnique({ where: { id: 1 } })
+    async createUser({user}) {
+      const settings = await prisma.settings.findUnique({where: {id: 1}})
       const allow = settings?.adminAllowlist?.length
         ? settings.adminAllowlist
         : getSettingsAllowlistFallback()
 
       if (user.email && allow.includes(user.email)) {
         await prisma.user.update({
-          where: { id: user.id },
-          data: { isAdmin: true },
+          where: {id: user.id},
+          data: {isAdmin: true},
         })
       }
     },

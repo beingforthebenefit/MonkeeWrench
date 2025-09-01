@@ -1,33 +1,37 @@
-import Link from "next/link";
-import { prisma } from "@/lib/db";
+import Link from 'next/link'
+import {prisma} from '@/lib/db'
 
 async function getPending() {
   // Call our API route from the server without re-auth cookies (public pending)
   // Simpler: read from DB directly to avoid fetch/auth complexity
-  const threshold = await prisma.settings.findUnique({ where: { id: 1 } }).then(s => s?.voteThreshold ?? 3);
+  const threshold = await prisma.settings
+    .findUnique({where: {id: 1}})
+    .then((s) => s?.voteThreshold ?? 3)
 
   const rows = await prisma.proposal.findMany({
-    where: { status: "PENDING" },
-    include: { votes: true },
-    orderBy: { updatedAt: "desc" },
-  });
+    where: {status: 'PENDING'},
+    include: {votes: true},
+    orderBy: {updatedAt: 'desc'},
+  })
 
-  const pending = rows.map(r => ({
+  const pending = rows.map((r) => ({
     id: r.id,
     title: r.title,
     artist: r.artist,
     voteCount: r.votes.length,
-  }));
+  }))
 
-  const near = pending.filter(p => p.voteCount >= threshold - 1 && p.voteCount < threshold);
-  return { pending, nearCount: near.length, threshold };
+  const near = pending.filter(
+    (p) => p.voteCount >= threshold - 1 && p.voteCount < threshold,
+  )
+  return {pending, nearCount: near.length, threshold}
 }
 
 export default async function DashboardPage() {
-  const [{ pending, nearCount }, approvedCount] = await Promise.all([
+  const [{pending, nearCount}, approvedCount] = await Promise.all([
     getPending(),
-    prisma.proposal.count({ where: { status: "APPROVED" } }),
-  ]);
+    prisma.proposal.count({where: {status: 'APPROVED'}}),
+  ])
 
   return (
     <section className="space-y-8 max-w-4xl mx-auto w-full px-4 py-8">
@@ -62,16 +66,20 @@ export default async function DashboardPage() {
           className="flex-1 min-w-[160px] flex flex-col items-center p-4 rounded-xl bg-[#19191c] hover:bg-monkee-red hover:text-white transition shadow group"
         >
           <span className="font-semibold">Vote</span>
-          <span className="text-xs text-gray-400 group-hover:text-white">Pending songs need your vote!</span>
+          <span className="text-xs text-gray-400 group-hover:text-white">
+            Pending songs need your vote!
+          </span>
         </Link>
         <Link
           href="/setlist"
           className="flex-1 min-w-[160px] flex flex-col items-center p-4 rounded-xl bg-[#19191c] hover:bg-monkee-red hover:text-white transition shadow group"
         >
           <span className="font-semibold">Setlist</span>
-          <span className="text-xs text-gray-400 group-hover:text-white">See approved songs</span>
+          <span className="text-xs text-gray-400 group-hover:text-white">
+            See approved songs
+          </span>
         </Link>
       </div>
     </section>
-  );
+  )
 }

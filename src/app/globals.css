@@ -1,9 +1,17 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-:root { color-scheme: dark; }
+:root {
+  color-scheme: dark;
+}
 body {
   background-color: #111113;
   color: #fff;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Inter,
+    Arial,
+    sans-serif;
 }
-

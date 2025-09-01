@@ -1,22 +1,22 @@
 // Backfill setlistOrder for approved proposals
-const { PrismaClient } = require('@prisma/client')
+const {PrismaClient} = require('@prisma/client')
 const prisma = new PrismaClient()
 
 ;(async () => {
   try {
     const approved = await prisma.proposal.findMany({
-      where: { status: 'APPROVED' },
-      orderBy: [{ updatedAt: 'desc' }],
-      select: { id: true },
+      where: {status: 'APPROVED'},
+      orderBy: [{updatedAt: 'desc'}],
+      select: {id: true},
     })
 
     await prisma.$transaction(
       approved.map((p, i) =>
         prisma.proposal.update({
-          where: { id: p.id },
-          data: { setlistOrder: i + 1 },
-        })
-      )
+          where: {id: p.id},
+          data: {setlistOrder: i + 1},
+        }),
+      ),
     )
 
     console.log(`Backfilled ${approved.length} rows`)
