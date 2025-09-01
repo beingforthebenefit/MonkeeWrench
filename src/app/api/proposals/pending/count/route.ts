@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET() {
   const count = await prisma.proposal.count({
-    where: { status: 'PENDING', archivedAt: null as any },
+    where: { status: 'PENDING' },
   })
   return NextResponse.json({ count })
 }

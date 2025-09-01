@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function SetlistPage() {
   const items = await prisma.proposal.findMany({
-    where: { status: 'APPROVED' }, // removed archivedAt
+    where: { status: 'APPROVED' },
     orderBy: [{ updatedAt: 'desc' }],
     select: {
       id: true, title: true, artist: true,
