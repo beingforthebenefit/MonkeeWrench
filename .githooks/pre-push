@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.dev.yml)
+
+echo "[pre-push] Running format check, lint, and tests in Docker..."
+
+${COMPOSE[@]} build --quiet tools >/dev/null 2>&1 || true
+
+echo "[pre-push] 1/3 prettier --check"
+${COMPOSE[@]} run --rm -T tools sh -lc 'npm run --silent format:check'
+
+echo "[pre-push] 2/3 eslint"
+${COMPOSE[@]} run --rm -T tools sh -lc 'npm run --silent lint:eslint'
+
+echo "[pre-push] 3/3 tests"
+${COMPOSE[@]} run --rm -T tools sh -lc 'npm test --silent'
+
+echo "[pre-push] All checks passed. Proceeding with push."

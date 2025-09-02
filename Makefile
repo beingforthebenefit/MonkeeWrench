@@ -136,6 +136,22 @@ format:
 test:
 	$(COMPOSE_DEV) exec $(APP_SVC) npm test --silent || true
 
+# Strict CI-style targets (no exit swallowing)
+.PHONY: format-check
+format-check:
+	$(COMPOSE_DEV) exec $(APP_SVC) npm run format:check --silent
+
+.PHONY: lint-ci
+lint-ci:
+	$(COMPOSE_DEV) exec $(APP_SVC) npm run lint --silent
+
+.PHONY: test-ci
+test-ci:
+	$(COMPOSE_DEV) exec $(APP_SVC) npm test --silent
+
+.PHONY: ci
+ci: format-check lint-ci test-ci
+
 # ------------------------------------------------------------------------------
 # Dependencies
 # ------------------------------------------------------------------------------

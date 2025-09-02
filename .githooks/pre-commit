@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.dev.yml)
+
+# Collect staged files
+mapfile -t STAGED < <(git diff --cached --name-only --diff-filter=ACM)
+if [ ${#STAGED[@]} -eq 0 ]; then
+  exit 0
+fi
+
+# Filter for Prettier and ESLint
+PRETTIER_FILES=()
+ESLINT_FILES=()
+for f in "${STAGED[@]}"; do
+  case "$f" in
+    *.ts|*.tsx|*.js|*.jsx|*.json|*.css|*.scss|*.md|*.mjs|*.cjs|*.yml|*.yaml)
+      PRETTIER_FILES+=("$f")
+      ;;
+  esac
+  case "$f" in
+    *.ts|*.tsx|*.js|*.jsx)
+      ESLINT_FILES+=("$f")
+      ;;
+  esac
+done
+
+if [ ${#PRETTIER_FILES[@]} -gt 0 ]; then
+  echo "[pre-commit] Formatting staged files with Prettier..."
+  # shellcheck disable=SC2046
+  ${COMPOSE[@]} run --rm -T tools sh -lc "npx prettier --write --ignore-unknown --log-level warn $(printf '%q ' "${PRETTIER_FILES[@]}")"
+  git add -- "${PRETTIER_FILES[@]}"
+fi
+
+if [ ${#ESLINT_FILES[@]} -gt 0 ]; then
+  echo "[pre-commit] Linting staged files with ESLint (fix)..."
+  # shellcheck disable=SC2046
+  ${COMPOSE[@]} run --rm -T tools sh -lc "npx eslint --fix $(printf '%q ' "${ESLINT_FILES[@]}")"
+  git add -- "${ESLINT_FILES[@]}"
+fi
+
+echo "[pre-commit] Done."
