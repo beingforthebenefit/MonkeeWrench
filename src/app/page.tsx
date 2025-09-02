@@ -74,7 +74,9 @@ export default async function DashboardPage() {
         >
           <span className="font-semibold inline-flex items-center">
             Vote
-            <span className="ml-2 opacity-70 translate-x-0 group-hover:opacity-100 group-hover:translate-x-1 transition">→</span>
+            <span className="ml-2 opacity-70 translate-x-0 group-hover:opacity-100 group-hover:translate-x-1 transition">
+              →
+            </span>
           </span>
           <span className="text-xs text-gray-400 group-hover:text-white">
             Pending songs need your vote!
@@ -86,7 +88,9 @@ export default async function DashboardPage() {
         >
           <span className="font-semibold inline-flex items-center">
             Setlist
-            <span className="ml-2 opacity-70 translate-x-0 group-hover:opacity-100 group-hover:translate-x-1 transition">→</span>
+            <span className="ml-2 opacity-70 translate-x-0 group-hover:opacity-100 group-hover:translate-x-1 transition">
+              →
+            </span>
           </span>
           <span className="text-xs text-gray-400 group-hover:text-white">
             See approved songs

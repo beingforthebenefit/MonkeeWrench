@@ -22,8 +22,9 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "types": ["vitest/globals", "@testing-library/jest-dom", "node"]
   },
-  "include": ["src", "prisma", ".next/types/**/*.ts"],
+  "include": ["src", "prisma", "tests", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
 }
