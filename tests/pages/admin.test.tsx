@@ -1,7 +1,7 @@
 import React from 'react'
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 import {renderWithProviders} from '../utils'
-import {screen, within} from '@testing-library/react'
+import {screen} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import AdminPage from '@/app/(protected)/admin/page'
 
@@ -11,7 +11,6 @@ describe('Admin page', () => {
 
   beforeEach(() => {
     // Mock confirm to auto-accept deletions
-    // @ts-expect-error jsdom typing
     global.confirm = () => true
     global.fetch = vi.fn(async (url: string, init?: RequestInit) => {
       // Settings
@@ -76,7 +75,6 @@ describe('Admin page', () => {
 
   afterEach(() => {
     global.fetch = originalFetch
-    // @ts-expect-error jsdom typing
     global.confirm = confirmOrig
   })
 

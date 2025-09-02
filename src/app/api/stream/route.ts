@@ -5,12 +5,10 @@ export const GET = async () => {
   await requireSession()
 
   // Use a cancellable underlying source so we can unsubscribe cleanly
-  const source: {
-    start: (controller: ReadableStreamDefaultController) => void
-    cancel?: (reason?: unknown) => void
+  const source: UnderlyingDefaultSource<Uint8Array> & {
     _cleanup?: () => void
   } = {
-    start(controller) {
+    start(controller: ReadableStreamDefaultController<Uint8Array>) {
       const send = (type: string, payload: unknown) => {
         controller.enqueue(
           new TextEncoder().encode(
@@ -36,7 +34,7 @@ export const GET = async () => {
     },
   }
 
-  const stream = new ReadableStream(source as UnderlyingDefaultSource<any>)
+  const stream = new ReadableStream<Uint8Array>(source)
 
   return new Response(stream, {
     headers: {
