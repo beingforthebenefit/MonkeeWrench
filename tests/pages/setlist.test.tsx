@@ -2,7 +2,7 @@ import React from 'react'
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
 import {screen} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import SetlistPage from '@/app/(protected)/setlist/page'
+import SetlistPage from '@/app/setlist/page'
 import {renderWithProviders} from '../utils'
 
 // Use global next-auth mock; default unauthenticated, but SetlistPage only uses isAdmin

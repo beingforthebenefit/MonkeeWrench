@@ -2,7 +2,7 @@ import React from 'react'
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
 import {screen} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import Vote from '@/app/(protected)/vote/page'
+import Vote from '@/app/vote/page'
 import {renderWithProviders} from '../utils'
 
 import {setMockSession} from '../utils'

@@ -46,10 +46,12 @@ describe('Dashboard page (src/app/page.tsx)', () => {
     sessionVal = null
   })
 
-  it('redirects unauthenticated users to /login', async () => {
+  it('renders for guests without redirect', async () => {
     const Page = (await import('@/app/page')).default
-    await expect(Page()).rejects.toThrow('REDIRECT:/login')
-    expect(redirect).toHaveBeenCalledWith('/login')
+    const ui = await Page()
+    render(ui)
+    expect(screen.getByText('Dashboard')).toBeInTheDocument()
+    expect(redirect).not.toHaveBeenCalled()
   })
 
   it('renders summary cards when authenticated', async () => {

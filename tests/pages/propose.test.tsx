@@ -1,9 +1,9 @@
 import React from 'react'
 import {describe, it, expect} from 'vitest'
 import userEvent from '@testing-library/user-event'
-import {renderWithProviders} from '../utils'
+import {renderWithProviders, setMockSession} from '../utils'
 import {screen} from '@testing-library/react'
-import Propose from '@/app/(protected)/propose/page'
+import Propose from '@/app/propose/page'
 
 describe('Propose page', () => {
   it('validates URLs and shows helper text', async () => {
@@ -19,6 +19,7 @@ describe('Propose page', () => {
   })
 
   it('submits valid form and resets fields', async () => {
+    setMockSession({data: {user: {email: 'u@x'}}, status: 'authenticated'})
     const originalFetch = global.fetch
     const user = userEvent.setup()
     global.fetch = vi.fn(async (url: string, init?: RequestInit) => {
@@ -45,6 +46,7 @@ describe('Propose page', () => {
   })
 
   it('shows error when backend fails', async () => {
+    setMockSession({data: {user: {email: 'u@x'}}, status: 'authenticated'})
     const originalFetch = global.fetch
     const user = userEvent.setup()
     global.fetch = vi.fn(async () => new Response('nope', {status: 500})) as any
