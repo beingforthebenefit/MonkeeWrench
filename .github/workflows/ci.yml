@@ -98,6 +98,7 @@ jobs:
           file_pattern: badges/*.json
           branch: badges
           create_branch: true
+          push_options: '--force-with-lease'
 
       - name: Upload coverage HTML
         if: always()
