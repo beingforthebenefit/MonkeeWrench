@@ -46,7 +46,6 @@ if (typeof globalThis.fetch === 'undefined') {
 
 // next-auth/react mock that preserves SessionProvider but lets tests control useSession
 // Tests can set (globalThis as any).__mockSession = {data, status}
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ;(globalThis as any).__mockSession = {data: null, status: 'unauthenticated'}
 vi.mock('next-auth/react', async (importOriginal) => {
   const actual: any = await importOriginal()
