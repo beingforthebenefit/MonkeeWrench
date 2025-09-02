@@ -13,7 +13,7 @@ services:
       NEXTAUTH_URL: https://members.monkeebusinessband.com
       # Internal service URL used for server-to-server calls inside the network
       INTERNAL_APP_URL: http://app:3000
-      DATABASE_URL: postgresql://monkee:monkee@db:5432/monkee?schema=public
+      DATABASE_URL: postgresql://monkee:monkee@monkeewrench-db:5432/monkee?schema=public
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
