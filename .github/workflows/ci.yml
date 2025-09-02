@@ -57,13 +57,16 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
+          # Extract the "Tests ..." summary line; empty if not found
           line=$(grep -E "^Tests\s+" vitest-output.txt | tail -n1 || true)
-          passed=$(echo "$line" | grep -oE "([0-9]+) passed" | awk '{print $1}')
-          failed=$(echo "$line" | grep -oE "([0-9]+) failed" | awk '{print $1}')
-          skipped=$(echo "$line" | grep -oE "([0-9]+) skipped" | awk '{print $1}')
-          passed=${passed:-0}
-          failed=${failed:-0}
-          skipped=${skipped:-0}
+          # Parse counts robustly; sed returns success even if no match
+          passed=$(sed -n 's/.*\([0-9][0-9]*\) passed.*/\1/p' <<<"$line" | head -n1)
+          failed=$(sed -n 's/.*\([0-9][0-9]*\) failed.*/\1/p' <<<"$line" | head -n1)
+          skipped=$(sed -n 's/.*\([0-9][0-9]*\) skipped.*/\1/p' <<<"$line" | head -n1)
+          # Default to 0 if empty
+          [ -n "${passed:-}" ] || passed=0
+          [ -n "${failed:-}" ] || failed=0
+          [ -n "${skipped:-}" ] || skipped=0
           if [ "$failed" -gt 0 ]; then color=red; elif [ "$passed" -gt 0 ]; then color=brightgreen; else color=lightgrey; fi
           mkdir -p badges
           cat > badges/tests.json <<EOF
