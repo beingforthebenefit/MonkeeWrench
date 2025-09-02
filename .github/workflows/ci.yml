@@ -74,12 +74,14 @@ jobs:
           EOF
 
       # Only attempt to commit on pushes to main. PRs (esp. from forks) lack write perms.
-      - name: Commit badge
+      - name: Commit badge (to badges branch)
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: 'chore(ci): update tests badge'
           file_pattern: badges/tests.json
+          branch: badges
+          create_branch: true
 
       - name: Upload coverage HTML
         if: always()
@@ -87,24 +89,3 @@ jobs:
         with:
           name: coverage-html
           path: coverage
-
-      - name: Generate tests badge JSON
-        if: always()
-        run: |
-          line=$(grep -E "^Tests\s+" vitest-output.txt | tail -n1 || true)
-          passed=$(echo "$line" | grep -oE "[0-9]+ passed" | awk '{print $1}')
-          failed=$(echo "$line" | grep -oE "[0-9]+ failed" | awk '{print $1}')
-          skipped=$(echo "$line" | grep -oE "[0-9]+ skipped" | awk '{print $1}')
-          total=$(( (${passed:-0}) + (${failed:-0}) + (${skipped:-0}) ))
-          color=brightgreen && [ "${failed:-0}" -gt 0 ] && color=red
-          mkdir -p badges
-          cat > badges/tests.json <<EOF
-          {"schemaVersion":1, "label":"tests", "message":"${passed:-0} passed, ${failed:-0} failed", "color":"$color"}
-          EOF
-
-      - name: Commit badge
-        if: always()
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: 'chore(ci): update tests badge'
-          file_pattern: badges/tests.json

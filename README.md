@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/beingforthebenefit/MonkeeWrench/actions/workflows/ci.yml/badge.svg)](https://github.com/beingforthebenefit/MonkeeWrench/actions/workflows/ci.yml)
 
-[![Tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/MonkeeWrench/main/badges/tests.json)](https://github.com/beingforthebenefit/MonkeeWrench/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/MonkeeWrench/badges/badges/tests.json)](https://github.com/beingforthebenefit/MonkeeWrench/actions/workflows/ci.yml)
 
 Song request, voting, and setlist management for a band. Built with Next.js, NextAuth (Google), Prisma/Postgres, and Vitest — containerized for easy local dev and prod.
 
@@ -130,41 +130,44 @@ Workflow: `.github/workflows/ci.yml`.
 
 Yes — you can add a dynamic badge with pass/fail counts using Shields’ endpoint badge. The idea: parse Vitest’s summary in CI, write a small JSON file to the repo, then reference it in README.
 
-1. Add steps to CI to generate and commit `badges/tests.json` (public repo):
+1. Add steps to CI to generate and commit `badges/tests.json` to a dedicated `badges` branch (avoids churn on `main`):
 
 ```yaml
 - name: Generate tests badge JSON
   if: always()
   run: |
+    set -euo pipefail
     line=$(grep -E "^Tests\s+" vitest-output.txt | tail -n1 || true)
-    passed=$(echo "$line" | grep -oE "[0-9]+ passed" | awk '{print $1}')
-    failed=$(echo "$line" | grep -oE "[0-9]+ failed" | awk '{print $1}')
-    skipped=$(echo "$line" | grep -oE "[0-9]+ skipped" | awk '{print $1}')
-    total=$(( (${passed:-0}) + (${failed:-0}) + (${skipped:-0}) ))
-    color=brightgreen && [ "${failed:-0}" -gt 0 ] && color=red
+    passed=$(sed -n 's/.*\([0-9][0-9]*\) passed.*/\1/p' <<<"$line" | head -n1)
+    failed=$(sed -n 's/.*\([0-9][0-9]*\) failed.*/\1/p' <<<"$line" | head -n1)
+    [ -n "${passed:-}" ] || passed=0
+    [ -n "${failed:-}" ] || failed=0
+    if [ "$failed" -gt 0 ]; then color=red; elif [ "$passed" -gt 0 ]; then color=brightgreen; else color=lightgrey; fi
     mkdir -p badges
     cat > badges/tests.json <<EOF
-    {"schemaVersion":1, "label":"tests", "message":"${passed:-0} passed, ${failed:-0} failed", "color":"$color"}
+    {"schemaVersion":1, "label":"tests", "message":"${passed} passed, ${failed} failed", "color":"$color"}
     EOF
 
-- name: Commit badge
-  if: always()
+- name: Commit badge (to badges branch)
+  if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
   uses: stefanzweifel/git-auto-commit-action@v5
   with:
     commit_message: 'chore(ci): update tests badge'
     file_pattern: badges/tests.json
+    branch: badges
+    create_branch: true
 ```
 
-2. Add the badge to this README (replace OWNER/REPO):
+2. Add the badge to this README (replace OWNER/REPO), targeting the `badges` branch:
 
 ```
-[![Tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/MonkeeWrench/main/badges/tests.json)](https://github.com/beingforthebenefit/MonkeeWrench/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/OWNER/REPO/badges/badges/tests.json)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
 ```
 
 Notes:
 
 - This works best for public repos (raw.githubusercontent.com must be public)
-- Prefer committing only the JSON file (small diff) vs auto‑editing README on every run
+- Using a separate `badges` branch keeps `main` clean and avoids local divergence
 - Alternatives: publish to `gh-pages` or a Gist and point Shields at that URL; or use Codecov for coverage badges
 
 ## File Map
