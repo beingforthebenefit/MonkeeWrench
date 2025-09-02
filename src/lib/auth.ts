@@ -34,7 +34,6 @@ export const authOptions: NextAuthOptions = {
     error: '/login',
   },
   session: {strategy: 'database'},
-  allowDangerousEmailAccountLinking: true,
 
   callbacks: {
     async signIn({account, profile}) {
