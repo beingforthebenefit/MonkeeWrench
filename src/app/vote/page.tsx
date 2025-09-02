@@ -15,6 +15,8 @@ import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import {useSession} from 'next-auth/react'
 import EditProposalButton from '@/components/EditProposalButton'
+import EmptyState from '@/components/EmptyState'
+import InboxOutlinedIcon from '@mui/icons-material/InboxOutlined'
 
 type Item = {
   id: string
@@ -31,13 +33,19 @@ export default function Vote() {
   const canVote = Boolean(session?.user)
 
   const [items, setItems] = useState<Item[]>([])
+  const [loading, setLoading] = useState(true)
   const [busyVote, setBusyVote] = useState<Record<string, boolean>>({})
   const [busyDelete, setBusyDelete] = useState<Record<string, boolean>>({})
 
   async function load() {
-    const res = await fetch('/api/proposals/pending', {cache: 'no-store'})
-    if (!res.ok) return
-    setItems(await res.json())
+    setLoading(true)
+    try {
+      const res = await fetch('/api/proposals/pending', {cache: 'no-store'})
+      if (!res.ok) return
+      setItems(await res.json())
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -85,6 +93,13 @@ export default function Vote() {
           Viewing as guest — sign in to vote on requests.
         </Typography>
       )}
+      {!loading && items.length === 0 ? (
+        <EmptyState
+          icon={<InboxOutlinedIcon fontSize="large" color="disabled" />}
+          title="No pending requests"
+          message="Check back soon, or propose a new song."
+        />
+      ) : null}
       {items.map((p) => {
         const pct = Math.min(100, (p.votes / p.threshold) * 100)
         const VIcon = p.mine ? ThumbUpAltIcon : ThumbUpOffAltIcon

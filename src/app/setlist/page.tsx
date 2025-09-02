@@ -37,6 +37,8 @@ import DescriptionIcon from '@mui/icons-material/Description'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import {useSession} from 'next-auth/react'
 import EditProposalButton from '@/components/EditProposalButton'
+import EmptyState from '@/components/EmptyState'
+import QueueMusicIcon from '@mui/icons-material/QueueMusic'
 
 type Item = {
   id: string
@@ -341,6 +343,21 @@ export default function SetlistPage() {
                       <TableRow>
                         <TableCell colSpan={isAdmin ? 5 : 4}>
                           <Typography sx={{p: 2}}>Loading…</Typography>
+                        </TableCell>
+                      </TableRow>
+                    ) : !items.length ? (
+                      <TableRow>
+                        <TableCell colSpan={isAdmin ? 5 : 4}>
+                          <EmptyState
+                            icon={
+                              <QueueMusicIcon
+                                fontSize="large"
+                                color="disabled"
+                              />
+                            }
+                            title="No songs in the setlist"
+                            message="Songs that reach the vote threshold appear here."
+                          />
                         </TableCell>
                       </TableRow>
                     ) : (
