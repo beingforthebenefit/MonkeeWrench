@@ -42,9 +42,9 @@ jobs:
         run: |
           echo "## Test Summary" >> $GITHUB_STEP_SUMMARY
           echo >> $GITHUB_STEP_SUMMARY
-          # Grep key lines from Vitest output for quick glance
-          grep -E "^Tests\s+" vitest-output.txt >> $GITHUB_STEP_SUMMARY || true
-          grep -E "^Test Files\s+" vitest-output.txt >> $GITHUB_STEP_SUMMARY || true
+          # Grep key lines from Vitest output for quick glance (tolerate ANSI + leading spaces)
+          grep -E "Tests[[:space:]]+[0-9]+[[:space:]]+passed" vitest-output.txt >> $GITHUB_STEP_SUMMARY || true
+          grep -E "Test Files[[:space:]]+[0-9]+[[:space:]]+passed" vitest-output.txt >> $GITHUB_STEP_SUMMARY || true
           echo >> $GITHUB_STEP_SUMMARY
           echo "<details><summary>Raw Vitest Output</summary>" >> $GITHUB_STEP_SUMMARY
           echo '' >> $GITHUB_STEP_SUMMARY
@@ -57,8 +57,8 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
-          # Extract the "Tests ..." summary line; empty if not found
-          line=$(grep -E "^Tests\s+" vitest-output.txt | tail -n1 || true)
+          # Extract the summary line regardless of ANSI/indent
+          line=$(grep -E "Tests[[:space:]]+[0-9]+[[:space:]]+passed" vitest-output.txt | tail -n1 || true)
           # Parse counts robustly; sed returns success even if no match
           passed=$(sed -n 's/.*\([0-9][0-9]*\) passed.*/\1/p' <<<"$line" | head -n1)
           failed=$(sed -n 's/.*\([0-9][0-9]*\) failed.*/\1/p' <<<"$line" | head -n1)
