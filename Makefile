@@ -6,6 +6,7 @@ SHELL := /bin/bash
 # Compose commands
 COMPOSE        ?= docker compose
 COMPOSE_DEV    ?= $(COMPOSE) -f docker-compose.yml -f docker-compose.dev.yml
+COMPOSE_PROD   ?= $(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml
 
 # Service names (must match docker-compose services, not container_name)
 APP_SVC        ?= app
@@ -69,12 +70,12 @@ dev-restart:
 	$(COMPOSE_DEV) restart $(APP_SVC)
 
 .PHONY: prod
-prod: ## Build & run production image
-	$(COMPOSE) up --build
+prod: ## Build & run production image (prod override)
+	$(COMPOSE_PROD) up --build
 
 .PHONY: prod-up
-prod-up: ## Run production stack without rebuild
-	$(COMPOSE) up
+prod-up: ## Run production stack without rebuild (prod override)
+	$(COMPOSE_PROD) up
 
 # ------------------------------------------------------------------------------
 # Build

@@ -51,7 +51,8 @@ export async function PATCH(req: Request) {
 
   // Optional: notify SSE listeners
   try {
-    await fetch(`${process.env.NEXTAUTH_URL}/api/stream/emit`, {
+    const base = process.env.INTERNAL_APP_URL || process.env.NEXTAUTH_URL
+    await fetch(`${base}/api/stream/emit`, {
       method: 'POST',
       body: JSON.stringify({type: 'setlist_reordered'}),
     })

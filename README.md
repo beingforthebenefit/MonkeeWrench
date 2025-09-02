@@ -78,8 +78,40 @@ Useful: `make logs`, `make app-sh`, `make db-sh`, `make psql`.
 
 ## Production (Docker)
 
-- `make prod` builds and runs the production image
+- `make prod` builds and runs using `docker-compose.yml` + `docker-compose.prod.yml`
 - `make prod-up` runs without rebuilding
+
+What changes in production:
+
+- Host port: app listens on container `3000` but is published on host `3012`.
+- Public origin: `NEXTAUTH_URL` is set to `https://members.monkeebusinessband.com`.
+- Internal calls: server-to-server fetches use `INTERNAL_APP_URL=http://app:3000` to avoid going out through TLS.
+
+Steps:
+
+1. Copy env and set production values
+
+- `cp .env.example .env`
+- Set:
+  - `NEXTAUTH_SECRET` to a strong random value
+  - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
+  - `ADMIN_ALLOWLIST` and optional `USER_ALLOWLIST`
+  - `NEXTAUTH_URL=https://members.monkeebusinessband.com`
+  - `INTERNAL_APP_URL=http://app:3000` (default in example)
+
+2. Configure Google OAuth
+
+- Authorized redirect URI: `https://members.monkeebusinessband.com/api/auth/callback/google`
+- Authorized JavaScript origin: `https://members.monkeebusinessband.com`
+
+3. Start the stack
+
+- `make prod` (build + run) or `make prod-up` (run existing image)
+- App exposed on host: `http://localhost:3012` (use your reverse proxy to serve HTTPS)
+
+4. Put HTTPS in front (recommended)
+
+If you terminate TLS with a reverse proxy (e.g., Nginx/Caddy/Traefik), point it at `localhost:3012` and set the external host to `members.monkeebusinessband.com`.
 
 Entrypoint runs Prisma migrations and seeds default data if the DB is empty.
 

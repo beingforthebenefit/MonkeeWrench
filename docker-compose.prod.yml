@@ -1,0 +1,25 @@
+services:
+  app:
+    # Build with production env so Dockerfile runs `npm run build`
+    build:
+      context: .
+      args:
+        APP_ENV: production
+        NEXTAUTH_URL: https://members.monkeebusinessband.com
+    environment:
+      APP_ENV: production
+      NODE_ENV: production
+      # External, public origin for NextAuth URLs and callbacks
+      NEXTAUTH_URL: https://members.monkeebusinessband.com
+      # Internal service URL used for server-to-server calls inside the network
+      INTERNAL_APP_URL: http://app:3000
+      DATABASE_URL: postgresql://monkee:monkee@db:5432/monkee?schema=public
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      ADMIN_ALLOWLIST: ${ADMIN_ALLOWLIST}
+      USER_ALLOWLIST: ${USER_ALLOWLIST}
+      VOTE_THRESHOLD: ${VOTE_THRESHOLD}
+    ports:
+      # Expose a distinct host port for production traffic
+      - '3012:3000'
