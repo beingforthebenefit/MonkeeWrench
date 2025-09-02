@@ -25,6 +25,7 @@ help:
 	@echo "  dev-restart    Restart dev containers"
 	@echo "  prod           Build & run in prod (optimized)"
 	@echo "  prod-up        Run in prod without rebuild"
+	@echo "  build          Next.js build inside app container"
 	@echo "  logs           Tail app+db logs"
 	@echo "  app-sh         Shell into app container"
 	@echo "  db-sh          Shell into db container"
@@ -36,6 +37,7 @@ help:
 	@echo "  lint           Lint code"
 	@echo "  lint-fix       Lint code and fix issues"
 	@echo "  test           Run tests"
+	@echo "  test-watch     Run tests in watch mode"
 	@echo "  test-cov       Run tests with coverage"
 	@echo "  deps           Install node modules inside app container"
 	@echo "  down           Stop all containers"
@@ -73,6 +75,14 @@ prod: ## Build & run production image
 .PHONY: prod-up
 prod-up: ## Run production stack without rebuild
 	$(COMPOSE) up
+
+# ------------------------------------------------------------------------------
+# Build
+# ------------------------------------------------------------------------------
+
+.PHONY: build
+build: ## Next.js build inside the app container
+	$(COMPOSE_DEV) exec $(APP_SVC) npm run build --silent || true
 
 # ------------------------------------------------------------------------------
 # Logs / Shells
@@ -136,6 +146,10 @@ format:
 .PHONY: test
 test:
 	$(COMPOSE_DEV) exec $(APP_SVC) npm test --silent || true
+
+.PHONY: test-watch
+test-watch:
+	$(COMPOSE_DEV) exec $(APP_SVC) npm run test:watch --silent || true
 
 .PHONY: test-cov
 test-cov:
