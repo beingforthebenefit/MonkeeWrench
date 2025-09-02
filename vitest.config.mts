@@ -15,6 +15,18 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
+      exclude: [
+        'node_modules/**',
+        '.next/**',
+        'coverage/**',
+        'tests/**',
+        '**/*.d.ts',
+        'next.config.mjs',
+        'postcss.config.js',
+        'tailwind.config.js',
+        'prisma/**',
+        'scripts/**',
+      ],
     },
     alias: {
       '@': resolve(__dirname, 'src'),
