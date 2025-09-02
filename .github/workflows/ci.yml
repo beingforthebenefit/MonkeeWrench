@@ -59,8 +59,10 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
-          # Extract the summary line regardless of ANSI/indent
-          line=$(grep -E "Tests[[:space:]]+[0-9]+[[:space:]]+passed" vitest-output.txt | tail -n1 || true)
+          # Strip ANSI escape codes to make parsing robust
+          perl -pe 's/\e\[[\d;]*[A-Za-z]//g' vitest-output.txt | tr -d '\r' > vitest-output.clean.txt || true
+          # Extract the summary line regardless of indent
+          line=$(grep -E "^[[:space:]]*Tests[[:space:]]+[0-9]+[[:space:]]+passed" vitest-output.clean.txt | tail -n1 || true)
           # Parse counts robustly; sed returns success even if no match
           passed=$(sed -n 's/.*\([0-9][0-9]*\) passed.*/\1/p' <<<"$line" | head -n1)
           failed=$(sed -n 's/.*\([0-9][0-9]*\) failed.*/\1/p' <<<"$line" | head -n1)
