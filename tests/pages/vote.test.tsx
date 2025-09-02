@@ -51,4 +51,71 @@ describe('Vote page', () => {
       method: 'POST',
     })
   })
+
+  it('supports unvote when mine=true', async () => {
+    const originalFetch = global.fetch
+    const user = userEvent.setup()
+    global.fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === '/api/proposals/pending' && (!init || !init.method)) {
+        return new Response(
+          JSON.stringify([
+            {
+              id: 'p1',
+              title: 'Song',
+              artist: 'A',
+              votes: 2,
+              mine: true,
+              threshold: 2,
+            },
+          ]),
+          {status: 200, headers: {'Content-Type': 'application/json'}},
+        )
+      }
+      return new Response(null, {status: 204})
+    }) as any
+    setMockSession({data: {user: {isAdmin: false}}, status: 'authenticated'})
+    renderWithProviders(<Vote />)
+    await screen.findByText(/Song — A/)
+    await user.click(screen.getByRole('button', {name: 'Unvote'}))
+    expect(global.fetch).toHaveBeenCalledWith('/api/proposals/p1/vote', {
+      method: 'DELETE',
+    })
+    global.fetch = originalFetch
+  })
+
+  it('admin can delete a request', async () => {
+    const originalFetch = global.fetch
+    const confirmOrig = global.confirm
+    // @ts-expect-error jsdom typing
+    global.confirm = () => true
+    global.fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === '/api/proposals/pending' && (!init || !init.method)) {
+        return new Response(
+          JSON.stringify([
+            {
+              id: 'p2',
+              title: 'To Remove',
+              artist: 'B',
+              votes: 0,
+              mine: false,
+              threshold: 2,
+            },
+          ]),
+          {status: 200, headers: {'Content-Type': 'application/json'}},
+        )
+      }
+      return new Response(null, {status: 204})
+    }) as any
+    setMockSession({data: {user: {isAdmin: true}}, status: 'authenticated'})
+    const user = userEvent.setup()
+    renderWithProviders(<Vote />)
+    await screen.findByText(/To Remove/)
+    await user.click(screen.getByRole('button', {name: 'Delete'}))
+    expect(global.fetch).toHaveBeenCalledWith('/api/proposals/p2', {
+      method: 'DELETE',
+    })
+    global.fetch = originalFetch
+    // @ts-expect-error jsdom typing
+    global.confirm = confirmOrig
+  })
 })

@@ -3,7 +3,13 @@ import {requireSession} from '@/lib/guard'
 
 export const GET = async () => {
   await requireSession()
-  const stream = new ReadableStream({
+
+  // Use a cancellable underlying source so we can unsubscribe cleanly
+  const source: {
+    start: (controller: ReadableStreamDefaultController) => void
+    cancel?: (reason?: unknown) => void
+    _cleanup?: () => void
+  } = {
     start(controller) {
       const send = (type: string, payload: unknown) => {
         controller.enqueue(
@@ -18,12 +24,19 @@ export const GET = async () => {
       bus.on(EVENTS.PROPOSAL_CREATED, onCreate)
       // Initial tick
       send('hello', {})
-      return () => {
+      source._cleanup = () => {
         bus.off(EVENTS.PROPOSAL_UPDATED, onUpdate)
         bus.off(EVENTS.PROPOSAL_CREATED, onCreate)
       }
     },
-  })
+    cancel() {
+      try {
+        source._cleanup?.()
+      } catch {}
+    },
+  }
+
+  const stream = new ReadableStream(source as UnderlyingDefaultSource<any>)
 
   return new Response(stream, {
     headers: {

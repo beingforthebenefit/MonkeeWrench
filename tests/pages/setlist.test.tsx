@@ -71,4 +71,22 @@ describe('Setlist page', () => {
       expect.objectContaining({method: 'PATCH'}),
     )
   })
+
+  it('shows error when load fails', async () => {
+    const originalFetch = global.fetch
+    global.fetch = vi.fn(async (url: string) => {
+      if (url === '/api/proposals/approved') {
+        throw new Error('boom')
+      }
+      return new Response(JSON.stringify([]), {
+        status: 200,
+        headers: {'Content-Type': 'application/json'},
+      })
+    }) as any
+    renderWithProviders(<SetlistPage />)
+    expect(
+      await screen.findByText(/Failed to load setlist/i),
+    ).toBeInTheDocument()
+    global.fetch = originalFetch
+  })
 })

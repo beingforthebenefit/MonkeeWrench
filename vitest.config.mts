@@ -27,7 +27,6 @@ export default defineConfig({
         'tailwind.config.js',
         'prisma/**',
         'scripts/**',
-        'src/app/**/layout.tsx',
       ],
     },
     alias: {
