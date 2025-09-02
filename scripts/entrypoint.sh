@@ -27,7 +27,12 @@ if [[ "${APP_ENV:-production}" == "development" ]]; then
 fi
 
 # Migrate & seed
-npx prisma migrate deploy
+# Apply migrations; handle known out-of-order rename migration if deploy fails
+if ! npx prisma migrate deploy; then
+  echo "Prisma migrate deploy failed; attempting targeted resolve for known rename migration..."
+  npx prisma migrate resolve --applied 20250901175142_add_setlist_order || true
+  npx prisma migrate deploy
+fi
 node prisma/seed.mjs || true
 
 # Start Next in dev or prod mode
