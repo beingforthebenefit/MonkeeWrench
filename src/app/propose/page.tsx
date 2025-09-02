@@ -1,9 +1,12 @@
 'use client'
 import {useMemo, useState} from 'react'
-import {TextField, Button, Stack, Alert, FormHelperText} from '@mui/material'
+import {TextField, Button, Stack, Alert, FormHelperText, Tooltip} from '@mui/material'
 import {isHttpUrl, httpUrlError, suggestHttpUrls} from '@/lib/url'
+import {useSession} from 'next-auth/react'
 
 export default function Propose() {
+  const {data: session} = useSession()
+  const isAuthed = Boolean(session?.user)
   const [title, setTitle] = useState('')
   const [artist, setArtist] = useState('The Monkees')
   const [chartUrl, setChartUrl] = useState('')
@@ -81,6 +84,11 @@ export default function Propose() {
 
   return (
     <Stack spacing={2}>
+      {!isAuthed && (
+        <Alert severity="info">
+          Viewing as guest — sign in to submit song requests.
+        </Alert>
+      )}
       <TextField
         label="Title"
         value={title}
@@ -183,13 +191,17 @@ export default function Propose() {
         </>
       )}
 
-      <Button
-        variant="contained"
-        onClick={submit}
-        disabled={busy || formInvalid}
-      >
-        {busy ? 'Submitting...' : 'Propose'}
-      </Button>
+      <Tooltip title={isAuthed ? '' : 'Sign in to submit requests'}>
+        <span>
+          <Button
+            variant="contained"
+            onClick={submit}
+            disabled={busy || formInvalid || !isAuthed}
+          >
+            {busy ? 'Submitting...' : 'Propose'}
+          </Button>
+        </span>
+      </Tooltip>
       {msg && (
         <Alert severity={msg === 'Submitted' ? 'success' : 'error'}>
           {msg}

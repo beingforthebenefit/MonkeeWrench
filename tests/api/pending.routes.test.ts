@@ -20,11 +20,25 @@ describe('/api/proposals/pending GET', () => {
     }
   })
 
-  it('returns 401 without session', async () => {
+  it('returns public list without session', async () => {
     sessionVal = null
+    prisma.proposal.findMany.mockResolvedValue([
+      {
+        id: 'p1',
+        title: 'Song',
+        artist: 'Artist',
+        _count: {votes: 2},
+      },
+    ])
     const {GET} = await import('@/app/api/proposals/pending/route')
     const res = await GET()
-    expect(res.status).toBe(401)
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json[0]).toMatchObject({
+      id: 'p1',
+      votes: 2,
+      mine: false,
+    })
   })
 
   it('maps response for authenticated user', async () => {

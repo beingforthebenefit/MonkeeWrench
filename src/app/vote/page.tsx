@@ -27,6 +27,7 @@ type Item = {
 export default function Vote() {
   const {data: session} = useSession()
   const isAdmin = Boolean(session?.user?.isAdmin)
+  const canVote = Boolean(session?.user)
 
   const [items, setItems] = useState<Item[]>([])
   const [busyVote, setBusyVote] = useState<Record<string, boolean>>({})
@@ -40,10 +41,13 @@ export default function Vote() {
 
   useEffect(() => {
     load()
+    // Only subscribe to SSE when authenticated
+    if (!canVote) return
     const es = new EventSource('/api/stream')
     es.onmessage = () => load()
     return () => es.close()
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canVote])
 
   async function toggleVote(id: string, mine: boolean) {
     try {
@@ -76,6 +80,11 @@ export default function Vote() {
 
   return (
     <Stack spacing={2}>
+      {!canVote && (
+        <Typography variant="body2" color="text.secondary">
+          Viewing as guest — sign in to vote on requests.
+        </Typography>
+      )}
       {items.map((p) => {
         const pct = Math.min(100, (p.votes / p.threshold) * 100)
         const VIcon = p.mine ? ThumbUpAltIcon : ThumbUpOffAltIcon
@@ -95,12 +104,12 @@ export default function Vote() {
               </Typography>
             </CardContent>
             <CardActions sx={{justifyContent: 'space-between'}}>
-              <Tooltip title={label}>
+              <Tooltip title={canVote ? label : 'Sign in to vote'}>
                 <span>
                   <IconButton
                     aria-label={label}
                     onClick={() => toggleVote(p.id, p.mine)}
-                    disabled={voting || removing}
+                    disabled={!canVote || voting || removing}
                     color={p.mine ? 'primary' : 'default'}
                   >
                     <VIcon />

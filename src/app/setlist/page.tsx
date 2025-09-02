@@ -177,6 +177,8 @@ export default function SetlistPage() {
 
   useEffect(() => {
     load()
+    // Only subscribe to SSE when authenticated
+    if (!session?.user) return
     const es = new EventSource('/api/stream')
     es.onmessage = (e) => {
       try {
@@ -185,7 +187,7 @@ export default function SetlistPage() {
       } catch {}
     }
     return () => es.close()
-  }, [])
+  }, [session?.user])
 
   function onDragEnd(ev: DragEndEvent) {
     const {active, over} = ev
@@ -247,32 +249,34 @@ export default function SetlistPage() {
           alignItems="center"
         >
           <Typography variant="h5">Setlist</Typography>
-          <Stack direction="row" spacing={1}>
-            {!editing ? (
-              <Button variant="outlined" onClick={() => setEditing(true)}>
-                Reorder
-              </Button>
-            ) : (
-              <>
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    setEditing(false)
-                    load()
-                  }}
-                  disabled={saving}
-                >
-                  Cancel
+          {isAdmin && (
+            <Stack direction="row" spacing={1}>
+              {!editing ? (
+                <Button variant="outlined" onClick={() => setEditing(true)}>
+                  Reorder
                 </Button>
-                <Button variant="contained" onClick={save} disabled={saving}>
-                  {saving ? (
-                    <CircularProgress size={18} sx={{color: 'white', mr: 1}} />
-                  ) : null}
-                  Save order
-                </Button>
-              </>
-            )}
-          </Stack>
+              ) : (
+                <>
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      setEditing(false)
+                      load()
+                    }}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </Button>
+                  <Button variant="contained" onClick={save} disabled={saving}>
+                    {saving ? (
+                      <CircularProgress size={18} sx={{color: 'white', mr: 1}} />
+                    ) : null}
+                    Save order
+                  </Button>
+                </>
+              )}
+            </Stack>
+          )}
         </Stack>
 
         {error && (

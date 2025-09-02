@@ -14,6 +14,7 @@ Song request, voting, and setlist management for a band. Built with Next.js, Nex
 - Admin: manage allowlist + threshold; quick‑add approved songs; basic user management
 - Realtime: server‑sent events push updates to the UI
 - Auth: Google sign‑in via NextAuth with admin/user allowlists
+- Public mode: guests can browse the dashboard, pending requests, and setlist (read‑only); proposing and voting require sign‑in
 - CI: lint + tests + coverage on GitHub Actions with artifact uploads
 
 ## Stack

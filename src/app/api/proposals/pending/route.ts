@@ -7,7 +7,6 @@ export const dynamic = 'force-dynamic'
 
 export async function GET() {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.email) return NextResponse.json([], {status: 401})
 
   // only PENDING + not archived
   const rows = await prisma.proposal.findMany({
@@ -18,10 +17,13 @@ export async function GET() {
       title: true,
       artist: true,
       _count: {select: {votes: true}},
-      votes: {
-        where: {user: {email: session.user.email}},
-        select: {id: true},
-      },
+      // Only compute per-user vote membership if we have a session
+      votes: session?.user?.email
+        ? {
+            where: {user: {email: session.user.email}},
+            select: {id: true},
+          }
+        : undefined,
     },
   })
 
@@ -35,7 +37,7 @@ export async function GET() {
     title: r.title,
     artist: r.artist,
     votes: r._count.votes,
-    mine: r.votes.length > 0,
+    mine: Array.isArray((r as any).votes) && (r as any).votes.length > 0,
     threshold,
   }))
 
