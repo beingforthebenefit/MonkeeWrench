@@ -28,13 +28,15 @@ describe('Nav', () => {
     global.fetch = originalFetch
   })
 
-  it('shows Admin link when user is admin', () => {
+  it('shows Admin link when user is admin', async () => {
     setMockSession({
       data: {user: {isAdmin: true, name: 'Alice', email: 'a@example.com'}},
       status: 'authenticated',
     })
 
     renderWithProviders(<Nav />)
+    // Admin link lives in the account dropdown
+    await userEvent.click(screen.getByLabelText('Account menu'))
     expect(screen.getByText('Admin')).toBeInTheDocument()
     expect(screen.queryByText('Sign in')).not.toBeInTheDocument()
   })

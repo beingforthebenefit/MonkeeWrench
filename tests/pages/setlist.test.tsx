@@ -1,6 +1,6 @@
 import React from 'react'
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
-import {screen} from '@testing-library/react'
+import {screen, within} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import SetlistPage from '@/app/setlist/page'
 import {renderWithProviders} from '../utils'
@@ -62,8 +62,9 @@ describe('Setlist page', () => {
     const user = userEvent.setup()
     setMockSession({data: {user: {isAdmin: true}}, status: 'authenticated'})
     renderWithProviders(<SetlistPage />)
-    // Wait for list to load
-    await screen.findByText(/I’m a Believer/i)
+    // Wait for table view to contain the item (avoid mobile duplicate)
+    const table = await screen.findByRole('table')
+    await within(table).findByText(/I’m a Believer/i)
     await user.click(screen.getByRole('button', {name: 'Reorder'}))
     await user.click(screen.getByRole('button', {name: 'Save order'}))
     expect(global.fetch).toHaveBeenCalledWith(

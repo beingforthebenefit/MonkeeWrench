@@ -1,6 +1,6 @@
 import React from 'react'
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
-import {screen} from '@testing-library/react'
+import {screen, within} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import SetlistPage from '@/app/setlist/page'
 import {renderWithProviders, setMockSession} from '../utils'
@@ -50,9 +50,10 @@ describe('Setlist page editing', () => {
     const user = userEvent.setup()
     setMockSession({data: {user: {isAdmin: true}}, status: 'authenticated'})
     renderWithProviders(<SetlistPage />)
-    await screen.findByText('I’m a Believer')
-    // Click Edit (icon button)
-    await user.click(screen.getByRole('button', {name: 'Edit'}))
+    const table = await screen.findByRole('table')
+    await within(table).findByText('I’m a Believer')
+    // Click Edit (icon button) within the table to avoid mobile duplicate
+    await user.click(within(table).getByRole('button', {name: 'Edit'}))
     // Change fields
     const titleInput = screen.getByRole('textbox', {name: 'Title'})
     await user.clear(titleInput)
@@ -64,7 +65,9 @@ describe('Setlist page editing', () => {
     await user.clear(chartInput)
     await user.type(chartInput, 'https://chart.example.com')
     await user.click(screen.getByRole('button', {name: 'Save'}))
-    // UI reflects new title/artist
-    expect(await screen.findByText('Believer (Edit)')).toBeInTheDocument()
+    // UI reflects new title/artist (assert in table view to avoid duplicates)
+    expect(
+      await within(table).findByText('Believer (Edit)'),
+    ).toBeInTheDocument()
   })
 })

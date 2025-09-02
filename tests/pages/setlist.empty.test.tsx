@@ -1,6 +1,6 @@
 import React from 'react'
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
-import {screen} from '@testing-library/react'
+import {screen, within} from '@testing-library/react'
 import SetlistPage from '@/app/setlist/page'
 import {renderWithProviders} from '../utils'
 
@@ -26,8 +26,9 @@ describe('Setlist page empty state', () => {
 
   it('shows friendly message when setlist is empty', async () => {
     renderWithProviders(<SetlistPage />)
+    const table = await screen.findByRole('table')
     expect(
-      await screen.findByText('No songs in the setlist'),
+      await within(table).findByText('No songs in the setlist'),
     ).toBeInTheDocument()
   })
 })
