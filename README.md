@@ -6,6 +6,24 @@
 
 Song request, voting, and setlist management for a band. Built with Next.js, NextAuth (Google), Prisma/Postgres, and Vitest — containerized for easy local dev and prod.
 
+## Table of Contents
+
+- [Features](#features)
+- [Stack](#stack)
+- [AI Agents](#ai-agents)
+- [Quick Start (Docker)](#quick-start-docker)
+- [Production (Docker)](#production-docker)
+- [Make Targets](#make-targets)
+- [Environment Variables](#environment-variables)
+- [App Model & Flows](#app-model--flows)
+- [Running Locally (no Docker)](#running-locally-no-docker)
+- [Testing](#testing)
+- [Linting & Formatting](#linting--formatting)
+- [CI](#ci)
+- [Coverage Report](#coverage-report)
+- [File Map](#file-map)
+- [License](#license)
+
 ## Features
 
 - Proposals: authenticated users propose songs with optional Chart/Lyrics/YouTube links
