@@ -1,6 +1,7 @@
 import React from 'react'
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
 import {screen} from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import {renderWithProviders, setMockSession} from '../utils'
 import Nav from '@/components/Nav'
 
@@ -43,5 +44,34 @@ describe('Nav', () => {
 
     renderWithProviders(<Nav />)
     expect(screen.getByText('Sign in')).toBeInTheDocument()
+  })
+
+  it('shows a Discord link when authenticated', () => {
+    setMockSession({
+      data: {user: {isAdmin: false, name: 'Bob', email: 'b@example.com'}},
+      status: 'authenticated',
+    })
+
+    renderWithProviders(<Nav />)
+    const discord = screen.getByRole('link', {name: /discord/i})
+    expect(discord).toBeInTheDocument()
+    expect(discord).toHaveAttribute(
+      'href',
+      'https://discord.com/channels/1347070995122622545',
+    )
+    expect(discord).toHaveAttribute('target', '_blank')
+  })
+
+  it('shows user name inside the dropdown, not in the bar', async () => {
+    setMockSession({
+      data: {user: {isAdmin: false, name: 'Carol', email: 'c@example.com'}},
+      status: 'authenticated',
+    })
+
+    renderWithProviders(<Nav />)
+    expect(screen.queryByText('Carol')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByLabelText('Account menu'))
+    expect(screen.getByText('Carol')).toBeInTheDocument()
   })
 })

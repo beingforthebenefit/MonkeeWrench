@@ -28,6 +28,8 @@ services:
       args:
         APP_ENV: development
     entrypoint: ''
+    # Keep the tools container alive for ad-hoc execs
+    command: ['sh', '-lc', 'tail -f /dev/null']
     working_dir: /app
     environment:
       APP_ENV: development

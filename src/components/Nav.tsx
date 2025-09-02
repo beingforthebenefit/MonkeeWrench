@@ -25,6 +25,7 @@ import HowToVoteIcon from '@mui/icons-material/HowToVote'
 import ListAltIcon from '@mui/icons-material/ListAlt'
 import {usePathname} from 'next/navigation'
 import {signOut, useSession} from 'next-auth/react'
+import DiscordButton from '@/components/DiscordButton'
 
 const fetcher = (u: string) =>
   fetch(u, {cache: 'no-store'})
@@ -137,9 +138,7 @@ export default function Nav() {
           {/* User dropdown */}
           {session?.user ? (
             <Box className="flex items-center space-x-2">
-              <span className="hidden md:inline-block text-sm text-gray-300">
-                {userName}
-              </span>
+              <DiscordButton channelId="1347070995122622545" />
               <IconButton
                 onClick={handleOpen}
                 size="small"
@@ -163,6 +162,20 @@ export default function Nav() {
                 transformOrigin={{horizontal: 'right', vertical: 'top'}}
                 anchorOrigin={{horizontal: 'right', vertical: 'bottom'}}
               >
+                <Box sx={{px: 2, py: 1.5}}>
+                  <Typography variant="subtitle2" sx={{fontWeight: 700}}>
+                    {userName || userEmail}
+                  </Typography>
+                  {userEmail && userName && (
+                    <Typography
+                      variant="caption"
+                      sx={{color: 'text.secondary'}}
+                    >
+                      {userEmail}
+                    </Typography>
+                  )}
+                </Box>
+                <Divider />
                 {isAdmin && (
                   <Link href="/admin" passHref legacyBehavior>
                     <MenuItem component="a">
