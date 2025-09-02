@@ -37,7 +37,7 @@ export async function GET() {
     title: r.title,
     artist: r.artist,
     votes: r._count.votes,
-    mine: Array.isArray((r as any).votes) && (r as any).votes.length > 0,
+    mine: Boolean((r as {votes?: {id: string}[]}).votes?.length),
     threshold,
   }))
 

@@ -269,7 +269,10 @@ export default function SetlistPage() {
                   </Button>
                   <Button variant="contained" onClick={save} disabled={saving}>
                     {saving ? (
-                      <CircularProgress size={18} sx={{color: 'white', mr: 1}} />
+                      <CircularProgress
+                        size={18}
+                        sx={{color: 'white', mr: 1}}
+                      />
                     ) : null}
                     Save order
                   </Button>
