@@ -55,6 +55,64 @@ describe('auth callbacks', () => {
     expect(ok).toBe(true)
   })
 
+  it('signIn allows via USER_ALLOWLIST env', async () => {
+    process.env.USER_ALLOWLIST = 'user@x.test'
+    const {authOptions} = await import('@/lib/auth')
+    const ok = await authOptions.callbacks!.signIn!({
+      // @ts-expect-error - narrow args
+      account: {provider: 'google'},
+      profile: gp('user@x.test', true),
+    })
+    expect(ok).toBe(true)
+  })
+
+  it('signIn denies unverified email', async () => {
+    const {authOptions} = await import('@/lib/auth')
+    const ok = await authOptions.callbacks!.signIn!({
+      // @ts-expect-error - narrow args
+      account: {provider: 'google'},
+      profile: gp('u@test', false),
+    })
+    expect(ok).toBe(false)
+  })
+
+  it('signIn links account for existing user', async () => {
+    const {authOptions} = await import('@/lib/auth')
+    prisma.settings.findUnique.mockResolvedValue({adminAllowlist: []})
+    prisma.user.findUnique.mockResolvedValue({id: 'u1'})
+    prisma.account.findUnique.mockResolvedValue(null)
+    await authOptions.callbacks!.signIn!({
+      // @ts-expect-error - narrow args
+      account: {provider: 'google', providerAccountId: 'gid', type: 'oauth'},
+      profile: gp('u@test'),
+    })
+    expect(prisma.account.create).toHaveBeenCalled()
+  })
+
+  it('events.createUser makes admins from allowlist', async () => {
+    const {authOptions} = await import('@/lib/auth')
+    prisma.settings.findUnique.mockResolvedValue({adminAllowlist: ['a@x']})
+    await authOptions.events!.createUser!({
+      user: {id: 'u1', email: 'a@x'} as any,
+    })
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: {id: 'u1'},
+      data: {isAdmin: true},
+    })
+  })
+
+  it('events.signIn syncs google image when changed', async () => {
+    const {authOptions} = await import('@/lib/auth')
+    prisma.user.findUnique.mockResolvedValue({image: null})
+    await authOptions.events!.signIn!({
+      user: {id: 'u1'} as any,
+      // @ts-expect-error - narrow args
+      profile: {picture: 'http://img'},
+      account: {provider: 'google'},
+    } as any)
+    expect(prisma.user.update).toHaveBeenCalled()
+  })
+
   it('session callback enriches session from DB', async () => {
     const {authOptions} = await import('@/lib/auth')
     prisma.user.findUnique.mockResolvedValue({

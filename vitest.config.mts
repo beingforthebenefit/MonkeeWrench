@@ -21,11 +21,13 @@ export default defineConfig({
         'coverage/**',
         'tests/**',
         '**/*.d.ts',
+        '**/vitest.config.*',
         'next.config.mjs',
         'postcss.config.js',
         'tailwind.config.js',
         'prisma/**',
         'scripts/**',
+        'src/app/**/layout.tsx',
       ],
     },
     alias: {

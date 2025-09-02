@@ -38,4 +38,33 @@ describe('/api/settings route', () => {
     const res = await PATCH(bad)
     expect(res.status).toBe(400)
   })
+
+  it('GET returns existing settings', async () => {
+    prisma.settings.findUnique.mockResolvedValue({
+      id: 1,
+      voteThreshold: 5,
+      adminAllowlist: ['a@x'],
+    })
+    const {GET} = await import('@/app/api/settings/route')
+    const res = await GET()
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({
+      voteThreshold: 5,
+      adminAllowlist: ['a@x'],
+    })
+  })
+
+  it('PATCH updates settings', async () => {
+    const {PATCH} = await import('@/app/api/settings/route')
+    const req = new Request('http://x/api/settings', {
+      method: 'PATCH',
+      body: JSON.stringify({voteThreshold: 3, adminAllowlist: ['a@x', 'b@y']}),
+    })
+    const res = await PATCH(req)
+    expect(res.status).toBe(204)
+    expect(prisma.settings.update).toHaveBeenCalledWith({
+      where: {id: 1},
+      data: {voteThreshold: 3, adminAllowlist: ['a@x', 'b@y']},
+    })
+  })
 })
