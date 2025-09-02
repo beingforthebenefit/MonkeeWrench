@@ -61,11 +61,12 @@ jobs:
           set -euo pipefail
           # Strip ANSI escape codes to make parsing robust
           perl -pe 's/\e\[[\d;]*[A-Za-z]//g' vitest-output.txt | tr -d '\r' > vitest-output.clean.txt || true
-          # Aggregate across any matching summary lines; pick the max counts observed
-          lines=$(grep -E '^[[:space:]]*Tests[[:space:]]+[0-9]+' vitest-output.clean.txt || true)
-          passed=$(echo "$lines" | grep -oE '[0-9]+[[:space:]]+passed' | awk '{print $1}' | sort -n | tail -1)
-          failed=$(echo "$lines" | grep -oE '[0-9]+[[:space:]]+failed' | awk '{print $1}' | sort -n | tail -1)
-          skipped=$(echo "$lines" | grep -oE '[0-9]+[[:space:]]+skipped' | awk '{print $1}' | sort -n | tail -1)
+          # Extract the last overall "Tests ..." summary line
+          tests_line=$(grep -E '^[[:space:]]*Tests[[:space:]]+' vitest-output.clean.txt | tail -n1 || true)
+          # Parse counts; sed prints nothing on no-match but exits 0
+          passed=$(sed -n 's/.*[[:space:]]\([0-9][0-9]*\)[[:space:]]\{1,\}passed.*/\1/p' <<<"$tests_line" | head -n1)
+          failed=$(sed -n 's/.*[[:space:]]\([0-9][0-9]*\)[[:space:]]\{1,\}failed.*/\1/p' <<<"$tests_line" | head -n1)
+          skipped=$(sed -n 's/.*[[:space:]]\([0-9][0-9]*\)[[:space:]]\{1,\}skipped.*/\1/p' <<<"$tests_line" | head -n1)
           # Default to 0 if empty
           [ -n "${passed:-}" ] || passed=0
           [ -n "${failed:-}" ] || failed=0
