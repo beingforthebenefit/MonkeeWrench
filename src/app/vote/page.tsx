@@ -14,6 +14,7 @@ import ThumbUpOffAltIcon from '@mui/icons-material/ThumbUpOffAlt'
 import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import {useSession} from 'next-auth/react'
+import EditProposalButton from '@/components/EditProposalButton'
 
 type Item = {
   id: string
@@ -46,7 +47,6 @@ export default function Vote() {
     const es = new EventSource('/api/stream')
     es.onmessage = () => load()
     return () => es.close()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canVote])
 
   async function toggleVote(id: string, mine: boolean) {
@@ -118,18 +118,32 @@ export default function Vote() {
               </Tooltip>
 
               {isAdmin && (
-                <Tooltip title="Delete request">
-                  <span>
-                    <IconButton
-                      aria-label="Delete"
-                      onClick={() => deleteProposal(p.id, p.title)}
-                      disabled={removing || voting}
-                      color="default"
-                    >
-                      <DeleteOutlineIcon />
-                    </IconButton>
-                  </span>
-                </Tooltip>
+                <Stack direction="row" spacing={1}>
+                  <EditProposalButton
+                    proposal={{id: p.id, title: p.title, artist: p.artist}}
+                    onSaved={(u) =>
+                      setItems((arr) =>
+                        arr.map((it) =>
+                          it.id === p.id
+                            ? {...it, title: u.title, artist: u.artist}
+                            : it,
+                        ),
+                      )
+                    }
+                  />
+                  <Tooltip title="Delete request">
+                    <span>
+                      <IconButton
+                        aria-label="Delete"
+                        onClick={() => deleteProposal(p.id, p.title)}
+                        disabled={removing || voting}
+                        color="default"
+                      >
+                        <DeleteOutlineIcon />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                </Stack>
               )}
             </CardActions>
           </Card>

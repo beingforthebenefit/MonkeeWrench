@@ -36,6 +36,7 @@ import LibraryBooksIcon from '@mui/icons-material/LibraryBooks'
 import DescriptionIcon from '@mui/icons-material/Description'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import {useSession} from 'next-auth/react'
+import EditProposalButton from '@/components/EditProposalButton'
 
 type Item = {
   id: string
@@ -53,11 +54,13 @@ function Row({
   editing,
   isAdmin,
   onDelete,
+  onEdited,
 }: {
   item: Item
   editing: boolean
   isAdmin: boolean
   onDelete: (id: string) => void
+  onEdited: (id: string, updated: Partial<Item>) => void
 }) {
   const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
     useSortable({id: item.id})
@@ -123,6 +126,30 @@ function Row({
 
       {isAdmin && (
         <TableCell align="right" sx={{width: 0, whiteSpace: 'nowrap'}}>
+          <Tooltip title="Edit song">
+            <span>
+              <EditProposalButton
+                proposal={{
+                  id: item.id,
+                  title: item.title,
+                  artist: item.artist,
+                  chartUrl: item.chartUrl,
+                  lyricsUrl: item.lyricsUrl,
+                  youtubeUrl: item.youtubeUrl,
+                }}
+                size="small"
+                onSaved={(u) =>
+                  onEdited(item.id, {
+                    title: u.title,
+                    artist: u.artist,
+                    chartUrl: u.chartUrl ?? null,
+                    lyricsUrl: u.lyricsUrl ?? null,
+                    youtubeUrl: u.youtubeUrl ?? null,
+                  })
+                }
+              />
+            </span>
+          </Tooltip>
           <Tooltip title="Delete song">
             <span>
               <IconButton
@@ -324,6 +351,13 @@ export default function SetlistPage() {
                           editing={editing}
                           isAdmin={isAdmin}
                           onDelete={handleDelete}
+                          onEdited={(id, updated) =>
+                            setItems((arr) =>
+                              arr.map((it) =>
+                                it.id === id ? {...it, ...updated} : it,
+                              ),
+                            )
+                          }
                         />
                       ))
                     )}
