@@ -68,7 +68,7 @@ Entrypoint runs Prisma migrations and seeds default data if the DB is empty.
 - `prisma-dev NAME=…`: create a new migration interactively
 - `seed`: run `prisma/seed.mjs`
 - `lint`/`lint-fix`/`format`/`format-check`: code quality
-- `test`: run tests in the app container
+- `test`/`test-cov`: run tests with/without coverage in the app container
 - `down`/`nuke`: stop; stop + remove volumes (danger: wipes DB)
 
 See the full list in `Makefile`.

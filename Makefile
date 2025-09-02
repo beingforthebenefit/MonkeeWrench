@@ -36,6 +36,7 @@ help:
 	@echo "  lint           Lint code"
 	@echo "  lint-fix       Lint code and fix issues"
 	@echo "  test           Run tests"
+	@echo "  test-cov       Run tests with coverage"
 	@echo "  deps           Install node modules inside app container"
 	@echo "  down           Stop all containers"
 	@echo "  nuke           Stop and remove volumes (DANGER)"
@@ -135,6 +136,10 @@ format:
 .PHONY: test
 test:
 	$(COMPOSE_DEV) exec $(APP_SVC) npm test --silent || true
+
+.PHONY: test-cov
+test-cov:
+	$(COMPOSE_DEV) exec $(APP_SVC) npm run test:coverage --silent || true
 
 # Strict CI-style targets (no exit swallowing)
 .PHONY: format-check
