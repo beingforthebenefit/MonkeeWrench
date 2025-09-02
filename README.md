@@ -25,6 +25,13 @@ Song request, voting, and setlist management for a band. Built with Next.js, Nex
 - Tooling: ESLint, Prettier, Vitest (jsdom), Testing Library
 - Containers: Dockerfile + Compose (dev + prod)
 
+## AI Agents
+
+- See `AGENTS.md` for authoritative guidelines for AI assistants (Copilot, Codex, Claude, etc.) and contributors.
+- Follow repo conventions for structure, coding style, and tests as defined there.
+- When making changes, always update tests in `tests/` to reflect behavior and update this `README.md` if commands, setup, or user‑facing behavior change.
+- For convenience, `COPILOT.md`, `CODEX.md`, and `CLAUDE.md` are symlinks to `AGENTS.md`. Additionally, `.github/copilot-instructions.md` points to `AGENTS.md` for GitHub Copilot Chat.
+
 ## Quick Start (Docker)
 
 1. Copy env and configure values
