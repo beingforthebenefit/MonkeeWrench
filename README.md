@@ -87,6 +87,7 @@ Entrypoint runs Prisma migrations and seeds default data if the DB is empty.
 
 - `dev`/`dev-d`/`dev-up`/`dev-up-d`: run dev stack with/without rebuild, fg/bg
 - `prod`/`prod-up`: run production stack
+- `build`: Next.js build inside the app container
 - `logs`: tail logs for app + db
 - `app-sh`/`db-sh`/`psql`: shells and psql into the DB
 - `prisma-gen`: prisma format + generate (inside app)
@@ -94,7 +95,7 @@ Entrypoint runs Prisma migrations and seeds default data if the DB is empty.
 - `prisma-dev NAME=…`: create a new migration interactively
 - `seed`: run `prisma/seed.mjs`
 - `lint`/`lint-fix`/`format`/`format-check`: code quality
-- `test`/`test-cov`: run tests with/without coverage in the app container
+- `test`/`test-watch`/`test-cov`: run tests (watch/coverage) in the app container
 - `down`/`nuke`: stop; stop + remove volumes (danger: wipes DB)
 
 See the full list in `Makefile`.
@@ -132,16 +133,15 @@ Key models: see `prisma/schema.prisma`. Seed data: `prisma/seed.mjs`.
 
 ## Testing
 
-- Run tests: `npm test` or `npm run test:watch`
-- Coverage: `npm run test:coverage` (text summary + HTML under `coverage/`)
+- Preferred (inside container via Make): `make test`, `make test-watch`, or `make test-cov`
 - Test env: Vitest with jsdom and Testing Library (see `vitest.config.mts` and `tests/setup.ts`)
 
 In CI, coverage HTML is uploaded as an artifact.
 
 ## Linting & Formatting
 
-- `npm run lint` runs ESLint and Prettier check
-- `npm run lint:eslint:fix` and `npm run format` to auto‑fix and format
+- Preferred (inside container via Make): `make lint` and `make format-check`
+- To auto-fix issues: `make lint-fix` and `make format`
 
 ## CI
 

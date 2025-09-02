@@ -16,7 +16,7 @@ Authoritative guidelines for AI coding assistants (Copilot, Codex, Claude, etc.)
 ## Coding Conventions
 
 - Language: TypeScript for all new code. Prefer explicit types at boundaries; rely on inference internally when clear.
-- Style: Obey ESLint and Prettier configs. Run `npm run lint` before committing.
+- Style: Obey ESLint and Prettier configs. Prefer `make lint` (runs in container) before committing.
 - Imports: Use path alias `@` for `src` (see `vitest.config.mts`). Keep import groups ordered: node/third‑party, internal libs, components, local.
 - React:
   - Prefer functional components and hooks.
@@ -35,6 +35,14 @@ Authoritative guidelines for AI coding assistants (Copilot, Codex, Claude, etc.)
 - Comments: Explain non‑obvious decisions or complex logic; avoid restating the code.
 - Logging: Keep `console.*` out of committed code unless behind a guard or clearly temporary (tests may log when useful).
 
+## Dev Commands: Make vs npm
+
+- Default to Make targets which execute inside the Docker app container.
+- Only use `npm` scripts when:
+  - You are attached to the app container (e.g., `make app-sh`), or
+  - You are explicitly following the "Running Locally (no Docker)" path in `README.md`.
+- In documentation and instructions, prefer Make. Mention `npm` only if no Make target exists and include the attach step first (e.g., `make app-sh` then `npm run …`).
+
 ## Tests: Requirements & Commands
 
 - Write or update tests for all behavior changes. New features need test coverage; bug fixes require regression tests.
@@ -43,9 +51,9 @@ Authoritative guidelines for AI coding assistants (Copilot, Codex, Claude, etc.)
 - Commands:
 
 ```bash
-npm test            # run test suite
-npm run test:watch  # watch mode during development
-npm run test:coverage  # generate coverage report
+make test         # run test suite in container
+make test-watch   # run tests in watch mode
+make test-cov     # run tests with coverage in container
 ```
 
 ## Lint, Format, Build
@@ -53,8 +61,19 @@ npm run test:coverage  # generate coverage report
 Run these checks locally and in CI. All must pass before merge:
 
 ```bash
-npm run lint     # ESLint + Prettier check
-npm run build    # Next.js build (includes type checks)
+make lint           # ESLint + Prettier check in container
+make format-check   # Prettier formatting check in container
+
+# If you need fixes:
+make lint-fix
+make format
+
+# Build options:
+# - Containerized prod build/run:
+make prod           # builds image and runs
+# - Next.js build inside container:
+make build
+# - Local (no Docker): see README "Running Locally (no Docker)"
 ```
 
 ## Database & Migrations (Prisma)
@@ -93,7 +112,7 @@ npm run build    # Next.js build (includes type checks)
 2. Make minimal, surgical changes consistent with existing patterns and style.
 3. Add/modify tests under `/tests` that mirror the changed code path(s).
 4. Update `README.md` and `.env.example` if setup, commands, or envs change.
-5. Run `npm run lint`, `npm test`, and `npm run build`. Fix all errors.
+5. Prefer containerized checks: `make lint` and `make test`. For builds, use `make prod` or `make build` as appropriate. Avoid running raw `npm` on the host unless following the no‑Docker flow.
 6. Use clear, Conventional Commit messages and open a focused PR with rationale and evidence (test results, screenshots).
 
 This document is the single source of truth for AI assistants in this repository. If in doubt, ask for guidance or propose an update here.
