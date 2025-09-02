@@ -27,7 +27,7 @@ jobs:
 
       - name: Test (with coverage)
         run: |
-          npx vitest run --coverage -c vitest.config.mts | tee vitest-output.txt
+          npm run test:coverage | tee vitest-output.txt
           test ${PIPESTATUS[0]} -eq 0
 
       - name: Publish summary

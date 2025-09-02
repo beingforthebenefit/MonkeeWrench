@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Fast pre-commit: format + eslint on staged files only
+# Prefer host (node_modules) for speed; fallback to Docker tools container.
+
 COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.dev.yml)
 
 # Collect staged files
@@ -25,18 +28,39 @@ for f in "${STAGED[@]}"; do
   esac
 done
 
-if [ ${#PRETTIER_FILES[@]} -gt 0 ]; then
-  echo "[pre-commit] Formatting staged files with Prettier..."
-  # shellcheck disable=SC2046
-  ${COMPOSE[@]} run --rm -T tools sh -lc "npx prettier --write --ignore-unknown --log-level warn $(printf '%q ' "${PRETTIER_FILES[@]}")"
-  git add -- "${PRETTIER_FILES[@]}"
-fi
+run_local() {
+  if [ ${#PRETTIER_FILES[@]} -gt 0 ]; then
+    echo "[pre-commit] Prettier (local)"
+    npx prettier --write --ignore-unknown --log-level warn "${PRETTIER_FILES[@]}"
+    git add -- "${PRETTIER_FILES[@]}"
+  fi
+  if [ ${#ESLINT_FILES[@]} -gt 0 ]; then
+    echo "[pre-commit] ESLint --fix (local)"
+    npx eslint --fix --cache --cache-location .eslintcache "${ESLINT_FILES[@]}"
+    git add -- "${ESLINT_FILES[@]}"
+  fi
+}
 
-if [ ${#ESLINT_FILES[@]} -gt 0 ]; then
-  echo "[pre-commit] Linting staged files with ESLint (fix)..."
-  # shellcheck disable=SC2046
-  ${COMPOSE[@]} run --rm -T tools sh -lc "npx eslint --fix $(printf '%q ' "${ESLINT_FILES[@]}")"
-  git add -- "${ESLINT_FILES[@]}"
+run_docker() {
+  # Build a single combined command to reduce container startup overhead
+  PRETTIER_CMD="true"; ESLINT_CMD="true"
+  if [ ${#PRETTIER_FILES[@]} -gt 0 ]; then
+    PRETTIER_CMD="npx prettier --write --ignore-unknown --log-level warn $(printf '%q ' "${PRETTIER_FILES[@]}")"
+  fi
+  if [ ${#ESLINT_FILES[@]} -gt 0 ]; then
+    ESLINT_CMD="npx eslint --fix --cache --cache-location .eslintcache $(printf '%q ' "${ESLINT_FILES[@]}")"
+  fi
+  echo "[pre-commit] Prettier + ESLint (docker)"
+  "${COMPOSE[@]}" run --rm -T tools sh -lc "${PRETTIER_CMD} && ${ESLINT_CMD}"
+  # Re-add potentially modified files
+  if [ ${#PRETTIER_FILES[@]} -gt 0 ]; then git add -- "${PRETTIER_FILES[@]}"; fi
+  if [ ${#ESLINT_FILES[@]} -gt 0 ]; then git add -- "${ESLINT_FILES[@]}"; fi
+}
+
+if [ -d node_modules ] && command -v npx >/dev/null 2>&1; then
+  run_local || run_docker
+else
+  run_docker
 fi
 
 echo "[pre-commit] Done."
