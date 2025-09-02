@@ -230,13 +230,6 @@ export default function Nav() {
             label="Setlist"
             icon={<ListAltIcon fontSize="small" />}
           />
-          {isAdmin && (
-            <NavLink
-              to="/admin"
-              label="Admin"
-              icon={<SettingsIcon fontSize="small" />}
-            />
-          )}
         </Box>
       </Container>
     </AppBar>
