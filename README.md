@@ -1,8 +1,8 @@
 # Monkee Wrench
 
 [![CI](https://github.com/beingforthebenefit/MonkeeWrench/actions/workflows/ci.yml/badge.svg)](https://github.com/beingforthebenefit/MonkeeWrench/actions/workflows/ci.yml)
-
 [![Tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/MonkeeWrench/badges/badges/tests.json)](https://github.com/beingforthebenefit/MonkeeWrench/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/MonkeeWrench/badges/badges/coverage.json)](https://beingforthebenefit.github.io/MonkeeWrench/)
 
 Song request, voting, and setlist management for a band. Built with Next.js, NextAuth (Google), Prisma/Postgres, and Vitest — containerized for easy local dev and prod.
 
@@ -125,6 +125,11 @@ GitHub Actions workflow runs on every push/PR:
 - Coverage HTML uploaded as artifact for the run
 
 Workflow: `.github/workflows/ci.yml`.
+
+## Coverage Report
+
+- Latest HTML report: https://beingforthebenefit.github.io/MonkeeWrench/
+- Coverage badge source is generated in CI and pushed to the `badges` branch as `badges/coverage.json`.
 
 ## Show Test Results In README (optional)
 

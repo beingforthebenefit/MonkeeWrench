@@ -6,9 +6,11 @@ on:
   pull_request:
     branches: ['**']
 
-# Needed so the workflow can push the generated badge JSON back to the repo
+# Needed for committing badges and deploying GitHub Pages
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
   build-and-test:
@@ -53,7 +55,7 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "</details>" >> $GITHUB_STEP_SUMMARY
 
-      - name: Generate tests badge JSON
+      - name: Generate badges JSON
         if: always()
         run: |
           set -euo pipefail
@@ -73,13 +75,27 @@ jobs:
           {"schemaVersion":1, "label":"tests", "message":"${passed} passed, ${failed} failed", "color":"$color"}
           EOF
 
+          # Coverage badge from the "All files" line in vitest text report
+          cov_line=$(grep -E "^[[:space:]]*All files[[:space:]]*\|" vitest-output.txt | head -n1 || true)
+          cov_raw=$(awk -F'\|' '{gsub(/[[:space:]]/,"",$2); print $2}' <<<"$cov_line" | head -n1)
+          [ -n "${cov_raw:-}" ] || cov_raw=0
+          cov_int=$(echo "$cov_raw" | awk '{printf("%.0f", $1)}')
+          if [ "$cov_int" -ge 90 ]; then color_cov=brightgreen;
+          elif [ "$cov_int" -ge 80 ]; then color_cov=yellowgreen;
+          elif [ "$cov_int" -ge 70 ]; then color_cov=yellow;
+          elif [ "$cov_int" -ge 50 ]; then color_cov=orange;
+          else color_cov=red; fi
+          cat > badges/coverage.json <<EOF
+          {"schemaVersion":1, "label":"coverage", "message":"${cov_int}%", "color":"$color_cov"}
+          EOF
+
       # Only attempt to commit on pushes to main. PRs (esp. from forks) lack write perms.
-      - name: Commit badge (to badges branch)
+      - name: Commit badges (to badges branch)
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: 'chore(ci): update tests badge'
-          file_pattern: badges/tests.json
+          commit_message: 'chore(ci): update test/coverage badges'
+          file_pattern: badges/*.json
           branch: badges
           create_branch: true
 
@@ -88,4 +104,28 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-html
+          path: coverage
+
+  publish-coverage:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+      contents: read
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Upload coverage to Pages artifact
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
           path: coverage
