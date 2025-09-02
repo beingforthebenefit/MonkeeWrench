@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import {ReactNode} from 'react'
 import {getServerSession} from 'next-auth'
 import {authOptions} from '@/lib/auth'
