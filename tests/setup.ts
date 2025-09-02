@@ -31,12 +31,10 @@ class MockEventSource {
   removeEventListener = vi.fn()
   dispatchEvent = vi.fn()
 }
-// @ts-expect-error assign for tests
 globalThis.EventSource = MockEventSource as unknown as typeof EventSource
 
 // Default fetch mock (tests override per-case)
 if (typeof globalThis.fetch === 'undefined') {
-  // @ts-expect-error - provide a simple fetch stub
   globalThis.fetch = vi.fn(
     async () =>
       new Response(JSON.stringify({}), {
