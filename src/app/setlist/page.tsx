@@ -18,6 +18,7 @@ import {
   Card,
   CardContent,
   Container,
+  TableContainer,
   Table,
   TableBody,
   TableCell,
@@ -29,6 +30,8 @@ import {
   Button,
   Tooltip,
   CircularProgress,
+  Paper,
+  Box,
 } from '@mui/material'
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import YouTubeIcon from '@mui/icons-material/YouTube'
@@ -51,7 +54,7 @@ type Item = {
   setlistOrder: number | null
 }
 
-function Row({
+function TableRowItem({
   item,
   editing,
   isAdmin,
@@ -83,45 +86,74 @@ function Row({
           </Tooltip>
         )}
       </TableCell>
-      <TableCell sx={{width: '40%'}}>{item.title}</TableCell>
-      <TableCell sx={{width: '30%'}}>{item.artist}</TableCell>
       <TableCell>
-        <Stack direction="row" spacing={1}>
+        <Typography variant="body1">{item.title}</Typography>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{display: {xs: 'block', sm: 'none'}}}
+        >
+          {item.artist}
+        </Typography>
+      </TableCell>
+      <TableCell sx={{display: {xs: 'none', sm: 'table-cell'}}}>
+        {item.artist}
+      </TableCell>
+      <TableCell>
+        <Stack direction="row" spacing={{xs: 0.5, sm: 1}}>
           {item.chartUrl && (
-            <Button
-              href={item.chartUrl}
-              target="_blank"
-              rel="noreferrer"
-              size="small"
-              startIcon={<DescriptionIcon />}
-              disabled={editing}
-            >
-              Chart
-            </Button>
+            <Tooltip title="Chart">
+              <span>
+                <Button
+                  href={item.chartUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  size="small"
+                  startIcon={<DescriptionIcon />}
+                  disabled={editing}
+                  sx={{minWidth: 0, px: {xs: 1, sm: 1.25}}}
+                  aria-label="Chart"
+                >
+                  <span className="hidden sm:inline">Chart</span>
+                </Button>
+              </span>
+            </Tooltip>
           )}
           {item.lyricsUrl && (
-            <Button
-              href={item.lyricsUrl}
-              target="_blank"
-              rel="noreferrer"
-              size="small"
-              startIcon={<LibraryBooksIcon />}
-              disabled={editing}
-            >
-              Lyrics
-            </Button>
+            <Tooltip title="Lyrics">
+              <span>
+                <Button
+                  href={item.lyricsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  size="small"
+                  startIcon={<LibraryBooksIcon />}
+                  disabled={editing}
+                  sx={{minWidth: 0, px: {xs: 1, sm: 1.25}}}
+                  aria-label="Lyrics"
+                >
+                  <span className="hidden sm:inline">Lyrics</span>
+                </Button>
+              </span>
+            </Tooltip>
           )}
           {item.youtubeUrl && (
-            <Button
-              href={item.youtubeUrl}
-              target="_blank"
-              rel="noreferrer"
-              size="small"
-              startIcon={<YouTubeIcon />}
-              disabled={editing}
-            >
-              YouTube
-            </Button>
+            <Tooltip title="YouTube">
+              <span>
+                <Button
+                  href={item.youtubeUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  size="small"
+                  startIcon={<YouTubeIcon />}
+                  disabled={editing}
+                  sx={{minWidth: 0, px: {xs: 1, sm: 1.25}}}
+                  aria-label="YouTube"
+                >
+                  <span className="hidden sm:inline">YouTube</span>
+                </Button>
+              </span>
+            </Tooltip>
           )}
         </Stack>
       </TableCell>
@@ -167,6 +199,148 @@ function Row({
         </TableCell>
       )}
     </TableRow>
+  )
+}
+
+function CardRowItem({
+  item,
+  editing,
+  isAdmin,
+  onDelete,
+  onEdited,
+}: {
+  item: Item
+  editing: boolean
+  isAdmin: boolean
+  onDelete: (id: string) => void
+  onEdited: (id: string, updated: Partial<Item>) => void
+}) {
+  const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
+    useSortable({id: item.id})
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+    background: isDragging ? 'rgba(255,255,255,0.03)' : undefined,
+  }
+  return (
+    <Paper ref={setNodeRef} variant="outlined" sx={{p: 1.5}} style={style}>
+      <Stack direction="row" spacing={1} alignItems="center">
+        <Box sx={{width: 32}}>
+          {editing && (
+            <Tooltip title="Drag to reorder">
+              <IconButton size="small" {...attributes} {...listeners}>
+                <DragIndicatorIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
+        <Box sx={{flex: 1, minWidth: 0}}>
+          <Typography variant="body1" noWrap>
+            {item.title}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" noWrap>
+            {item.artist}
+          </Typography>
+        </Box>
+        <Stack direction="row" spacing={0.5} sx={{flexWrap: 'nowrap'}}>
+          {item.chartUrl && (
+            <Tooltip title="Chart">
+              <span>
+                <Button
+                  href={item.chartUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  size="small"
+                  startIcon={<DescriptionIcon />}
+                  disabled={editing}
+                  sx={{minWidth: 0, px: 1}}
+                  aria-label="Chart"
+                >
+                  <span className="hidden sm:inline">Chart</span>
+                </Button>
+              </span>
+            </Tooltip>
+          )}
+          {item.lyricsUrl && (
+            <Tooltip title="Lyrics">
+              <span>
+                <Button
+                  href={item.lyricsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  size="small"
+                  startIcon={<LibraryBooksIcon />}
+                  disabled={editing}
+                  sx={{minWidth: 0, px: 1}}
+                  aria-label="Lyrics"
+                >
+                  <span className="hidden sm:inline">Lyrics</span>
+                </Button>
+              </span>
+            </Tooltip>
+          )}
+          {item.youtubeUrl && (
+            <Tooltip title="YouTube">
+              <span>
+                <Button
+                  href={item.youtubeUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  size="small"
+                  startIcon={<YouTubeIcon />}
+                  disabled={editing}
+                  sx={{minWidth: 0, px: 1}}
+                  aria-label="YouTube"
+                >
+                  <span className="hidden sm:inline">YouTube</span>
+                </Button>
+              </span>
+            </Tooltip>
+          )}
+        </Stack>
+        {isAdmin && (
+          <Stack direction="row" spacing={0.5} sx={{ml: 0.5}}>
+            <Tooltip title="Edit song">
+              <span>
+                <EditProposalButton
+                  proposal={{
+                    id: item.id,
+                    title: item.title,
+                    artist: item.artist,
+                    chartUrl: item.chartUrl,
+                    lyricsUrl: item.lyricsUrl,
+                    youtubeUrl: item.youtubeUrl,
+                  }}
+                  size="small"
+                  onSaved={(u) =>
+                    onEdited(item.id, {
+                      title: u.title,
+                      artist: u.artist,
+                      chartUrl: u.chartUrl ?? null,
+                      lyricsUrl: u.lyricsUrl ?? null,
+                      youtubeUrl: u.youtubeUrl ?? null,
+                    })
+                  }
+                />
+              </span>
+            </Tooltip>
+            <Tooltip title="Delete song">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={() => onDelete(item.id)}
+                  disabled={editing}
+                  aria-label={`Delete ${item.title}`}
+                >
+                  <DeleteOutlineIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Stack>
+        )}
+      </Stack>
+    </Paper>
   )
 }
 
@@ -324,45 +498,22 @@ export default function SetlistPage() {
                 items={ids}
                 strategy={verticalListSortingStrategy}
               >
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{width: 0}} />
-                      <TableCell width="40%">Title</TableCell>
-                      <TableCell width="30%">Artist</TableCell>
-                      <TableCell>Links</TableCell>
-                      {isAdmin && (
-                        <TableCell align="right" sx={{width: 0}}>
-                          Actions
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
+                {/* Mobile: card list */}
+                <Box sx={{display: {xs: 'block', sm: 'none'}}}>
+                  <Stack spacing={1} sx={{p: 1}}>
                     {loading ? (
-                      <TableRow>
-                        <TableCell colSpan={isAdmin ? 5 : 4}>
-                          <Typography sx={{p: 2}}>Loading…</Typography>
-                        </TableCell>
-                      </TableRow>
+                      <Typography sx={{p: 1.5}}>Loading…</Typography>
                     ) : !items.length ? (
-                      <TableRow>
-                        <TableCell colSpan={isAdmin ? 5 : 4}>
-                          <EmptyState
-                            icon={
-                              <QueueMusicIcon
-                                fontSize="large"
-                                color="disabled"
-                              />
-                            }
-                            title="No songs in the setlist"
-                            message="Songs that reach the vote threshold appear here."
-                          />
-                        </TableCell>
-                      </TableRow>
+                      <EmptyState
+                        icon={
+                          <QueueMusicIcon fontSize="large" color="disabled" />
+                        }
+                        title="No songs in the setlist"
+                        message="Songs that reach the vote threshold appear here."
+                      />
                     ) : (
                       items.map((i) => (
-                        <Row
+                        <CardRowItem
                           key={i.id}
                           item={i}
                           editing={editing}
@@ -378,8 +529,78 @@ export default function SetlistPage() {
                         />
                       ))
                     )}
-                  </TableBody>
-                </Table>
+                  </Stack>
+                </Box>
+
+                {/* Desktop/tablet: table */}
+                <TableContainer
+                  sx={{
+                    width: '100%',
+                    overflowX: 'auto',
+                    display: {xs: 'none', sm: 'block'},
+                  }}
+                >
+                  <Table size="small" sx={{minWidth: 560}}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{width: 0}} />
+                        <TableCell>Title</TableCell>
+                        <TableCell
+                          sx={{display: {xs: 'none', sm: 'table-cell'}}}
+                        >
+                          Artist
+                        </TableCell>
+                        <TableCell>Links</TableCell>
+                        {isAdmin && (
+                          <TableCell align="right" sx={{width: 0}}>
+                            Actions
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {loading ? (
+                        <TableRow>
+                          <TableCell colSpan={isAdmin ? 5 : 4}>
+                            <Typography sx={{p: 2}}>Loading…</Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : !items.length ? (
+                        <TableRow>
+                          <TableCell colSpan={isAdmin ? 5 : 4}>
+                            <EmptyState
+                              icon={
+                                <QueueMusicIcon
+                                  fontSize="large"
+                                  color="disabled"
+                                />
+                              }
+                              title="No songs in the setlist"
+                              message="Songs that reach the vote threshold appear here."
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        items.map((i) => (
+                          <TableRowItem
+                            key={i.id}
+                            item={i}
+                            editing={editing}
+                            isAdmin={isAdmin}
+                            onDelete={handleDelete}
+                            onEdited={(id, updated) =>
+                              setItems((arr) =>
+                                arr.map((it) =>
+                                  it.id === id ? {...it, ...updated} : it,
+                                ),
+                              )
+                            }
+                          />
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
               </SortableContext>
             </DndContext>
           </CardContent>
