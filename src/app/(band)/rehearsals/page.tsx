@@ -8,14 +8,12 @@ import Rehearsals from '@/components/Rehearsals'
 
 export const metadata = {title: 'Rehearsals · Monkee Wrench'}
 
-const WEEKS = 8
 // How far ahead to look for a day everyone can make
-const HORIZON_DAYS = 365
+const HORIZON_DAYS = 730
 
 export default async function RehearsalsPage() {
   const {user} = await requireSession()
   const today = todayKey()
-  const days = dayRange(today, WEEKS * 7)
   const [users, rows, rehearsals] = await Promise.all([
     prisma.user.findMany({orderBy: {name: 'asc'}}),
     prisma.unavailability.findMany({
@@ -38,7 +36,6 @@ export default async function RehearsalsPage() {
     <Rehearsals
       me={user.id}
       isAdmin={user.isAdmin}
-      days={days}
       horizon={dayRange(today, HORIZON_DAYS)}
       members={users.map((u) => ({
         id: u.id,
