@@ -19,6 +19,7 @@ import {
 } from '@/lib/chordpro'
 import ChartBody from '@/components/chart/ChartBody'
 import {useStoredState} from '@/components/useStoredState'
+import {TEXT_SIZES} from '@/components/ChartScreen'
 
 export type PerformSong = {
   id: string
@@ -61,15 +62,44 @@ export default function Perform({
 
   const chartRef = useRef<FittedChartHandle>(null)
   const [page, setPage] = useState({page: 0, pages: 1})
+  // Phones: one song is a single scrolling chart instead of fitted pages
+  const narrow = useNarrow()
+  const [sizeIdx] = useStoredState('mw:text-size', 2)
+  const scrollSize =
+    TEXT_SIZES[Math.min(Math.max(sizeIdx, 0), TEXT_SIZES.length - 1)]
 
-  // Next/previous turns the page within a long song first, then changes song
-  const go = useCallback(
-    (d: number) => {
-      if (chartRef.current?.turn(d)) return
-      setIndex(Math.min(Math.max(i + d, 0), songs.length - 1))
-    },
+  const toSong = useCallback(
+    (d: number) => setIndex(Math.min(Math.max(i + d, 0), songs.length - 1)),
     [i, songs.length, setIndex],
   )
+
+  // Next/previous turns the page within a long song first, then changes song.
+  // On phones "a page" is a screenful of scrolling.
+  const go = useCallback(
+    (d: number) => {
+      if (narrow) {
+        const el = document.scrollingElement ?? document.documentElement
+        const atEnd =
+          d > 0
+            ? el.scrollTop + window.innerHeight >= el.scrollHeight - 8
+            : el.scrollTop <= 8
+        if (!atEnd) {
+          window.scrollBy({
+            top: d * window.innerHeight * 0.8,
+            behavior: 'smooth',
+          })
+          return
+        }
+      } else if (chartRef.current?.turn(d)) return
+      toSong(d)
+    },
+    [narrow, toSong],
+  )
+
+  // A new song starts at its top
+  useEffect(() => {
+    if (narrow) window.scrollTo({top: 0})
+  }, [i, narrow])
   const jump = (n: number) => setIndex(n)
 
   // Page-turn pedals and keyboards send arrow / page keys
@@ -100,7 +130,7 @@ export default function Perform({
     const dy = e.changedTouches[0].clientY - touch.current.y
     touch.current = null
     if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5)
-      go(dx < 0 ? 1 : -1)
+      toSong(dx < 0 ? 1 : -1)
   }
 
   if (!song)
@@ -119,11 +149,13 @@ export default function Perform({
 
   return (
     <main
-      className="flex h-dvh flex-col overflow-hidden bg-stage px-4 pb-[max(env(safe-area-inset-bottom),12px)] pt-[max(env(safe-area-inset-top),12px)] text-[#f1eee8] md:px-8"
+      className={`flex flex-col bg-stage px-4 pb-[max(env(safe-area-inset-bottom),12px)] text-[#f1eee8] md:px-8 ${narrow ? 'min-h-dvh' : 'h-dvh overflow-hidden pt-[max(env(safe-area-inset-top),12px)]'}`}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <header className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1">
+      <header
+        className={`flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 ${narrow ? 'sticky top-0 z-10 -mx-4 bg-stage/95 px-4 pb-2 pt-[max(env(safe-area-inset-top),12px)] backdrop-blur' : ''}`}
+      >
         <span className="font-mono text-muted">
           {i + 1} / {songs.length}
         </span>
@@ -155,9 +187,17 @@ export default function Perform({
         </p>
       )}
 
-      <FittedChart key={i} ref={chartRef} chart={chart} onPage={setPage} />
+      {narrow ? (
+        <div className="mt-4 flex-1 pb-6" style={{fontSize: scrollSize}}>
+          <ChartBody chart={chart} columns={false} />
+        </div>
+      ) : (
+        <FittedChart key={i} ref={chartRef} chart={chart} onPage={setPage} />
+      )}
 
-      <footer className="flex shrink-0 items-center gap-4 border-t border-[#1c1f23] pt-3">
+      <footer
+        className={`flex shrink-0 items-center gap-4 border-t border-[#1c1f23] pt-3 ${narrow ? 'sticky bottom-0 z-10 -mx-4 bg-stage/95 px-4 pb-[max(env(safe-area-inset-bottom),12px)] backdrop-blur' : ''}`}
+      >
         <div
           className="hidden gap-1.5 sm:flex"
           aria-label={`Song ${i + 1} of ${songs.length}`}
@@ -175,7 +215,7 @@ export default function Perform({
         <span className="flex-1" />
         <button
           type="button"
-          onClick={() => go(-1)}
+          onClick={() => toSong(-1)}
           disabled={i === 0}
           className="min-h-11 rounded-lg px-3 text-muted disabled:opacity-30"
           aria-label="Previous song"
@@ -185,7 +225,7 @@ export default function Perform({
         {next ? (
           <button
             type="button"
-            onClick={() => go(1)}
+            onClick={() => toSong(1)}
             className="flex min-h-11 items-center gap-3 rounded-lg px-2 text-left"
           >
             <span className="text-muted">Next</span>
@@ -201,19 +241,21 @@ export default function Perform({
         )}
       </footer>
 
-      {/* Invisible tap zones on the screen edges */}
+      {/* Invisible tap zones on the screen edges. On phones they are wider
+          and change song; touch-action lets a scroll that starts on one still
+          scroll the chart, so only a tap counts. */}
       <button
         type="button"
         aria-label="Previous song"
-        onClick={() => go(-1)}
-        className="fixed bottom-16 left-0 top-28 w-[12vw] max-w-28 opacity-0"
+        onClick={() => (narrow ? toSong(-1) : go(-1))}
+        className={`fixed bottom-16 left-0 top-28 opacity-0 ${narrow ? 'w-1/4 touch-pan-y' : 'w-[12vw] max-w-28'}`}
         tabIndex={-1}
       />
       <button
         type="button"
         aria-label="Next song"
-        onClick={() => go(1)}
-        className="fixed bottom-16 right-0 top-28 w-[12vw] max-w-28 opacity-0"
+        onClick={() => (narrow ? toSong(1) : go(1))}
+        className={`fixed bottom-16 right-0 top-28 opacity-0 ${narrow ? 'w-1/4 touch-pan-y' : 'w-[12vw] max-w-28'}`}
         tabIndex={-1}
       />
     </main>
@@ -321,6 +363,19 @@ const FittedChart = forwardRef<
     </div>
   )
 })
+
+/** True on phone-width screens (and while the window is that narrow). */
+function useNarrow() {
+  const [narrow, setNarrow] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)')
+    const update = () => setNarrow(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
+  return narrow
+}
 
 function useWakeLock() {
   useEffect(() => {
