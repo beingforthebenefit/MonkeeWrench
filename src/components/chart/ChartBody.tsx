@@ -47,11 +47,23 @@ function ChartSection({section}: {section: Section}) {
   )
 }
 
-/** Group segments into words so a line only ever wraps between words. */
-function words(segments: Segment[]): Segment[][] {
+/**
+ * Group segments into words so a line only ever wraps between words. A
+ * segment's lyric is first split at its spaces ("A home" → "A ", "home"), the
+ * chord staying with the first piece; pieces are then joined across chord
+ * boundaries until a piece ends in a space.
+ */
+export function words(segments: Segment[]): Segment[][] {
+  const pieces: Segment[] = []
+  for (const seg of segments) {
+    const parts = seg.lyric.split(/(?<=\s)(?=\S)/)
+    parts.forEach((lyric, i) =>
+      pieces.push({chord: i === 0 ? seg.chord : null, lyric}),
+    )
+  }
   const groups: Segment[][] = []
   let cur: Segment[] = []
-  for (const seg of segments) {
+  for (const seg of pieces) {
     const prev = cur[cur.length - 1]
     if (prev && (prev.lyric === '' || /\s$/.test(prev.lyric))) {
       groups.push(cur)
