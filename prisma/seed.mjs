@@ -23,6 +23,10 @@ async function main() {
     create: {id: 1, voteThreshold: threshold, adminAllowlist: allowlist},
   })
 
+  // Demo data is for local development only: in production the fake
+  // "Seeder" user would show up as a band member (e.g. on Rehearsals).
+  if (process.env.APP_ENV !== 'development') return
+
   const existing = await prisma.proposal.count()
   if (existing > 0) return
 

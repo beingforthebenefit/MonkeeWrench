@@ -148,9 +148,9 @@ export default function Perform({
       </header>
       {(song.note || song.leadSinger) && (
         <p className="mt-2.5 shrink-0 rounded-lg bg-[#1a1708] px-3.5 py-2 text-[17px] text-[#f2d18a]">
-          {[song.leadSinger && `${song.leadSinger} sings`, song.note]
-            .filter(Boolean)
-            .join(' · ')}
+          {/* The set note carries this band's assignments ("Lead: Mark"); the
+              song's own lead singer is only a fallback when there is none */}
+          {song.note || `Lead (${song.leadSinger})`}
         </p>
       )}
 

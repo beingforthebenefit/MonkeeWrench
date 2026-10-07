@@ -40,3 +40,4 @@ next-env.d.ts
 # Local chart previews and import files: real charts are copyrighted, never commit them
 tmp-preview/
 data/
+.env.production
