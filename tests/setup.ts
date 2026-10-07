@@ -55,5 +55,17 @@ vi.mock('next-auth/react', async (importOriginal) => {
     SessionProvider: actual.SessionProvider,
     signIn: vi.fn(),
     signOut: vi.fn(),
+    // The login page asks which providers are enabled; tests set
+    // (globalThis as any).__mockProviders to change the answer
+    getProviders: vi.fn(
+      async () =>
+        (globalThis as any).__mockProviders ?? {
+          credentials: {
+            id: 'credentials',
+            name: 'Password',
+            type: 'credentials',
+          },
+        },
+    ),
   }
 })

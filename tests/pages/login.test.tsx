@@ -10,7 +10,10 @@ vi.mock('next/navigation', () => ({
 }))
 
 describe('LoginPage', () => {
-  beforeEach(() => replace.mockReset())
+  beforeEach(() => {
+    replace.mockReset()
+    ;(globalThis as any).__mockProviders = undefined
+  })
 
   it('signs in with email and password and returns to the page asked for', async () => {
     const mod: any = await import('next-auth/react')
@@ -41,5 +44,22 @@ describe('LoginPage', () => {
     await userEvent.click(screen.getByRole('button', {name: 'Sign in'}))
     expect(await screen.findByRole('alert')).toHaveTextContent('don’t match')
     expect(replace).not.toHaveBeenCalled()
+  })
+
+  it('offers Google only when it is configured', async () => {
+    const Page = (await import('@/app/login/page')).default
+    const {unmount} = render(<Page />)
+    expect(
+      screen.queryByRole('button', {name: /Google/}),
+    ).not.toBeInTheDocument()
+    unmount()
+    ;(globalThis as any).__mockProviders = {
+      credentials: {id: 'credentials'},
+      google: {id: 'google'},
+    }
+    render(<Page />)
+    expect(
+      await screen.findByRole('button', {name: /Sign in with Google/}),
+    ).toBeInTheDocument()
   })
 })
