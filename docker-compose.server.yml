@@ -61,11 +61,11 @@ services:
       USER_ALLOWLIST: ${USER_ALLOWLIST:-}
       VOTE_THRESHOLD: ${VOTE_THRESHOLD:-3}
     healthcheck:
-      # /login renders without a session and touches the app, not just the port
+      # /api/health queries the database; pages can render while it is down
       test:
         [
           'CMD-SHELL',
-          'curl -fsS -o /dev/null http://localhost:3000/login || exit 1',
+          'curl -fsS http://localhost:3000/api/health | grep -q ''"ok":true'' || exit 1',
         ]
       interval: 30s
       timeout: 10s

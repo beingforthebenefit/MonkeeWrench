@@ -16,6 +16,7 @@ describe('middleware', () => {
   it('lets sign-in and the public proposal lists through', () => {
     for (const p of [
       '/api/auth/session',
+      '/api/health',
       '/api/proposals/pending',
       '/api/proposals/approved',
     ])

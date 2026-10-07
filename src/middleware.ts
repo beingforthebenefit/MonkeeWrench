@@ -9,6 +9,7 @@ const SESSION_COOKIES = [
 // Read-only endpoints that are deliberately public
 const PUBLIC_API = [
   /^\/api\/auth\//,
+  /^\/api\/health$/,
   /^\/api\/proposals\/(pending|pending\/count|approved)$/,
 ]
 
