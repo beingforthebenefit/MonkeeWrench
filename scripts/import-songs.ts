@@ -30,6 +30,8 @@ type ImportSong = {
   chartText: string | null
   /** Name of the Doc the chart came from (informational) */
   chartFile?: string | null
+  /** History note for the imported version; defaults to IMPORT_NOTE */
+  chartNote?: string | null
 }
 type ImportFile = {
   songs: ImportSong[]
@@ -56,7 +58,8 @@ async function main() {
 
   const counts = {created: 0, updated: 0, unchanged: 0, skipped: 0}
   for (const s of data.songs) {
-    const {chartText, chartFile: _file, ...fields} = s
+    const {chartText, chartFile: _file, chartNote, ...fields} = s
+    const note = chartNote || IMPORT_NOTE
     const source = chartText
       ? importChordsOverWords(chartText, s.title).source
       : `{title: ${s.title}}\n`
@@ -76,7 +79,7 @@ async function main() {
             number: 1,
             source,
             authorId: author.id,
-            note: chartText ? IMPORT_NOTE : 'No chart yet',
+            note: chartText ? note : 'No chart yet',
           },
         })
         await tx.activity.create({
@@ -99,7 +102,9 @@ async function main() {
       continue
     }
     const lastWasImport =
-      !latest || latest.note === IMPORT_NOTE || latest.note === 'No chart yet'
+      !latest ||
+      latest.note?.startsWith('Imported from') ||
+      latest.note === 'No chart yet'
     if (!lastWasImport) {
       console.warn(
         `  skipped ${s.title}: edited in the app since the last import (v${latest.number})`,
@@ -114,7 +119,7 @@ async function main() {
           number: (latest?.number ?? 0) + 1,
           source,
           authorId: author.id,
-          note: IMPORT_NOTE,
+          note,
         },
       })
       await tx.song.update({
@@ -127,7 +132,7 @@ async function main() {
           action: 'song.import',
           targetType: 'song',
           targetId: existing.id,
-          summary: `re-imported ${existing.title} from Google Docs`,
+          summary: `imported a chart for ${existing.title} (${note.replace(/^Imported from /, 'from ')})`,
         },
       })
     })
