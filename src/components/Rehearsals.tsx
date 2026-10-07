@@ -1,6 +1,7 @@
 'use client'
 
 import {useRouter} from 'next/navigation'
+import {AddToCalendar, SubscribeCalendar} from '@/components/CalendarLinks'
 import {useMemo, useState} from 'react'
 import {
   nextAllFree,
@@ -136,6 +137,7 @@ export default function Rehearsals({
                   </span>
                 )}
                 <span className="text-xs text-faint">set by {r.by}</span>
+                <AddToCalendar r={r} />
                 {(r.mine || isAdmin) && (
                   <button
                     type="button"
@@ -148,6 +150,7 @@ export default function Rehearsals({
               </li>
             ))}
           </ul>
+          <SubscribeCalendar />
         </section>
       )}
 

@@ -38,6 +38,8 @@ model User {
   passwordSetAt         DateTime?
   // Bumped on every password change or reset: older sessions stop working
   sessionVersion        Int              @default(0)
+  // Secret in this person's calendar-feed URL (calendar apps can't sign in)
+  calendarToken         String?          @unique
   accounts              Account[]
   sessions              Session[]
   proposals             Proposal[]       @relation("Proposer")

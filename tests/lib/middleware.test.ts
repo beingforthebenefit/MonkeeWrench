@@ -14,7 +14,11 @@ describe('middleware', () => {
   })
 
   it('lets sign-in and the public proposal lists through', () => {
-    for (const p of ['/api/auth/session', '/api/health'])
+    for (const p of [
+      '/api/auth/session',
+      '/api/health',
+      '/api/calendar/abcdefghijklmnopqrstuvwx.ics',
+    ])
       expect(middleware(req(p)).status).toBe(200)
   })
 

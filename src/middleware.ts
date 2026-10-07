@@ -7,7 +7,12 @@ const SESSION_COOKIES = [
 ]
 
 // Read-only endpoints that are deliberately public
-const PUBLIC_API = [/^\/api\/auth\//, /^\/api\/health$/]
+const PUBLIC_API = [
+  /^\/api\/auth\//,
+  /^\/api\/health$/,
+  // Calendar apps fetch the feed with no session; its URL holds a secret
+  /^\/api\/calendar\/[^/]+$/,
+]
 
 export function middleware(req: NextRequest) {
   const {pathname, search} = req.nextUrl

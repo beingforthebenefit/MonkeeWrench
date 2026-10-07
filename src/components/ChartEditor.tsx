@@ -257,7 +257,7 @@ export default function ChartEditor({
         </div>
       </section>
 
-      <div className="sticky bottom-20 z-20 mt-6 flex flex-wrap items-center gap-2 rounded-xl border border-line-2 bg-panel p-2 sm:gap-3 sm:p-3 md:bottom-4">
+      <div className="sticky bottom-[max(env(safe-area-inset-bottom),16px)] z-20 mt-6 flex flex-wrap items-center gap-2 rounded-xl border border-line-2 bg-panel p-2 sm:gap-3 sm:p-3">
         <label className="flex min-w-0 flex-1 basis-64 items-center gap-2 text-sm text-muted">
           <span className="hidden shrink-0 sm:inline">What changed?</span>
           <input

@@ -285,7 +285,7 @@ export default function SetlistEditor({
       </label>
 
       {(dirty || error) && (
-        <div className="fixed inset-x-0 bottom-20 z-20 mx-auto flex max-w-3xl items-center gap-3 px-4 md:bottom-4">
+        <div className="fixed inset-x-0 bottom-[max(env(safe-area-inset-bottom),16px)] z-20 mx-auto flex max-w-3xl items-center gap-3 px-4">
           <div className="flex flex-1 items-center gap-3 rounded-xl border border-line-2 bg-panel p-3 shadow-xl">
             <span className="flex-1 text-sm text-muted">
               {error ?? 'Unsaved changes'}
@@ -436,7 +436,7 @@ function Row({
           ×
         </button>
       </div>
-      <div className="flex items-start gap-2 pl-16">
+      <div className="flex flex-wrap items-start gap-2 pl-16">
         {keys.length > 0 && (
           <label className="flex shrink-0 items-center sm:hidden">
             <span className="sr-only">Key for {song?.title}</span>
@@ -459,7 +459,7 @@ function Row({
           </label>
         )}
         {noteOpen ? (
-          <label className="flex min-w-0 flex-1 items-center gap-2">
+          <label className="flex min-w-[12rem] flex-1 items-center gap-2">
             <span className="sr-only">Note for {song?.title}</span>
             <AutoTextarea
               value={item.note}
