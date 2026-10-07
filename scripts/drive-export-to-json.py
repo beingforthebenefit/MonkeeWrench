@@ -105,12 +105,13 @@ def norm(s):
     return re.sub(r'[^a-z0-9]', '', s.lower())
 
 
-def clean_chart(text, title):
+def clean_chart(text, *titles):
     lines = [l.replace('\u00a0', ' ').rstrip() for l in text.split('\n')]
-    # The Doc's first line repeats the title as a heading
+    # The Doc's first line repeats the song's name as a heading -- sometimes
+    # the sheet's title, sometimes the Doc's own ("Steppin'" vs "Stepping")
     while lines and not lines[0].strip():
         lines.pop(0)
-    if lines and norm(lines[0]) == norm(title):
+    if lines and norm(lines[0]) in {norm(t) for t in titles if t}:
         lines.pop(0)
     return '\n'.join(lines).strip('\n') + '\n'
 
@@ -159,7 +160,7 @@ def songs_from_sheet(rows, charts):
             'lyricsUrl': link(3),
             'status': 'READY' if (c.get(0) or {}).get('fill') == GREEN else 'LEARNING',
             'chartFile': match[0] if match else None,
-            'chartText': clean_chart(match[1], title) if match else None,
+            'chartText': clean_chart(match[1], title, match[0]) if match else None,
         })
     unused = sorted(set(charts) - used)
     return songs, proposals, unused

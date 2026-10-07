@@ -4,7 +4,7 @@
 [![Tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/MonkeeWrench/badges/badges/tests.json)](https://github.com/beingforthebenefit/MonkeeWrench/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/MonkeeWrench/badges/badges/coverage.json)](https://beingforthebenefit.github.io/MonkeeWrench/)
 
-Song request, voting, and setlist management for a band. Built with Next.js, NextAuth (Google), Prisma/Postgres, and Vitest — containerized for easy local dev and prod.
+The band hub for **Monkee Business**: chord charts with full version history, setlists, a stage performance mode, rehearsal availability, and song proposals. Built with Next.js, NextAuth (Google), Prisma/Postgres and Vitest; live at <https://members.monkeebusinessband.com>.
 
 ## Table of Contents
 
@@ -13,6 +13,9 @@ Song request, voting, and setlist management for a band. Built with Next.js, Nex
 - [AI Agents](#ai-agents)
 - [Quick Start (Docker)](#quick-start-docker)
 - [Production (Docker)](#production-docker)
+- [Importing charts from Google Drive](#importing-charts-from-google-drive)
+- [Writing charts (ChordPro)](#writing-charts-chordpro)
+- [Dev notes](#dev-notes)
 - [Make Targets](#make-targets)
 - [Environment Variables](#environment-variables)
 - [App Model & Flows](#app-model--flows)
@@ -26,18 +29,21 @@ Song request, voting, and setlist management for a band. Built with Next.js, Nex
 
 ## Features
 
-- Proposals: authenticated users propose songs with optional Chart/Lyrics/YouTube links
-- Voting: members vote; items auto‑promote to Setlist when threshold is met
-- Setlist: approved songs, drag‑and‑drop reorder (admin‑only)
-- Admin: manage allowlist + threshold; quick‑add approved songs; basic user management
-- Realtime: server‑sent events push updates to the UI
-- Auth: Google sign‑in via NextAuth with admin/user allowlists
-- Public mode: guests can browse the dashboard, pending requests, and setlist (read‑only); proposing and voting require sign‑in
-- CI: lint + tests + coverage on GitHub Actions with artifact uploads
+- **Charts**: every song's chart is ChordPro text, rendered as chords over lyrics. Transpose and text size are remembered per device. Every section is always written out in full — no "same as verse 1".
+- **History**: every save is a new version with author, date and an optional note; a musician-readable diff between versions; a PDF of any version; admins can restore (which saves a new version, so nothing is lost). Two people saving at once can't overwrite each other: the second save is refused with a 409.
+- **PDFs**: generated on request — one song in any key, or a whole setlist in order with each song's set key and note. Letter or A4. The footer stamps the version and editor, so an old printout is obvious.
+- **Setlists**: drag (or up/down) to reorder, a key and a note per song (e.g. vocal assignments).
+- **Performance mode** (`/perform/:id`): black, chart-only, fitted to the screen; long songs page instead of shrinking. Next/previous by edge tap, swipe, or a Bluetooth page-turn pedal (arrow/page keys). Keeps the screen awake; the whole set loads up front.
+- **Rehearsals**: everyone marks the days they can't make (Free / PM out / Out); best dates for the next two weeks; schedule a rehearsal. People who haven't answered are named and never counted as free.
+- **Recent changes** (`/activity`): who changed what, everywhere.
+- **Proposals and voting**: a proposal that reaches the vote threshold joins the book as a song to learn.
+- **Auth**: Google sign-in via NextAuth with admin/user allowlists. Everything except sign-in requires an account (charts are copyrighted).
+- Phone and iPad layouts throughout ("Music Stand" design: dark, chords in amber).
 
 ## Stack
 
-- Web: Next.js 14 (App Router), React 18, TypeScript, MUI, Tailwind
+- Web: Next.js 14 (App Router), React 18, TypeScript, Tailwind v4 (MUI remains on the older admin/proposal pages)
+- Charts: own ChordPro parser/transposer (`src/lib/chordpro.ts`), PDFs with `pdfkit`, diffs with `diff`
 - Auth: NextAuth with Google provider
 - Data: Prisma ORM, PostgreSQL 16
 - Realtime: EventEmitter + SSE
@@ -78,42 +84,48 @@ Useful: `make logs`, `make app-sh`, `make db-sh`, `make psql`.
 
 ## Production (Docker)
 
-- `make prod` builds and runs using `docker-compose.yml` + `docker-compose.prod.yml`
-- `make prod-up` runs without rebuilding
+Production runs on the `popos` server from `docker-compose.server.yml`, a standalone stack (project `monkeewrench`, port **7120**) that can run beside the dev stack. Traefik on another host terminates TLS for `members.monkeebusinessband.com` and forwards to it.
 
-What changes in production:
+1. Create `.env.production` (gitignored; `.dockerignore` keeps every `.env*` out of images) with `POSTGRES_PASSWORD`, `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_ALLOWLIST` and optional `USER_ALLOWLIST`, `VOTE_THRESHOLD`.
+2. Google OAuth client: redirect URI `https://members.monkeebusinessband.com/api/auth/callback/google`.
+3. Build and start (also the update command):
 
-- Host port: app listens on container `3000` but is published on host `3012`.
-- Public origin: `NEXTAUTH_URL` is set to `https://members.monkeebusinessband.com`.
-- Internal calls: server-to-server fetches use `INTERNAL_APP_URL=http://app:3000` to avoid going out through TLS.
+   ```bash
+   docker compose -f docker-compose.server.yml --env-file .env.production up -d --build
+   ```
 
-Steps:
+The entrypoint applies migrations on start. Demo seed data is created only when `APP_ENV=development`. `GET /api/health` is public and queries the database (`{"ok":true,"songs":N}`); the container healthcheck and the server's monitoring use it.
 
-1. Copy env and set production values
+## Importing charts from Google Drive
 
-- `cp .env.example .env`
-- Set:
-  - `NEXTAUTH_SECRET` to a strong random value
-  - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
-  - `ADMIN_ALLOWLIST` and optional `USER_ALLOWLIST`
-  - `NEXTAUTH_URL=https://members.monkeebusinessband.com`
-  - `INTERNAL_APP_URL=http://app:3000` (default in example)
+The band's old charts were Google Docs in chords-over-lyrics format (`[Verse 1]` or `INTRO: C F Bb F (x4)` / `#1.` headers, guitar tab). To import them:
 
-2. Configure Google OAuth
+1. In Drive, download the `Original Documents` folder (a zip of `.docx`) and the song spreadsheet as `.xlsx`. Unzip into `data/` — **gitignored**, because the charts are copyrighted.
+2. `python3 -I scripts/drive-export-to-json.py "data/docs/Original Documents" "data/Monkee Business.xlsx" data/import.json`
+3. `make import FILE=data/import.json AS=you@example.com` (dev). For production, `docker cp` the JSON into `monkeewrench-app` and run `npx tsx scripts/import-songs.ts /tmp/import.json you@example.com` there, then delete it.
 
-- Authorized redirect URI: `https://members.monkeebusinessband.com/api/auth/callback/google`
-- Authorized JavaScript origin: `https://members.monkeebusinessband.com`
+Re-running is safe: unchanged charts are skipped, changed Docs become a new version, and a chart edited in the app since the last import is never overwritten (it's reported instead).
 
-3. Start the stack
+## Writing charts (ChordPro)
 
-- `make prod` (build + run) or `make prod-up` (run existing image)
-- App exposed on host: `http://localhost:3012` (use your reverse proxy to serve HTTPS)
+```
+{title: Daydream Believer}
+{start_of_verse: Verse 1}
+Oh, I could [G]hide 'neath the [Am]wings
+{end_of_verse}
+{start_of_chorus: Chorus (x2)}
+...
+{end_of_chorus}
+{chorus}                      <- repeats the last chorus, written out in full
+{start_of_tab} ... {end_of_tab}  <- tablature, shown verbatim
+```
 
-4. Put HTTPS in front (recommended)
+The editor also converts pasted chords-above-lyrics text with one button.
 
-If you terminate TLS with a reverse proxy (e.g., Nginx/Caddy/Traefik), point it at `localhost:3012` and set the external host to `members.monkeebusinessband.com`.
+## Dev notes
 
-Entrypoint runs Prisma migrations and seeds default data if the DB is empty.
+- **New Tailwind classes missing in dev?** In the Docker dev container, Tailwind does not see files added after the server started (the bind mount hides the change from its scanner), so classes used only in a new file are not generated. `make dev-restart` fixes it. Production builds are unaffected.
+- Files created by commands run inside the container (e.g. a new migration) are owned by root on the host: `docker exec mw_app chown -R $(id -u):$(id -g) /app/prisma`.
 
 ## Make Targets
 
@@ -148,12 +160,14 @@ Tip: on first run, ensure your email is in `ADMIN_ALLOWLIST` so you can sign in 
 
 ## App Model & Flows
 
-- Proposals (Pending) -> Votes -> auto‑promote to Approved Setlist when votes ≥ threshold
-- Admins can quick‑add songs directly to the Setlist and reorder it
-- Basic per‑user proposal rate limit: 10 per hour
-- Server‑sent events notify clients about proposal changes and setlist reorder
+- **Song** → many **ChartVersion**s (append-only; the newest is the chart). Saving sends the version you started from; if someone saved since, it is refused (409) rather than overwriting.
+- **Setlist** → ordered **SetlistItem**s, each with an optional key and note.
+- **Unavailability**: one row per person per day they can't make (no row = free); `User.availabilityUpdatedAt` tells "hasn't answered" from "always free". **Rehearsal**: a scheduled date.
+- **Activity**: a human-readable line for every change, shown on `/activity` and in song history.
+- Proposals (Pending) → Votes → at the threshold the proposal is Approved and becomes a Song to learn.
+- Per-user proposal rate limit: 10 per hour. Server-sent events notify clients about proposal changes.
 
-Key models: see `prisma/schema.prisma`. Seed data: `prisma/seed.mjs`.
+Key models: `prisma/schema.prisma`. Seed data (dev only): `prisma/seed.mjs`.
 
 ## Running Locally (no Docker)
 
@@ -191,11 +205,13 @@ Workflow: `.github/workflows/ci.yml`.
 
 ## File Map
 
-- Docker: `Dockerfile`, `docker-compose.yml`, `docker-compose.dev.yml`
+- Docker: `Dockerfile`, `.dockerignore`, `docker-compose.yml` + `docker-compose.dev.yml` (dev), `docker-compose.server.yml` (production)
 - Make targets: `Makefile`
 - CI: `.github/workflows/ci.yml`
-- Prisma: `prisma/schema.prisma`, `prisma/seed.mjs`
-- App: `src/app/*`, `src/components/*`, `src/lib/*`
+- Prisma: `prisma/schema.prisma`, `prisma/migrations/`, `prisma/seed.mjs`
+- Charts: `src/lib/chordpro.ts` (parse/transpose/import), `src/lib/pdf.ts`, `src/lib/chart-diff.ts`, `src/components/chart/ChartBody.tsx`
+- Import: `scripts/drive-export-to-json.py`, `scripts/import-songs.ts`
+- App: `src/app/(band)/*` (signed-in pages), `src/app/perform/*`, `src/app/api/*`, `src/components/*`, `src/lib/*`, `src/middleware.ts`
 - Tests: `tests/*`, `vitest.config.mts`
 
 ## License

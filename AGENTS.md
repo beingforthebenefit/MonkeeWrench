@@ -101,6 +101,10 @@ make build
 
 ## Patterns Specific to This Repo
 
+- Charts are ChordPro in `ChartVersion.source`; derive everything (view, PDF, diff) from it with `src/lib/chordpro.ts`. Never collapse repeated sections ("same as verse 1") — the band reads every chord in full.
+- Chart saves go through `saveChart()` in `src/lib/songs.ts` (versioning, conflict check, activity). Log every user-visible change with `logActivity()`.
+- Never commit real chart text: it is copyrighted. Test fixtures use invented lyrics; imports live in gitignored `data/`.
+
 - AuthZ/AuthN: Use `requireSession()` and `requireAdmin()` from `src/lib/guard.ts` in server routes.
 - Realtime: Use the SSE event bus in `src/lib/events.ts` for UI updates; clean up listeners to avoid leaks (see `src/app/api/stream/route.ts`).
 - URL and validation helpers live in `src/lib/url.ts` and other `lib/*` utilities; prefer these over ad‑hoc parsing.
