@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
@@ -25,34 +25,39 @@ enum AuditAction {
 }
 
 model User {
-  id            String     @id @default(cuid())
-  name          String?
-  email         String?    @unique
-  emailVerified DateTime?
-  image         String?
-  isAdmin       Boolean    @default(false)
-  accounts      Account[]
-  sessions      Session[]
-  proposals     Proposal[] @relation("Proposer")
-  votes         Vote[]
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id             String           @id @default(cuid())
+  name           String?
+  email          String?          @unique
+  emailVerified  DateTime?
+  image          String?
+  isAdmin        Boolean          @default(false)
+  accounts       Account[]
+  sessions       Session[]
+  proposals      Proposal[]       @relation("Proposer")
+  votes          Vote[]
+  chartVersions  ChartVersion[]
+  songsEdited    Song[]           @relation("SongEditor")
+  setlistsEdited Setlist[]        @relation("SetlistEditor")
+  unavailability Unavailability[]
+  activities     Activity[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 }
 
 model Proposal {
-  id         String         @id @default(cuid())
-  title      String
-  artist     String
-  chartUrl   String?
-  lyricsUrl  String?
-  youtubeUrl String?
-  status     ProposalStatus @default(PENDING)
-  proposer   User           @relation("Proposer", fields: [proposerId], references: [id], onDelete: Cascade)
-  proposerId String
-  votes      Vote[]
+  id           String         @id @default(cuid())
+  title        String
+  artist       String
+  chartUrl     String?
+  lyricsUrl    String?
+  youtubeUrl   String?
+  status       ProposalStatus @default(PENDING)
+  proposer     User           @relation("Proposer", fields: [proposerId], references: [id], onDelete: Cascade)
+  proposerId   String
+  votes        Vote[]
   setlistOrder Int?
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
   @@index([status, setlistOrder])
 }
@@ -118,4 +123,114 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// ---------------------------------------------------------------------------
+// v2: the band's book, charts, setlists and rehearsal availability
+// ---------------------------------------------------------------------------
+
+enum SongStatus {
+  READY // gig-ready
+  LEARNING
+}
+
+model Song {
+  id          String     @id @default(cuid())
+  title       String
+  writer      String?
+  leadSinger  String?
+  guitars     Int?
+  keys        String? // keyboard parts, e.g. "organ"
+  percussion  String?
+  youtubeUrl  String?
+  lyricsUrl   String?
+  status      SongStatus @default(LEARNING)
+  notes       String?    @db.Text
+  // Bumped on every chart save so lists can show "edited by X" cheaply
+  updatedBy   User?      @relation("SongEditor", fields: [updatedById], references: [id], onDelete: SetNull)
+  updatedById String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  chartVersions ChartVersion[]
+  setlistItems  SetlistItem[]
+
+  @@index([title])
+}
+
+/// Every chart save is a new row; nothing is updated in place or deleted.
+model ChartVersion {
+  id           String   @id @default(cuid())
+  song         Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  songId       String
+  number       Int
+  source       String   @db.Text // ChordPro
+  note         String?
+  author       User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  authorId     String?
+  restoredFrom Int?
+  createdAt    DateTime @default(now())
+
+  @@unique([songId, number])
+}
+
+model Setlist {
+  id          String        @id @default(cuid())
+  name        String
+  gigDate     DateTime?
+  venue       String?
+  notes       String?       @db.Text
+  items       SetlistItem[]
+  updatedBy   User?         @relation("SetlistEditor", fields: [updatedById], references: [id], onDelete: SetNull)
+  updatedById String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model SetlistItem {
+  id        String  @id @default(cuid())
+  setlist   Setlist @relation(fields: [setlistId], references: [id], onDelete: Cascade)
+  setlistId String
+  song      Song    @relation(fields: [songId], references: [id], onDelete: Cascade)
+  songId    String
+  position  Int
+  // Shown above the chart in performance mode ("Micky counts it in")
+  note      String?
+  // Play this song in a different key for this set
+  key       String?
+
+  @@index([setlistId, position])
+}
+
+enum UnavailableKind {
+  OUT // all day/evening
+  PM_OUT // afternoon only
+}
+
+/// No row means free; a row records that someone can't make it.
+model Unavailability {
+  id        String          @id @default(cuid())
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  date      DateTime        @db.Date
+  kind      UnavailableKind
+  updatedAt DateTime        @updatedAt
+
+  @@unique([userId, date])
+  @@index([date])
+}
+
+/// Human-readable record of who changed what, shown in the app.
+model Activity {
+  id         String   @id @default(cuid())
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId     String?
+  action     String // e.g. chart.save, song.update, setlist.update, availability.update
+  targetType String
+  targetId   String?
+  summary    String
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId, createdAt])
+  @@index([createdAt])
 }
