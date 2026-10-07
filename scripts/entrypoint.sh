@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Fail fast if Google creds missing
-if [[ -z "${GOOGLE_CLIENT_ID:-}" || -z "${GOOGLE_CLIENT_SECRET:-}" ]]; then
-  echo "ERROR: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are required." >&2
+# Fail fast without the session secret (sign-in is email + password)
+if [[ -z "${NEXTAUTH_SECRET:-}" ]]; then
+  echo "ERROR: NEXTAUTH_SECRET is required." >&2
   exit 1
 fi
 

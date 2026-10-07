@@ -96,7 +96,9 @@ export async function restoreVersion(args: {
   })
 }
 
-const authorSelect = {select: {id: true, name: true, email: true}} as const
+const authorSelect = {
+  select: {id: true, name: true, displayName: true, email: true},
+} as const
 
 /** Songs with their latest chart version's number, author and date. */
 export async function listSongs() {
@@ -146,9 +148,15 @@ export async function listVersions(songId: string) {
 }
 
 export function displayName(
-  u: {name: string | null; email: string | null} | null,
+  u: {
+    name: string | null
+    email: string | null
+    displayName?: string | null
+  } | null,
 ) {
   if (!u) return 'someone'
+  // What the band calls them ("Ken"), else the first name, else the email
+  if (u.displayName) return u.displayName
   if (u.name) return u.name.split(' ')[0]
   const local = u.email?.split('@')[0]
   return local ? local.charAt(0).toUpperCase() + local.slice(1) : 'someone'

@@ -41,7 +41,7 @@ export default async function ActivityPage() {
   const rows = await prisma.activity.findMany({
     orderBy: {createdAt: 'desc'},
     take: 200,
-    include: {user: {select: {name: true, email: true}}},
+    include: {user: {select: {name: true, displayName: true, email: true}}},
   })
   const groups: {day: string; rows: typeof rows}[] = []
   for (const r of rows) {

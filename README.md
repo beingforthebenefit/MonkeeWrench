@@ -4,7 +4,7 @@
 [![Tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/MonkeeWrench/badges/badges/tests.json)](https://github.com/beingforthebenefit/MonkeeWrench/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/MonkeeWrench/badges/badges/coverage.json)](https://beingforthebenefit.github.io/MonkeeWrench/)
 
-The band hub for **Monkee Business**: chord charts with full version history, setlists, a stage performance mode, rehearsal availability, and song proposals. Built with Next.js, NextAuth (Google), Prisma/Postgres and Vitest; live at <https://members.monkeebusinessband.com>.
+The band hub for **Monkee Business**: chord charts with full version history, setlists, a stage performance mode, rehearsal availability, and song proposals. Built with Next.js, NextAuth, Prisma/Postgres and Vitest; live at <https://members.monkeebusinessband.com>.
 
 ## Table of Contents
 
@@ -37,14 +37,14 @@ The band hub for **Monkee Business**: chord charts with full version history, se
 - **Rehearsals**: everyone marks the days they can't make (Free / PM out / Out); best dates for the next two weeks; schedule a rehearsal. People who haven't answered are named and never counted as free.
 - **Recent changes** (`/activity`): who changed what, everywhere.
 - **Proposals and voting**: a proposal that reaches the vote threshold joins the book as a song to learn.
-- **Auth**: Google sign-in via NextAuth with admin/user allowlists. Everything except sign-in requires an account (charts are copyrighted).
+- **Auth**: email + password (not everyone in the band has Google). An admin adds members and generates each password on **Band members** (`/members`); it is shown once, with a ready-to-send message. Resetting or changing a password signs that person out everywhere. Repeated failures are throttled. Everything except sign-in requires an account (charts are copyrighted).
 - Phone and iPad layouts throughout ("Music Stand" design: dark, chords in amber).
 
 ## Stack
 
 - Web: Next.js 14 (App Router), React 18, TypeScript, Tailwind v4 (MUI remains on the older admin/proposal pages)
 - Charts: own ChordPro parser/transposer (`src/lib/chordpro.ts`), PDFs with `pdfkit`, diffs with `diff`
-- Auth: NextAuth with Google provider
+- Auth: NextAuth credentials provider (JWT sessions with a per-user version), scrypt password hashes
 - Data: Prisma ORM, PostgreSQL 16
 - Realtime: EventEmitter + SSE
 - Tooling: ESLint, Prettier, Vitest (jsdom), Testing Library
@@ -62,10 +62,6 @@ The band hub for **Monkee Business**: chord charts with full version history, se
 1. Copy env and configure values
 
 - `cp .env.example .env`
-- Required: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (Google Cloud OAuth2)
-- Strongly recommended: set yourself as an admin so your first login works:
-  - `ADMIN_ALLOWLIST=you@example.com`
-- Optionally allow non‑admin users: `USER_ALLOWLIST=user1@example.com,user2@…`
 - `NEXTAUTH_SECRET` should be a random string (e.g. `openssl rand -base64 32`)
 
 2. Start the dev stack
@@ -74,11 +70,10 @@ The band hub for **Monkee Business**: chord charts with full version history, se
 - App: http://localhost:3002 (mapped from container 3000)
 - Postgres data persists in the `pgdata` volume
 
-3. Sign in with Google
+3. Give yourself an account
 
-- Configure your Google OAuth2 app to allow the redirect URL:
-  - http://localhost:3002/api/auth/callback/google
-  - Set “Authorized JavaScript origin” to http://localhost:3002
+- `make app-sh`, then `npx tsx scripts/import-members.ts data/members.json` (or create a user row with `isAdmin = true`)
+- `npx tsx scripts/set-password.ts you@example.com` prints a password once; sign in at `/login`
 
 Useful: `make logs`, `make app-sh`, `make db-sh`, `make psql`.
 
@@ -86,15 +81,14 @@ Useful: `make logs`, `make app-sh`, `make db-sh`, `make psql`.
 
 Production runs on the `popos` server from `docker-compose.server.yml`, a standalone stack (project `monkeewrench`, port **7120**) that can run beside the dev stack. Traefik on another host terminates TLS for `members.monkeebusinessband.com` and forwards to it.
 
-1. Create `.env.production` (gitignored; `.dockerignore` keeps every `.env*` out of images) with `POSTGRES_PASSWORD`, `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_ALLOWLIST` and optional `USER_ALLOWLIST`, `VOTE_THRESHOLD`.
-2. Google OAuth client: redirect URI `https://members.monkeebusinessband.com/api/auth/callback/google`.
-3. Build and start (also the update command):
+1. Create `.env.production` (gitignored; `.dockerignore` keeps every `.env*` out of images) with `POSTGRES_PASSWORD`, `NEXTAUTH_SECRET` and optional `VOTE_THRESHOLD`.
+2. Build and start (also the update command):
 
    ```bash
    docker compose -f docker-compose.server.yml --env-file .env.production up -d --build
    ```
 
-The entrypoint applies migrations on start. Demo seed data is created only when `APP_ENV=development`. `GET /api/health` is public and queries the database (`{"ok":true,"songs":N}`); the container healthcheck and the server's monitoring use it.
+The entrypoint applies migrations on start. The first admin: add the band with `scripts/import-members.ts` (or any user row with `isAdmin`), then `npx tsx scripts/set-password.ts you@example.com` inside the app container prints a password once; everyone else's comes from `/members`. Demo seed data is created only when `APP_ENV=development`. `GET /api/health` is public and queries the database (`{"ok":true,"songs":N}`); the container healthcheck and the server's monitoring use it.
 
 ## Importing charts from Google Drive
 
@@ -150,13 +144,11 @@ Defined in `.env.example` and used by Compose and the app:
 
 - `DATABASE_URL`: e.g. `postgresql://monkee:monkee@db:5432/monkee?schema=public`
 - `NEXTAUTH_URL`: e.g. `http://localhost:3002`
-- `NEXTAUTH_SECRET`: random string
-- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`: OAuth2 client creds
-- `ADMIN_ALLOWLIST`: comma‑separated emails that become admins on first sign‑in
-- `USER_ALLOWLIST`: comma‑separated emails allowed to sign in (non‑admin)
-- `VOTE_THRESHOLD`: number of votes to auto‑approve (default 2)
+- `NEXTAUTH_SECRET`: random string (signs session tokens)
+- `VOTE_THRESHOLD`: number of votes to approve a proposal (default 2)
+- `POSTGRES_PASSWORD`: production only (`.env.production`)
 
-Tip: on first run, ensure your email is in `ADMIN_ALLOWLIST` so you can sign in and access `/admin`.
+Members and admins live in the database (`/members`), not in env vars.
 
 ## App Model & Flows
 

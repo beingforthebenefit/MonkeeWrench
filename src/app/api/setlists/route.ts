@@ -4,17 +4,18 @@ import {prisma} from '@/lib/db'
 import {requireSession} from '@/lib/guard'
 import {SetlistBody, saveSetlist} from '@/lib/setlists'
 import {logActivity} from '@/lib/songs'
+import {route} from '@/lib/route'
 
-export const GET = async () => {
+export const GET = route(async () => {
   await requireSession()
   const sets = await prisma.setlist.findMany({
     orderBy: [{gigDate: {sort: 'asc', nulls: 'last'}}, {updatedAt: 'desc'}],
     include: {_count: {select: {items: true}}},
   })
   return Response.json(sets)
-}
+})
 
-export const POST = async (req: Request) => {
+export const POST = route(async (req: Request) => {
   const {user} = await requireSession()
   const parsed = SetlistBody.safeParse(await req.json())
   if (!parsed.success) return new Response('Bad Request', {status: 400})
@@ -36,4 +37,4 @@ export const POST = async (req: Request) => {
   if (Object.keys(rest).length)
     await saveSetlist(set.id, user.id, {...rest, name: set.name})
   return Response.json({id: set.id}, {status: 201})
-}
+})

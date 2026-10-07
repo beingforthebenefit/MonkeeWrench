@@ -41,7 +41,7 @@ export default async function HistoryPage({
     },
     orderBy: {createdAt: 'desc'},
     take: 20,
-    include: {user: {select: {name: true, email: true}}},
+    include: {user: {select: {name: true, displayName: true, email: true}}},
   })
 
   return (

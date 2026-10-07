@@ -2,8 +2,9 @@ export const dynamic = 'force-dynamic'
 
 import {prisma} from '@/lib/db'
 import {requireAdmin} from '@/lib/guard'
+import {route} from '@/lib/route'
 
-export async function GET() {
+export const GET = route(async function GET() {
   await requireAdmin()
 
   const rows = await prisma.proposal.findMany({
@@ -12,4 +13,4 @@ export async function GET() {
   })
 
   return Response.json(rows)
-}
+})

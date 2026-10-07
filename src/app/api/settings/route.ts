@@ -2,16 +2,17 @@ export const dynamic = 'force-dynamic'
 
 import {prisma} from '@/lib/db'
 import {requireAdmin} from '@/lib/guard'
+import {route} from '@/lib/route'
 
-export const GET = async () => {
+export const GET = route(async () => {
   const s = await prisma.settings.findUnique({where: {id: 1}})
   return Response.json({
     voteThreshold: s?.voteThreshold ?? 2,
     adminAllowlist: s?.adminAllowlist ?? [],
   })
-}
+})
 
-export const PATCH = async (req: Request) => {
+export const PATCH = route(async (req: Request) => {
   await requireAdmin()
   const body = await req.json()
   const voteThreshold = Number(body.voteThreshold)
@@ -26,4 +27,4 @@ export const PATCH = async (req: Request) => {
   if (adminAllowlist) data.adminAllowlist = adminAllowlist
   await prisma.settings.update({where: {id: 1}, data})
   return new Response(null, {status: 204})
-}
+})

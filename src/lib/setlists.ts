@@ -39,13 +39,17 @@ export async function getSetlist(id: string) {
               chartVersions: {
                 orderBy: {number: 'desc'},
                 take: 1,
-                include: {author: {select: {name: true, email: true}}},
+                include: {
+                  author: {
+                    select: {name: true, displayName: true, email: true},
+                  },
+                },
               },
             },
           },
         },
       },
-      updatedBy: {select: {name: true, email: true}},
+      updatedBy: {select: {name: true, displayName: true, email: true}},
     },
   })
 }

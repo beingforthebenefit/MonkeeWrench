@@ -5,18 +5,19 @@ import {prisma} from '@/lib/db'
 import {requireSession} from '@/lib/guard'
 import {listSongs, logActivity} from '@/lib/songs'
 import {SongFields} from '@/lib/song-fields'
+import {route} from '@/lib/route'
 
-export const GET = async () => {
+export const GET = route(async () => {
   await requireSession()
   return Response.json(await listSongs())
-}
+})
 
 const CreateBody = SongFields.extend({
   title: z.string().trim().min(1),
   source: z.string().optional(),
 })
 
-export const POST = async (req: Request) => {
+export const POST = route(async (req: Request) => {
   const {user} = await requireSession()
   const parsed = CreateBody.safeParse(await req.json())
   if (!parsed.success) return new Response('Bad Request', {status: 400})
@@ -44,4 +45,4 @@ export const POST = async (req: Request) => {
     return song
   })
   return Response.json({id: song.id}, {status: 201})
-}
+})

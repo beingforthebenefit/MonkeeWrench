@@ -5,7 +5,8 @@ Usage:
 
 Reads the chart .docx files (Drive's Download of the "Original Documents"
 folder) and the "Songs" tab of the spreadsheet (File > Download > .xlsx).
-Writes {songs: [...], proposals: [...]} for `make import`. Standard library
+Writes {songs, proposals, availability} for `make import` and
+`scripts/import-members.ts`. Standard library
 only. The output contains copyrighted lyrics: keep it in data/ (gitignored).
 """
 import json
@@ -95,6 +96,8 @@ def xlsx_rows(path):
 
 
 GREEN = 'FF00FF00'
+# The availability tab has no year on it
+YEAR = 2026
 # Fix obvious typos in the sheet's titles
 TITLE_FIXES = {"Tommorow's Gonna Be Another Day": "Tomorrow's Gonna Be Another Day"}
 
@@ -166,6 +169,43 @@ def songs_from_sheet(rows, charts):
     return songs, proposals, unused
 
 
+MONTHS = {m: i for i, m in enumerate(
+    ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'], 1)}
+DOW = ['M', 'T', 'W', 'Th', 'F', 'Sa', 'Su']
+MARKS = {'X': 'OUT', 'A': 'PM_OUT'}
+
+
+def availability_from_sheet(rows, year):
+    """The availability tab: a header row of names, "Sept:"/"Oct:" marker rows,
+    then one row per day. X = out all day/evening, A = out in the afternoon."""
+    import datetime as dt
+    names, month, out, answered = {}, None, [], set()
+    for row in rows:
+        c = row['cells']
+        get = lambda i: (c.get(i) or {}).get('v', '').strip()
+        first = get(0)
+        m = re.match(r'^([A-Za-z]{3})[a-z]*\.?:?$', first)
+        if m and m.group(1).lower() in MONTHS:
+            month = MONTHS[m.group(1).lower()]
+            if not names:  # the first marker row also carries the names
+                names = {i: get(i) for i in sorted(c) if i >= 2 and get(i)}
+            continue
+        if not month or not re.match(r'^\d+(\.0)?$', first):
+            continue
+        day = dt.date(year, month, int(float(first)))
+        if get(1) and DOW[day.weekday()] != get(1):
+            raise SystemExit(f'weekday mismatch on {day}: sheet says {get(1)}')
+        for i, name in names.items():
+            v = get(i).upper()
+            if not v:
+                continue
+            if v not in MARKS:
+                raise SystemExit(f'unknown mark {v!r} for {name} on {day}')
+            out.append({'name': name, 'date': day.isoformat(), 'kind': MARKS[v]})
+            answered.add(name)
+    return {'members': list(names.values()), 'answered': sorted(answered), 'entries': out}
+
+
 def main():
     docs_dir, xlsx, out = sys.argv[1:4]
     charts = {}
@@ -173,7 +213,15 @@ def main():
         charts[f.stem] = docx_text(f)
     sheets = xlsx_rows(xlsx)
     songs, proposals, unused = songs_from_sheet(sheets['Songs'], charts)
-    Path(out).write_text(json.dumps({'songs': songs, 'proposals': proposals}, indent=1, ensure_ascii=False))
+    avail_tab = next((k for k in sheets if 'availab' in k.lower()), None)
+    availability = availability_from_sheet(sheets[avail_tab], YEAR) if avail_tab else None
+    Path(out).write_text(json.dumps(
+        {'songs': songs, 'proposals': proposals, 'availability': availability},
+        indent=1, ensure_ascii=False))
+    if availability:
+        print(f"availability: {len(availability['entries'])} marks for "
+              f"{', '.join(availability['members'])}; no marks at all: "
+              f"{', '.join(sorted(set(availability['members']) - set(availability['answered']))) or 'none'}")
     with_chart = sum(1 for s in songs if s['chartText'])
     print(f'{len(songs)} songs ({with_chart} with charts), {len(proposals)} proposals')
     for s in songs:

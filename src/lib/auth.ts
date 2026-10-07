@@ -1,188 +1,103 @@
-import GoogleProvider from 'next-auth/providers/google'
-import type {GoogleProfile} from 'next-auth/providers/google'
-import {PrismaAdapter} from '@next-auth/prisma-adapter'
-import {prisma} from './db'
+import CredentialsProvider from 'next-auth/providers/credentials'
 import type {NextAuthOptions} from 'next-auth'
-import type {Adapter} from 'next-auth/adapters'
+import {prisma} from './db'
+import {verifyPassword} from './password'
+import {clearFailures, isThrottled, recordFailure} from './login-throttle'
 
-function splitCsv(raw?: string) {
-  return (raw || '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-}
+/**
+ * Email + password sign-in. Not everyone in the band has a Google account, so
+ * an admin creates each member and generates their password on /members.
+ *
+ * Sessions are JWTs (the credentials provider requires it). Each token
+ * carries the user's sessionVersion at sign-in; resetting or changing a
+ * password bumps it, which ends every older session on its next request.
+ */
 
-function getSettingsAllowlistFallback() {
-  return splitCsv(process.env.ADMIN_ALLOWLIST)
-}
-
-function getUserAllowlistEnv() {
-  // NEW: non-admin users who are allowed to sign in
-  return splitCsv(process.env.USER_ALLOWLIST)
+function clientIp(
+  headers: Record<string, string | string[] | undefined> | undefined,
+) {
+  const h = (k: string) => {
+    const v = headers?.[k]
+    return Array.isArray(v) ? v[0] : v
+  }
+  // Behind Cloudflare and Traefik: the original client is the first hop
+  return (
+    h('cf-connecting-ip') ??
+    h('x-forwarded-for')?.split(',')[0].trim() ??
+    'unknown'
+  )
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as Adapter,
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    CredentialsProvider({
+      name: 'Password',
+      credentials: {
+        email: {label: 'Email', type: 'email'},
+        password: {label: 'Password', type: 'password'},
+      },
+      async authorize(credentials, req) {
+        const email = credentials?.email?.trim().toLowerCase() ?? ''
+        const password = credentials?.password ?? ''
+        if (!email || !password) return null
+        const ip = clientIp(req?.headers as Record<string, string> | undefined)
+        if (isThrottled(email, ip)) throw new Error('throttled')
+
+        const user = await prisma.user.findFirst({
+          where: {email: {equals: email, mode: 'insensitive'}},
+        })
+        const ok = await verifyPassword(password, user?.passwordHash)
+        if (!user || !ok) {
+          recordFailure(email, ip)
+          return null
+        }
+        clearFailures(email)
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.displayName ?? user.name,
+        }
+      },
     }),
   ],
-  pages: {
-    signIn: '/login',
-    error: '/login',
-  },
-  session: {strategy: 'database'},
+  pages: {signIn: '/login', error: '/login'},
+  // Long-lived: people sign in once on the phone or iPad they read charts on
+  session: {strategy: 'jwt', maxAge: 180 * 24 * 60 * 60},
 
   callbacks: {
-    async signIn({account, profile}) {
-      // Enforce Google-only and verified email
-      if (!account || account.provider !== 'google') return false
-      const gp = profile as GoogleProfile
-      const email = gp?.email
-      const verified = gp?.email_verified
-      if (!email) return false
-      if (verified === false) return false
-
-      // Gate access: only allow emails on admin or user allowlists
-      const settings = await prisma.settings.findUnique({where: {id: 1}})
-      // Merge DB and env allowlists so either source grants access
-      const adminAllow = Array.from(
-        new Set([
-          ...(settings?.adminAllowlist ?? []),
-          ...getSettingsAllowlistFallback(),
-        ]),
-      )
-      const userAllow = getUserAllowlistEnv()
-
-      const existingUser = await prisma.user.findUnique({
-        where: {email},
-        select: {id: true},
-      })
-
-      const isAdminEmail = adminAllow.includes(email)
-      const isAllowedUser =
-        Boolean(existingUser) || isAdminEmail || userAllow.includes(email)
-      if (!isAllowedUser) return false
-
-      // Attempt to pre-link Google account to existing user by email to avoid
-      // OAuthAccountNotLinked when the user already exists without a linked account.
-      try {
-        const provider = account.provider
-        const providerAccountId = account.providerAccountId
-        const existingAccount = await prisma.account.findUnique({
-          where: {provider_providerAccountId: {provider, providerAccountId}},
-          select: {id: true},
+    async jwt({token, user}) {
+      if (user) {
+        const u = await prisma.user.findUnique({
+          where: {id: user.id},
+          select: {sessionVersion: true},
         })
-        if (!existingAccount) {
-          if (existingUser) {
-            await prisma.account.create({
-              data: {
-                userId: existingUser.id,
-                type: account.type,
-                provider,
-                providerAccountId,
-                refresh_token: account.refresh_token,
-                access_token: account.access_token,
-                expires_at: account.expires_at ?? undefined,
-                token_type: account.token_type ?? undefined,
-                scope: account.scope ?? undefined,
-                id_token: account.id_token ?? undefined,
-                // Some providers add non-standard fields like `session_state`.
-                // Safely extract a string value if present without using `any`.
-                session_state:
-                  typeof (account as Record<string, unknown>)?.[
-                    'session_state'
-                  ] === 'string'
-                    ? ((account as Record<string, unknown>)[
-                        'session_state'
-                      ] as string)
-                    : undefined,
-              },
-            })
-          }
-        }
-      } catch {
-        // Best-effort link; ignore failures and let NextAuth handle.
+        token.uid = user.id
+        token.sv = u?.sessionVersion ?? 0
       }
-
-      // Best-effort: sync basic profile fields onto the user
-      try {
-        const name = gp?.name as string | undefined
-        const picture = gp?.picture as string | undefined
-        if (existingUser && (name || picture)) {
-          await prisma.user.update({
-            where: {id: existingUser.id},
-            data: {
-              ...(name ? {name} : {}),
-              ...(picture ? {image: picture} : {}),
+      return token
+    },
+    async session({session, token}) {
+      const u = token.uid
+        ? await prisma.user.findUnique({
+            where: {id: token.uid as string},
+            select: {
+              email: true,
+              name: true,
+              displayName: true,
+              isAdmin: true,
+              sessionVersion: true,
             },
           })
-        }
-      } catch {
-        // ignore
-      }
-
-      // Do NOT create users here. Return true to proceed; adapter will create/link.
-      return true
-    },
-    async session({session}) {
-      if (session.user?.email) {
-        const u = await prisma.user.findUnique({
-          where: {email: session.user.email},
-          select: {isAdmin: true, image: true, name: true},
-        })
-        if (u) {
-          session.user.isAdmin = u.isAdmin
-          // Ensure image and name are present on the session
-          if (u.image) session.user.image = u.image
-          if (u.name) session.user.name = u.name
-        }
+        : null
+      // Deleted user, or password changed since this token was issued
+      if (!u || u.sessionVersion !== token.sv) return {expires: session.expires}
+      session.user = {
+        email: u.email,
+        name: u.displayName ?? u.name,
+        image: null,
+        isAdmin: u.isAdmin,
       }
       return session
     },
   },
-
-  events: {
-    // Runs only when a brand new user is created by the adapter
-    async createUser({user}) {
-      const settings = await prisma.settings.findUnique({where: {id: 1}})
-      const allow = settings?.adminAllowlist?.length
-        ? settings.adminAllowlist
-        : getSettingsAllowlistFallback()
-
-      if (user.email && allow.includes(user.email)) {
-        await prisma.user.update({
-          where: {id: user.id},
-          data: {isAdmin: true},
-        })
-      }
-    },
-    // Keep the user's profile image in sync with Google on sign-in
-    async signIn({user, profile, account}) {
-      try {
-        if (account?.provider === 'google') {
-          const gp = profile as GoogleProfile | undefined
-          const googleImage = gp?.picture as string | undefined
-          if (user?.id && googleImage) {
-            const existing = await prisma.user.findUnique({
-              where: {id: user.id},
-              select: {image: true},
-            })
-            if (!existing?.image || existing.image !== googleImage) {
-              await prisma.user.update({
-                where: {id: user.id},
-                data: {image: googleImage},
-              })
-            }
-          }
-        }
-      } catch {
-        // Best-effort sync; ignore failures
-      }
-    },
-  },
-
-  // allowDangerousEmailAccountLinking: true,
 }

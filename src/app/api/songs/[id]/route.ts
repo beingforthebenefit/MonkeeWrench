@@ -4,17 +4,18 @@ import {prisma} from '@/lib/db'
 import {requireAdmin, requireSession} from '@/lib/guard'
 import {getSong, logActivity} from '@/lib/songs'
 import {SongFields, describeChanges} from '@/lib/song-fields'
+import {route} from '@/lib/route'
 
 type Ctx = {params: {id: string}}
 
-export const GET = async (_req: Request, {params}: Ctx) => {
+export const GET = route(async (_req: Request, {params}: Ctx) => {
   await requireSession()
   const song = await getSong(params.id)
   if (!song) return new Response('Not Found', {status: 404})
   return Response.json(song)
-}
+})
 
-export const PATCH = async (req: Request, {params}: Ctx) => {
+export const PATCH = route(async (req: Request, {params}: Ctx) => {
   const {user} = await requireSession()
   const parsed = SongFields.safeParse(await req.json())
   if (!parsed.success) return new Response('Bad Request', {status: 400})
@@ -36,9 +37,9 @@ export const PATCH = async (req: Request, {params}: Ctx) => {
     })
   })
   return new Response(null, {status: 204})
-}
+})
 
-export const DELETE = async (_req: Request, {params}: Ctx) => {
+export const DELETE = route(async (_req: Request, {params}: Ctx) => {
   const admin = await requireAdmin()
   const song = await prisma.song.findUnique({where: {id: params.id}})
   if (!song) return new Response('Not Found', {status: 404})
@@ -53,4 +54,4 @@ export const DELETE = async (_req: Request, {params}: Ctx) => {
     })
   })
   return new Response(null, {status: 204})
-}
+})

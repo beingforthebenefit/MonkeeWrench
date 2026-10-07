@@ -1,7 +1,8 @@
 import {EVENTS, bus} from '@/lib/events'
 import {requireSession} from '@/lib/guard'
+import {route} from '@/lib/route'
 
-export const GET = async () => {
+export const GET = route(async () => {
   await requireSession()
 
   // Use a cancellable underlying source so we can unsubscribe cleanly
@@ -43,4 +44,4 @@ export const GET = async () => {
       Connection: 'keep-alive',
     },
   })
-}
+})

@@ -5,6 +5,7 @@ import {requireSession} from '@/lib/guard'
 import {z} from 'zod'
 import {isHttpUrl} from '@/lib/url'
 import {bus, EVENTS} from '@/lib/events'
+import {route} from '@/lib/route'
 
 // Helper: only allow http(s) URLs, and allow empty string -> undefined
 const httpUrl = z.string().trim().refine(isHttpUrl, 'Must be http(s) URL')
@@ -21,7 +22,7 @@ const Body = z.object({
   youtubeUrl: Url,
 })
 
-export const POST = async (req: Request) => {
+export const POST = route(async (req: Request) => {
   const {user} = await requireSession()
   const json = await req.json().catch(() => null)
   const parsed = Body.safeParse(json)
@@ -50,9 +51,9 @@ export const POST = async (req: Request) => {
   })
   bus.emit(EVENTS.PROPOSAL_CREATED, {id: p.id})
   return Response.json({id: p.id})
-}
+})
 
-export const GET = async () => {
+export const GET = route(async () => {
   const all = await prisma.proposal.findMany({orderBy: {createdAt: 'desc'}})
   return Response.json(all)
-}
+})

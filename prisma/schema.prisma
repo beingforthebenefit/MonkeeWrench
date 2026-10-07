@@ -31,6 +31,13 @@ model User {
   emailVerified         DateTime?
   image                 String?
   isAdmin               Boolean          @default(false)
+  // What the band calls them ("Ken", "Ed"); shown instead of the full name
+  displayName           String?
+  // scrypt hash; null = no password yet, so they cannot sign in
+  passwordHash          String?
+  passwordSetAt         DateTime?
+  // Bumped on every password change or reset: older sessions stop working
+  sessionVersion        Int              @default(0)
   accounts              Account[]
   sessions              Session[]
   proposals             Proposal[]       @relation("Proposer")

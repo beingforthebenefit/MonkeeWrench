@@ -95,6 +95,22 @@ export default function AppShell({children}: {children: ReactNode}) {
                 >
                   Band Discord ↗
                 </a>
+                <Link
+                  href="/account"
+                  onClick={() => setMenuOpen(false)}
+                  className="block rounded-lg px-3 py-2.5 no-underline hover:bg-line"
+                >
+                  Change password
+                </Link>
+                {session.user.isAdmin && (
+                  <Link
+                    href="/members"
+                    onClick={() => setMenuOpen(false)}
+                    className="block rounded-lg px-3 py-2.5 no-underline hover:bg-line"
+                  >
+                    Band members
+                  </Link>
+                )}
                 {session.user.isAdmin && (
                   <Link
                     href="/admin"

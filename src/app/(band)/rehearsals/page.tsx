@@ -27,7 +27,9 @@ export default async function RehearsalsPage() {
     prisma.rehearsal.findMany({
       where: {date: {gte: new Date(today + 'T00:00:00Z')}},
       orderBy: {date: 'asc'},
-      include: {createdBy: {select: {name: true, email: true}}},
+      include: {
+        createdBy: {select: {name: true, displayName: true, email: true}},
+      },
     }),
   ])
   return (

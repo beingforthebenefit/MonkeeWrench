@@ -7,3 +7,12 @@ declare module 'next-auth' {
     }
   }
 }
+
+declare module 'next-auth/jwt' {
+  interface JWT {
+    /** User id */
+    uid?: string
+    /** User.sessionVersion when the token was issued */
+    sv?: number
+  }
+}

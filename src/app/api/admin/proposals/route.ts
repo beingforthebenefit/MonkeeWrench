@@ -5,6 +5,7 @@ import {requireAdmin} from '@/lib/guard'
 import {z} from 'zod'
 import {isHttpUrl} from '@/lib/url'
 import {bus, EVENTS} from '@/lib/events'
+import {route} from '@/lib/route'
 
 // Accept: valid URL string OR "" OR null OR undefined -> normalize to undefined
 const Url = z.preprocess(
@@ -20,7 +21,7 @@ const Body = z.object({
   youtubeUrl: Url,
 })
 
-export const POST = async (req: Request) => {
+export const POST = route(async (req: Request) => {
   const admin = await requireAdmin()
   const json = await req.json()
   const parsed = Body.safeParse(json)
@@ -59,9 +60,9 @@ export const POST = async (req: Request) => {
   }
 
   return Response.json({id: p.id})
-}
+})
 
-export const GET = async () => {
+export const GET = route(async () => {
   const all = await prisma.proposal.findMany({orderBy: {createdAt: 'desc'}})
   return Response.json(all)
-}
+})

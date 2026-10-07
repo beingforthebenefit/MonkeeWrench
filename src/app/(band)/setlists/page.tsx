@@ -23,7 +23,7 @@ export default async function SetlistsPage() {
         orderBy: {position: 'asc'},
         include: {song: {select: {title: true}}},
       },
-      updatedBy: {select: {name: true, email: true}},
+      updatedBy: {select: {name: true, displayName: true, email: true}},
     },
   })
   const today = new Date()

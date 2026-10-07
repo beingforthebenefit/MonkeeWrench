@@ -5,6 +5,7 @@ import {prisma} from '@/lib/db'
 import {requireSession} from '@/lib/guard'
 import {logActivity} from '@/lib/songs'
 import {formatDay} from '@/lib/availability'
+import {route} from '@/lib/route'
 
 const Body = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -13,7 +14,7 @@ const Body = z.object({
   note: z.string().trim().max(500).nullable().optional(),
 })
 
-export const POST = async (req: Request) => {
+export const POST = route(async (req: Request) => {
   const {user} = await requireSession()
   const parsed = Body.safeParse(await req.json())
   if (!parsed.success) return new Response('Bad Request', {status: 400})
@@ -38,4 +39,4 @@ export const POST = async (req: Request) => {
     return r
   })
   return Response.json({id: r.id}, {status: 201})
-}
+})

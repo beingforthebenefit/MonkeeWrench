@@ -2,8 +2,9 @@ export const dynamic = 'force-dynamic'
 import {NextResponse} from 'next/server'
 import {requireAdmin} from '@/lib/guard'
 import {prisma} from '@/lib/db'
+import {route} from '@/lib/route'
 
-export async function GET() {
+export const GET = route(async function GET() {
   await requireAdmin()
   const users = await prisma.user.findMany({
     orderBy: {createdAt: 'desc'},
@@ -30,9 +31,9 @@ export async function GET() {
     canDelete: true,
   }))
   return NextResponse.json(data)
-}
+})
 
-export async function POST(req: Request) {
+export const POST = route(async function POST(req: Request) {
   await requireAdmin()
   const body = (await req.json().catch(() => ({}))) as {
     email?: string
@@ -53,4 +54,4 @@ export async function POST(req: Request) {
     select: {id: true, email: true, name: true, isAdmin: true},
   })
   return NextResponse.json(user, {status: 201})
-}
+})

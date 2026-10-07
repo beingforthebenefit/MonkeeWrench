@@ -16,7 +16,11 @@ type VersionLike = {
   number: number
   source: string
   createdAt: Date
-  author: {name: string | null; email: string | null} | null
+  author: {
+    name: string | null
+    email: string | null
+    displayName?: string | null
+  } | null
 }
 
 const dateFmt = new Intl.DateTimeFormat('en-US', {

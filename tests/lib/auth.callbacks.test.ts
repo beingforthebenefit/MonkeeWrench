@@ -1,130 +1,118 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest'
+import {hashPassword} from '@/lib/password'
+import {isThrottled, resetThrottleForTests} from '@/lib/login-throttle'
 
 let prisma: any
-
 vi.mock('@/lib/db', () => ({
   get prisma() {
     return prisma
   },
 }))
 
-function gp(email: string, verified = true) {
-  return {
-    email,
-    email_verified: verified,
-    name: 'Test User',
-    picture: 'http://img',
-  }
+async function authorize(email: string, password: string, ip = '1.2.3.4') {
+  const {authOptions} = await import('@/lib/auth')
+  const provider: any = authOptions.providers[0]
+  return provider.options.authorize(
+    {email, password},
+    {headers: {'x-forwarded-for': ip}},
+  )
 }
 
-describe('auth callbacks', () => {
+describe('password sign-in', () => {
+  let hash: string
+  beforeEach(async () => {
+    resetThrottleForTests()
+    hash ??= await hashPassword('k7mq-x2vd-9rta-hp3e')
+    prisma = {
+      user: {
+        findFirst: vi.fn(async ({where}: any) =>
+          where.email.equals === 'ken@example.com'
+            ? {
+                id: 'u1',
+                email: 'ken@example.com',
+                name: 'Kenneth Johnson',
+                displayName: 'Ken',
+                passwordHash: hash,
+              }
+            : null,
+        ),
+        findUnique: vi.fn(),
+      },
+    }
+  })
+
+  it('signs in with the right password, any email case', async () => {
+    expect(await authorize('Ken@Example.com ', 'k7mq-x2vd-9rta-hp3e')).toEqual({
+      id: 'u1',
+      email: 'ken@example.com',
+      name: 'Ken',
+    })
+  })
+
+  it('refuses a wrong password or unknown email, and counts the failure', async () => {
+    expect(await authorize('ken@example.com', 'nope')).toBeNull()
+    expect(await authorize('who@example.com', 'nope')).toBeNull()
+    for (let i = 0; i < 7; i++) await authorize('ken@example.com', 'nope')
+    expect(isThrottled('ken@example.com', '9.9.9.9')).toBe(true)
+    await expect(
+      authorize('ken@example.com', 'k7mq-x2vd-9rta-hp3e'),
+    ).rejects.toThrow('throttled')
+  })
+
+  it('refuses a member with no password yet', async () => {
+    prisma.user.findFirst = vi.fn(async () => ({
+      id: 'u2',
+      email: 'ed@example.com',
+      passwordHash: null,
+    }))
+    expect(await authorize('ed@example.com', 'anything')).toBeNull()
+  })
+})
+
+describe('session callbacks', () => {
   beforeEach(() => {
     prisma = {
-      settings: {findUnique: vi.fn().mockResolvedValue({adminAllowlist: []})},
       user: {
-        findUnique: vi.fn().mockResolvedValue(null),
-        update: vi.fn(),
+        findUnique: vi.fn(async () => ({
+          email: 'ken@example.com',
+          name: 'Kenneth Johnson',
+          displayName: 'Ken',
+          isAdmin: false,
+          sessionVersion: 3,
+        })),
       },
-      account: {findUnique: vi.fn().mockResolvedValue(null), create: vi.fn()},
     }
-    // default env allowlists
-    process.env.ADMIN_ALLOWLIST = ''
-    process.env.USER_ALLOWLIST = ''
-    process.env.GOOGLE_CLIENT_ID = 'test-id'
-    process.env.GOOGLE_CLIENT_SECRET = 'test-secret'
   })
 
-  it('signIn denies when no email', async () => {
+  it('stamps the session version into the token at sign-in', async () => {
     const {authOptions} = await import('@/lib/auth')
-    const ok = await authOptions.callbacks!.signIn!({
-      // @ts-expect-error - narrow args
-      account: {provider: 'google'},
-      profile: {},
-    })
-    expect(ok).toBe(false)
-  })
-
-  it('signIn allows admin allowlist via env', async () => {
-    process.env.ADMIN_ALLOWLIST = 'admin@x.test'
-    const {authOptions} = await import('@/lib/auth')
-    const ok = await authOptions.callbacks!.signIn!({
-      // @ts-expect-error - narrow args
-      account: {provider: 'google'},
-      profile: gp('admin@x.test', true),
-    })
-    expect(ok).toBe(true)
-  })
-
-  it('signIn allows via USER_ALLOWLIST env', async () => {
-    process.env.USER_ALLOWLIST = 'user@x.test'
-    const {authOptions} = await import('@/lib/auth')
-    const ok = await authOptions.callbacks!.signIn!({
-      // @ts-expect-error - narrow args
-      account: {provider: 'google'},
-      profile: gp('user@x.test', true),
-    })
-    expect(ok).toBe(true)
-  })
-
-  it('signIn denies unverified email', async () => {
-    const {authOptions} = await import('@/lib/auth')
-    const ok = await authOptions.callbacks!.signIn!({
-      // @ts-expect-error - narrow args
-      account: {provider: 'google'},
-      profile: gp('u@test', false),
-    })
-    expect(ok).toBe(false)
-  })
-
-  it('signIn links account for existing user', async () => {
-    const {authOptions} = await import('@/lib/auth')
-    prisma.settings.findUnique.mockResolvedValue({adminAllowlist: []})
-    prisma.user.findUnique.mockResolvedValue({id: 'u1'})
-    prisma.account.findUnique.mockResolvedValue(null)
-    await authOptions.callbacks!.signIn!({
-      // @ts-expect-error - narrow args
-      account: {provider: 'google', providerAccountId: 'gid', type: 'oauth'},
-      profile: gp('u@test'),
-    })
-    expect(prisma.account.create).toHaveBeenCalled()
-  })
-
-  it('events.createUser makes admins from allowlist', async () => {
-    const {authOptions} = await import('@/lib/auth')
-    prisma.settings.findUnique.mockResolvedValue({adminAllowlist: ['a@x']})
-    await authOptions.events!.createUser!({
-      user: {id: 'u1', email: 'a@x'} as any,
-    })
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: {id: 'u1'},
-      data: {isAdmin: true},
-    })
-  })
-
-  it('events.signIn syncs google image when changed', async () => {
-    const {authOptions} = await import('@/lib/auth')
-    prisma.user.findUnique.mockResolvedValue({image: null})
-    await authOptions.events!.signIn!({
-      user: {id: 'u1'} as any,
-      // @ts-expect-error - narrow args
-      profile: {picture: 'http://img'},
-      account: {provider: 'google'},
+    const token = await authOptions.callbacks!.jwt!({
+      token: {},
+      user: {id: 'u1'},
     } as any)
-    expect(prisma.user.update).toHaveBeenCalled()
+    expect(token).toMatchObject({uid: 'u1', sv: 3})
   })
 
-  it('session callback enriches session from DB', async () => {
+  it('fills the session from the database while the version matches', async () => {
     const {authOptions} = await import('@/lib/auth')
-    prisma.user.findUnique.mockResolvedValue({
-      isAdmin: true,
-      image: 'i',
-      name: 'n',
-    })
-    const session = await authOptions.callbacks!.session!({
-      session: {user: {email: 'u@x', name: null, image: null}} as any,
+    const s: any = await authOptions.callbacks!.session!({
+      session: {expires: 'x'},
+      token: {uid: 'u1', sv: 3},
     } as any)
-    expect(session.user?.isAdmin).toBe(true)
-    expect(session.user?.image).toBe('i')
-    expect(session.user?.name).toBe('n')
+    expect(s.user).toEqual({
+      email: 'ken@example.com',
+      name: 'Ken',
+      image: null,
+      isAdmin: false,
+    })
+  })
+
+  it('drops the user once the password has been reset (version moved on)', async () => {
+    const {authOptions} = await import('@/lib/auth')
+    const s: any = await authOptions.callbacks!.session!({
+      session: {expires: 'x'},
+      token: {uid: 'u1', sv: 2},
+    } as any)
+    expect(s.user).toBeUndefined()
   })
 })

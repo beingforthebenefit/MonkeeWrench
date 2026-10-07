@@ -4,6 +4,7 @@ import {z} from 'zod'
 import {prisma} from '@/lib/db'
 import {requireSession} from '@/lib/guard'
 import {formatDay} from '@/lib/availability'
+import {route} from '@/lib/route'
 
 const Body = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -12,7 +13,7 @@ const Body = z.object({
   userId: z.string().optional(),
 })
 
-export const PUT = async (req: Request) => {
+export const PUT = route(async (req: Request) => {
   const {user} = await requireSession()
   const parsed = Body.safeParse(await req.json())
   if (!parsed.success) return new Response('Bad Request', {status: 400})
@@ -62,4 +63,4 @@ export const PUT = async (req: Request) => {
       })
   })
   return new Response(null, {status: 204})
-}
+})
