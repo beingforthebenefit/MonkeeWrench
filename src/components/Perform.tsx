@@ -122,7 +122,25 @@ export default function Perform({
   // Swipe left/right
   const touch = useRef<{x: number; y: number} | null>(null)
   const onTouchStart = (e: React.TouchEvent) => {
+    // A drag inside something that scrolls sideways (guitar tab) is that
+    // thing scrolling, not a swipe to another song
+    if ((e.target as Element).closest?.('[data-hscroll]')) {
+      touch.current = null
+      return
+    }
     touch.current = {x: e.touches[0].clientX, y: e.touches[0].clientY}
+  }
+
+  // Phones: a tap on the left or right quarter changes song. Read from the
+  // click, which browsers don't fire after a scroll or drag, so scrolling
+  // anywhere (including sideways through tab) never changes song.
+  const onClick = (e: React.MouseEvent) => {
+    if (!narrow) return
+    if ((e.target as Element).closest('a,button,summary,input,select,textarea'))
+      return
+    const x = e.clientX / window.innerWidth
+    if (x > 0.75) toSong(1)
+    else if (x < 0.25) toSong(-1)
   }
   const onTouchEnd = (e: React.TouchEvent) => {
     if (!touch.current) return
@@ -152,6 +170,7 @@ export default function Perform({
       className={`flex flex-col bg-stage px-4 pb-[max(env(safe-area-inset-bottom),12px)] text-[#f1eee8] md:px-8 ${narrow ? 'min-h-dvh' : 'h-dvh overflow-hidden pt-[max(env(safe-area-inset-top),12px)]'}`}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
+      onClick={onClick}
     >
       <header
         className={`flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 ${narrow ? 'sticky top-0 z-10 -mx-4 bg-stage/95 px-4 pb-2 pt-[max(env(safe-area-inset-top),12px)] backdrop-blur' : ''}`}
@@ -241,23 +260,26 @@ export default function Perform({
         )}
       </footer>
 
-      {/* Invisible tap zones on the screen edges. On phones they are wider
-          and change song; touch-action lets a scroll that starts on one still
-          scroll the chart, so only a tap counts. */}
-      <button
-        type="button"
-        aria-label="Previous song"
-        onClick={() => (narrow ? toSong(-1) : go(-1))}
-        className={`fixed bottom-16 left-0 top-28 opacity-0 ${narrow ? 'w-1/4 touch-pan-y' : 'w-[12vw] max-w-28'}`}
-        tabIndex={-1}
-      />
-      <button
-        type="button"
-        aria-label="Next song"
-        onClick={() => (narrow ? toSong(1) : go(1))}
-        className={`fixed bottom-16 right-0 top-28 opacity-0 ${narrow ? 'w-1/4 touch-pan-y' : 'w-[12vw] max-w-28'}`}
-        tabIndex={-1}
-      />
+      {/* Invisible tap zones on the screen edges (iPad/desktop; phones use
+          onClick above so the chart can scroll freely underneath) */}
+      {!narrow && (
+        <>
+          <button
+            type="button"
+            aria-label="Previous song"
+            onClick={() => go(-1)}
+            className="fixed bottom-16 left-0 top-28 w-[12vw] max-w-28 opacity-0"
+            tabIndex={-1}
+          />
+          <button
+            type="button"
+            aria-label="Next song"
+            onClick={() => go(1)}
+            className="fixed bottom-16 right-0 top-28 w-[12vw] max-w-28 opacity-0"
+            tabIndex={-1}
+          />
+        </>
+      )}
     </main>
   )
 }

@@ -36,6 +36,17 @@ describe('ChartBody', () => {
     expect(container.querySelectorAll('.chart-chord')).toHaveLength(2)
   })
 
+  it('puts consecutive tab lines in one scroll block, so they move together', () => {
+    const chart = parseChordPro(
+      '{start_of_tab}\ne|---0---|\nB|---1---|\nG|---0---|\n{end_of_tab}\n',
+    )
+    const {container} = render(<ChartBody chart={chart} />)
+    const blocks = container.querySelectorAll('.chart-tab-block')
+    expect(blocks).toHaveLength(1)
+    expect(blocks[0].querySelectorAll('.chart-tab')).toHaveLength(3)
+    expect(blocks[0].hasAttribute('data-hscroll')).toBe(true)
+  })
+
   it('renders tablature verbatim', () => {
     const chart = parseChordPro('{start_of_tab}\ne|---0---|\n{end_of_tab}\n')
     const {container} = render(<ChartBody chart={chart} />)

@@ -40,12 +40,34 @@ function ChartSection({section}: {section: Section}) {
         </h3>
       )}
       <div className="flex flex-col gap-[0.35em]">
-        {section.lines.map((l, i) => (
-          <Line key={i} line={l} />
-        ))}
+        {runs(section.lines).map((run, i) =>
+          run[0].kind === 'tab' ? (
+            // One scroll area per tab block, so the strings move together
+            <div key={i} className="chart-tab-block" data-hscroll="">
+              {run.map((l, j) => (
+                <div key={j} className="chart-tab">
+                  {l.kind === 'tab' ? l.text : ''}
+                </div>
+              ))}
+            </div>
+          ) : (
+            run.map((l, j) => <Line key={`${i}-${j}`} line={l} />)
+          ),
+        )}
       </div>
     </section>
   )
+}
+
+/** Consecutive tab lines form one block; every other line stands alone. */
+function runs(lines: ChartLine[]): ChartLine[][] {
+  const out: ChartLine[][] = []
+  for (const l of lines) {
+    const last = out[out.length - 1]
+    if (l.kind === 'tab' && last?.[0].kind === 'tab') last.push(l)
+    else out.push([l])
+  }
+  return out
 }
 
 /**

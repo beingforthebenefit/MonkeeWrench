@@ -85,12 +85,16 @@
   /* An empty lyric slot must still hold its row, or a trailing chord drops */
   min-height: 1.3em;
 }
-.chart-tab {
+.chart-tab-block {
   font-family: var(--font-mono);
-  white-space: pre;
   font-size: 0.8em;
   line-height: 1.25;
   overflow-x: auto;
+  /* a sideways scroll here never moves the page or the song */
+  overscroll-behavior-x: contain;
+}
+.chart-tab {
+  white-space: pre;
 }
 .chart-columns {
   /* In em, so bigger text means fewer, wider columns */
