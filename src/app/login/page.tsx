@@ -21,6 +21,11 @@ function mapError(code?: string) {
   }
 }
 
+// Only same-site paths, so the sign-in link can't bounce people elsewhere
+function safeCallback(raw: string | null) {
+  return raw && raw.startsWith('/') && !raw.startsWith('//') ? raw : '/songs'
+}
+
 export default function LoginPage() {
   const params = useSearchParams()
   const errorCode = params.get('error') || undefined
@@ -36,7 +41,9 @@ export default function LoginPage() {
               {msg}
             </Alert>
           )}
-          <GoogleSignInButton callbackUrl="/setlist" />
+          <GoogleSignInButton
+            callbackUrl={safeCallback(params.get('callbackUrl'))}
+          />
         </Stack>
       </CardContent>
     </Card>

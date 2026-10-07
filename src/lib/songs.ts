@@ -153,3 +153,54 @@ export function displayName(
   const local = u.email?.split('@')[0]
   return local ? local.charAt(0).toUpperCase() + local.slice(1) : 'someone'
 }
+
+/**
+ * A proposal that wins the vote joins the book as a song to learn, with an
+ * empty chart for someone to fill in. No-op if the song is already there.
+ */
+export async function addSongFromProposal(
+  tx: Tx,
+  p: {
+    title: string
+    artist: string
+    youtubeUrl: string | null
+    lyricsUrl: string | null
+  },
+  userId: string,
+) {
+  const exists = await tx.song.findFirst({
+    where: {title: {equals: p.title, mode: 'insensitive'}},
+    select: {id: true},
+  })
+  if (exists) return null
+  const song = await tx.song.create({
+    data: {
+      title: p.title,
+      notes:
+        p.artist && p.artist !== 'The Monkees'
+          ? `Originally by ${p.artist}`
+          : null,
+      youtubeUrl: p.youtubeUrl,
+      lyricsUrl: p.lyricsUrl,
+      status: 'LEARNING',
+      updatedById: userId,
+    },
+  })
+  await tx.chartVersion.create({
+    data: {
+      songId: song.id,
+      number: 1,
+      source: `{title: ${p.title}}\n`,
+      authorId: userId,
+      note: 'No chart yet',
+    },
+  })
+  await logActivity(tx, {
+    userId,
+    action: 'song.create',
+    targetType: 'song',
+    targetId: song.id,
+    summary: `voted ${p.title} in — it's on the list to learn`,
+  })
+  return song
+}

@@ -24,7 +24,7 @@ describe('(protected)/layout', () => {
   it('redirects unauthenticated to /login with callback', async () => {
     const Layout = (await import('@/app/(protected)/layout')).default
     await expect(Layout({children: <div>child</div>})).rejects.toThrow(
-      'REDIRECT:/login?callbackUrl=%2Fsetlist',
+      'REDIRECT:/login?callbackUrl=%2Fadmin',
     )
   })
 

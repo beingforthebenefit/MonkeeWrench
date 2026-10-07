@@ -4,8 +4,13 @@ import {prisma} from '@/lib/db'
 import {requireSession} from '@/lib/guard'
 import {bus, EVENTS} from '@/lib/events'
 import {Prisma} from '@prisma/client'
+import {addSongFromProposal} from '@/lib/songs'
 
-async function withPromotion(tx: Prisma.TransactionClient, proposalId: string) {
+async function withPromotion(
+  tx: Prisma.TransactionClient,
+  proposalId: string,
+  userId: string,
+) {
   const settings = await tx.settings.findUnique({where: {id: 1}})
   const threshold = settings?.voteThreshold ?? 2
   const voteCount = await tx.vote.count({where: {proposalId}})
@@ -16,6 +21,7 @@ async function withPromotion(tx: Prisma.TransactionClient, proposalId: string) {
       where: {id: proposalId},
       data: {status: 'APPROVED'},
     })
+    await addSongFromProposal(tx, p, userId)
   }
 }
 
@@ -29,7 +35,7 @@ export const POST = async (_req: Request, {params}: {params: {id: string}}) => {
       await tx.auditLog.create({
         data: {userId: user.id, action: 'VOTE', targetId: pid},
       })
-      await withPromotion(tx, pid)
+      await withPromotion(tx, pid, user.id)
     })
   } catch {
     // unique(userId, proposalId) constraint trip -> conflict

@@ -12,6 +12,9 @@ const TABS = [
   {href: '/vote', label: 'Proposals'},
 ]
 
+// The band's Discord server (carried over from the old nav)
+const DISCORD_URL = 'https://discord.com/channels/1347070995122622545'
+
 // Screens that take the whole display (performance mode) or stand alone
 const BARE = [/^\/perform\//, /^\/login/]
 
@@ -84,6 +87,14 @@ export default function AppShell({children}: {children: ReactNode}) {
                 >
                   Recent changes
                 </Link>
+                <a
+                  href={DISCORD_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block rounded-lg px-3 py-2.5 no-underline hover:bg-line"
+                >
+                  Band Discord ↗
+                </a>
                 {session.user.isAdmin && (
                   <Link
                     href="/admin"

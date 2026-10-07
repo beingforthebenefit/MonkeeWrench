@@ -26,7 +26,7 @@ function GoogleG() {
 }
 
 export default function GoogleSignInButton({
-  callbackUrl = '/setlist',
+  callbackUrl = '/songs',
 }: {
   callbackUrl?: string
 }) {

@@ -23,3 +23,10 @@ describe('SetlistBody', () => {
     )
   })
 })
+
+describe('describeSetChanges — long lists', () => {
+  it('summarises many additions as a count', () => {
+    const many = ['a', 'b', 'c', 'd'].map(s)
+    expect(describeSetChanges([], many)).toEqual(['added 4 songs'])
+  })
+})

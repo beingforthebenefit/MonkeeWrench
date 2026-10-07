@@ -11,8 +11,8 @@ export default async function ProtectedLayout({
 }) {
   const session = await getServerSession(authOptions)
   if (!session) {
-    // Send back to login with the original target (defaults to /setlist)
-    redirect('/login?callbackUrl=' + encodeURIComponent('/setlist'))
+    // Only the admin page lives in this group
+    redirect('/login?callbackUrl=' + encodeURIComponent('/admin'))
   }
   return <>{children}</>
 }

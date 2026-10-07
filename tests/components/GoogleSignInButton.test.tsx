@@ -12,7 +12,7 @@ describe('GoogleSignInButton', () => {
     render(<GoogleSignInButton />)
     await user.click(screen.getByRole('button', {name: /sign in with google/i}))
     const mod = await import('next-auth/react')
-    expect(mod.signIn).toHaveBeenCalledWith('google', {callbackUrl: '/setlist'})
+    expect(mod.signIn).toHaveBeenCalledWith('google', {callbackUrl: '/songs'})
   })
 })
 // Local mock for this test; component only uses signIn

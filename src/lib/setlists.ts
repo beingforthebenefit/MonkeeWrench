@@ -62,7 +62,12 @@ export function describeSetChanges(
   const keptBefore = before.filter((x) => a.has(x.songId)).map((x) => x.songId)
   const keptAfter = after.filter((x) => b.has(x.songId)).map((x) => x.songId)
   const parts: string[] = []
-  if (added.length) parts.push(`added ${added.join(', ')}`)
+  if (added.length)
+    parts.push(
+      added.length > 3
+        ? `added ${added.length} songs`
+        : `added ${added.join(', ')}`,
+    )
   if (removed.length) parts.push(`removed ${removed.join(', ')}`)
   if (keptBefore.join() !== keptAfter.join()) parts.push('changed the order')
   return parts
