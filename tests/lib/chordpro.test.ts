@@ -304,3 +304,48 @@ describe('parenthesised and bass-only chords', () => {
     expect(source).toContain('[D/F#]')
   })
 })
+
+describe('remarks and bare tab lines in imports', () => {
+  it('keeps a bracketed remark in a chord line as one note', () => {
+    const {source} = importChordsOverWords(
+      '[Intro]\nA    F#   B   Bmaj7 [hold 4 bars]\n',
+      'T',
+    )
+    expect(source).toContain('[A]')
+    expect(source).toContain('[Bmaj7]')
+    expect(source).toContain('[(hold 4 bars)]')
+  })
+
+  it('keeps a remark with nested parentheses whole', () => {
+    const {source} = importChordsOverWords(
+      '[V]\nE      (organ fill: E A/E E7(no3) A/E)\nla la\n',
+      'T',
+    )
+    expect(source).toContain('[(organ fill: E A/E E7(no3) A/E)]')
+  })
+
+  it('treats bare tab staff lines as tablature', () => {
+    const {source} = importChordsOverWords(
+      '[Break]\n  -9-7---4-2-------|\n  -----------4-2-0-|\n',
+      'T',
+    )
+    expect(source).toContain('{start_of_tab}')
+  })
+
+  it('reads a lone parenthesised chord at the end of a chord line as a chord', () => {
+    const {source} = importChordsOverWords(
+      '[V]\nE      B      (B)\nla la la la la la\n',
+      'T',
+    )
+    expect(source).toContain('[(B)]')
+  })
+
+  it('still reads a parenthesised chord group as chords', () => {
+    const {source} = importChordsOverWords(
+      '[V]\nC  (C F G7 x2)\nla la la la la la la\n',
+      'T',
+    )
+    expect(source).toMatch(/\[\(C\]/)
+    expect(source).toContain('[G7]')
+  })
+})

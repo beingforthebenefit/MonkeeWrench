@@ -376,8 +376,16 @@ const NON_CHORD_TOKENS = new Set([
 /** "(x2)", "x4", "F(x2)" → the repeat part, if the token is one */
 const REPEAT = /^\(?x\d+\)?$/i
 
+/**
+ * A remark written into a chord line: "[hold 4 bars]" or "(organ fill)" --
+ * anything bracketed or parenthesised that is not itself a chord group.
+ */
+const REMARK =
+  /\[[^\]]*\]|\((?![A-G][#b]?[^\s)]*(?:\)|\s))(?!x\d)(?:[^()]|\([^()]*\))*\)/g
+
 function isChordLine(line: string): boolean {
-  const tokens = line.trim().split(/\s+/).filter(Boolean)
+  // Remarks don't disqualify a chord line; they are kept as notes
+  const tokens = line.replace(REMARK, ' ').trim().split(/\s+/).filter(Boolean)
   if (!tokens.length) return false
   let chords = 0
   for (const t of tokens) {
@@ -403,7 +411,9 @@ function inlineChords(text: string): string {
 }
 
 /** A tablature string line: `e|---7---5p4p0---|` */
-const TAB_LINE = /^\s*[A-Ga-g]\|[-0-9a-z|~/\\^().*\s]*$/
+// "e|---7---5p4p0---|", or a bare tab staff line "-9-7---4-2----|"
+const TAB_LINE =
+  /^\s*(?:[A-Ga-g]\|[-0-9a-z|~/\\^().*\s]*|[-0-9hpbr/\\~x|.]*-{6,}[-0-9hpbr/\\~x|.]*)$/
 
 const SECTION_WORDS =
   /^(intro|verse|pre-?chorus|chorus|bridge|interlude|instrumental|solo|outro|coda|ending|tag|refrain|break)\b/i
@@ -477,9 +487,14 @@ function sectionType(name: string): string {
 /** Insert `[chord]` markers from a chord line into the lyric line below it. */
 export function mergeChordLine(chordLine: string, lyricLine: string): string {
   const marks: {col: number; chord: string}[] = []
-  const re = /\S+/g
+  // A remark is one token, re-wrapped in parentheses so it can't nest brackets
+  const re = new RegExp(`${REMARK.source}|\\S+`, 'g')
   let m: RegExpExecArray | null
-  while ((m = re.exec(chordLine))) marks.push({col: m.index, chord: m[0]})
+  while ((m = re.exec(chordLine)))
+    marks.push({
+      col: m.index,
+      chord: m[0].startsWith('[') ? `(${m[0].slice(1, -1)})` : m[0],
+    })
   let lyric = lyricLine
   const width = marks.length ? marks[marks.length - 1].col : 0
   if (lyric.length < width) lyric = lyric.padEnd(width)
