@@ -74,6 +74,7 @@ describe('session callbacks', () => {
     prisma = {
       user: {
         findUnique: vi.fn(async () => ({
+          id: 'u1',
           email: 'ken@example.com',
           name: 'Kenneth Johnson',
           displayName: 'Ken',
@@ -114,5 +115,53 @@ describe('session callbacks', () => {
       token: {uid: 'u1', sv: 2},
     } as any)
     expect(s.user).toBeUndefined()
+  })
+})
+
+describe('Google sign-in', () => {
+  beforeEach(() => {
+    prisma = {
+      user: {
+        findFirst: vi.fn(async ({where}: any) =>
+          where.email.equals.toLowerCase() === 'ken@example.com'
+            ? {id: 'u1', email: 'ken@example.com', sessionVersion: 4}
+            : null,
+        ),
+        findUnique: vi.fn(),
+      },
+    }
+  })
+
+  it('lets in a member whose verified Google email matches', async () => {
+    const {authOptions} = await import('@/lib/auth')
+    const ok = await authOptions.callbacks!.signIn!({
+      account: {provider: 'google'},
+      profile: {email: 'Ken@Example.com', email_verified: true},
+    } as any)
+    expect(ok).toBe(true)
+  })
+
+  it('turns away someone who is not a member, or an unverified email', async () => {
+    const {authOptions} = await import('@/lib/auth')
+    for (const profile of [
+      {email: 'stranger@example.com', email_verified: true},
+      {email: 'ken@example.com', email_verified: false},
+    ])
+      expect(
+        await authOptions.callbacks!.signIn!({
+          account: {provider: 'google'},
+          profile,
+        } as any),
+      ).toBe('/login?error=NotMember')
+  })
+
+  it('maps the Google account to the member by email in the token', async () => {
+    const {authOptions} = await import('@/lib/auth')
+    const token = await authOptions.callbacks!.jwt!({
+      token: {},
+      user: {id: 'google-sub-123', email: 'ken@example.com'},
+      account: {provider: 'google'},
+    } as any)
+    expect(token).toMatchObject({uid: 'u1', sv: 4})
   })
 })

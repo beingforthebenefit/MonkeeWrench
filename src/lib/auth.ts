@@ -1,12 +1,15 @@
 import CredentialsProvider from 'next-auth/providers/credentials'
+import GoogleProvider from 'next-auth/providers/google'
 import type {NextAuthOptions} from 'next-auth'
 import {prisma} from './db'
 import {verifyPassword} from './password'
 import {clearFailures, isThrottled, recordFailure} from './login-throttle'
 
 /**
- * Email + password sign-in. Not everyone in the band has a Google account, so
- * an admin creates each member and generates their password on /members.
+ * Email + password sign-in, plus "Sign in with Google" for members who have a
+ * Google account. Either way the person must already be a member (an admin
+ * adds them on /members): Google only proves who they are, it never creates
+ * an account. Not everyone in the band has Google, hence the passwords.
  *
  * Sessions are JWTs (the credentials provider requires it). Each token
  * carries the user's sessionVersion at sign-in; resetting or changing a
@@ -26,6 +29,12 @@ function clientIp(
     h('x-forwarded-for')?.split(',')[0].trim() ??
     'unknown'
   )
+}
+
+function findMember(email: string) {
+  return prisma.user.findFirst({
+    where: {email: {equals: email.trim(), mode: 'insensitive'}},
+  })
 }
 
 export const authOptions: NextAuthOptions = {
@@ -59,20 +68,42 @@ export const authOptions: NextAuthOptions = {
         }
       },
     }),
+    // Offered only when the OAuth client is configured
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          }),
+        ]
+      : []),
   ],
   pages: {signIn: '/login', error: '/login'},
   // Long-lived: people sign in once on the phone or iPad they read charts on
   session: {strategy: 'jwt', maxAge: 180 * 24 * 60 * 60},
 
   callbacks: {
-    async jwt({token, user}) {
+    async signIn({account, profile}) {
+      if (account?.provider !== 'google') return true
+      // Google: only a verified email that belongs to a band member
+      const p = profile as
+        | {email?: string; email_verified?: boolean}
+        | undefined
+      if (!p?.email || p.email_verified === false)
+        return '/login?error=NotMember'
+      const member = await findMember(p.email)
+      return member ? true : '/login?error=NotMember'
+    },
+    async jwt({token, user, account}) {
       if (user) {
-        const u = await prisma.user.findUnique({
-          where: {id: user.id},
-          select: {sessionVersion: true},
-        })
-        token.uid = user.id
-        token.sv = u?.sessionVersion ?? 0
+        // Credentials return our user id; Google returns Google's, so map by email
+        const u =
+          account?.provider === 'google'
+            ? await findMember(user.email ?? '')
+            : await prisma.user.findUnique({where: {id: user.id}})
+        if (!u) return token
+        token.uid = u.id
+        token.sv = u.sessionVersion
       }
       return token
     },

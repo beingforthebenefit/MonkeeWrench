@@ -55,6 +55,9 @@ services:
       NEXTAUTH_URL: https://members.monkeebusinessband.com
       DATABASE_URL: postgresql://monkee:${POSTGRES_PASSWORD}@db:5432/monkee?schema=public
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?}
+      # Optional: enables "Sign in with Google" for existing members
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       VOTE_THRESHOLD: ${VOTE_THRESHOLD:-3}
     healthcheck:
       # /api/health queries the database; pages can render while it is down
