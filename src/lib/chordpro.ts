@@ -54,8 +54,26 @@ const ALIASES: Record<string, string> = {
   eob: 'end_of_bridge',
 }
 
+/**
+ * Peel wrapping off a chord token: "(B)", "(C" and "G)," are chords inside
+ * a parenthesised group or followed by punctuation.
+ */
+function unwrap(token: string) {
+  const m = token.match(/^(\(?)(.*?)([),.]*)$/)!
+  return {pre: m[1], core: m[2], post: m[3]}
+}
+
+const BASS_ONLY = /^\/([A-G](?:#|b)?)$/
+
+/** A chord, possibly parenthesised, or a bass-only change like "/G". */
 export function isChord(token: string): boolean {
-  return CHORD.test(token)
+  const {core} = unwrap(token)
+  return CHORD.test(core) || BASS_ONLY.test(core)
+}
+
+/** Repeat counts, no-chord and bar lines: chord-row markings, not chords. */
+export function isChordMarking(token: string): boolean {
+  return /^\(?x\d+\)?$/i.test(token) || /^(N\.?C\.?|\|+|%|-)$/i.test(token)
 }
 
 /** Split "Chorus (x2, fade)" into label "Chorus" and note "x2, fade". */
@@ -227,13 +245,19 @@ export function transposeChord(
   semitones: number,
   flats = false,
 ): string {
-  const m = chord.match(CHORD)
-  if (!m || semitones % 12 === 0) return chord
+  if (semitones % 12 === 0) return chord
+  const {pre, core, post} = unwrap(chord)
+  const b = core.match(BASS_ONLY)
+  if (b) return pre + '/' + shift(b[1], semitones, flats) + post
+  const m = core.match(CHORD)
+  if (!m) return chord
   const [, root, quality, bass] = m
   return (
+    pre +
     shift(root, semitones, flats) +
     quality +
-    (bass ? '/' + shift(bass, semitones, flats) : '')
+    (bass ? '/' + shift(bass, semitones, flats) : '') +
+    post
   )
 }
 
@@ -258,7 +282,7 @@ export function detectKey(chart: Chart): string | null {
     for (const l of s.lines)
       if (l.kind === 'lyrics')
         for (const seg of l.segments) {
-          const m = seg.chord?.match(CHORD)
+          const m = seg.chord ? unwrap(seg.chord).core.match(CHORD) : null
           if (m) return m[1] + (isMinorQuality(m[2]) ? 'm' : '')
         }
   return null

@@ -281,3 +281,26 @@ Words here
     expect(chart.sections.find((s) => s.label === 'Verse 1')).toBeTruthy()
   })
 })
+
+describe('parenthesised and bass-only chords', () => {
+  it('counts them as chords and transposes them, keeping the wrapping', () => {
+    expect(isChord('(B)')).toBe(true)
+    expect(isChord('(C')).toBe(true)
+    expect(isChord('/G')).toBe(true)
+    expect(isChord('REPEAT')).toBe(false)
+    expect(transposeChord('(B)', 2)).toBe('(C#)')
+    expect(transposeChord('(C', 2)).toBe('(D')
+    expect(transposeChord('/G', 2)).toBe('/A')
+    expect(transposeChord('G7),', 2)).toBe('A7),')
+  })
+
+  it('reads a chord line with a bass-only change as chords, not lyrics', () => {
+    const {source} = importChordsOverWords(
+      '[Intro]\nA         /G     D/F#       Esus4\n',
+      'T',
+    )
+    expect(source).toContain('[A]')
+    expect(source).toContain('[/G]')
+    expect(source).toContain('[D/F#]')
+  })
+})

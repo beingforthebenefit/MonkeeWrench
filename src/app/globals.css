@@ -73,6 +73,13 @@
   padding-right: 0.5em;
   min-height: 1.15em;
 }
+/* Repeat counts, N.C., bar lines and remarks in the chord row: not chords */
+.chart-note {
+  font-family: var(--font-sans);
+  font-style: italic;
+  font-weight: 500;
+  color: var(--color-muted);
+}
 .chart-lyric {
   line-height: 1.3;
   /* An empty lyric slot must still hold its row, or a trailing chord drops */

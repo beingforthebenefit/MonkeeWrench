@@ -1,4 +1,5 @@
 import PDFDocument from 'pdfkit'
+import {isChord} from './chordpro'
 import type {Chart, ChartLine, Section} from './chordpro'
 
 /**
@@ -196,7 +197,13 @@ function drawLine(
     const lw = doc.widthOfString(seg.lyric)
     let cw = 0
     if (seg.chord) {
-      doc.font(CHORD).fontSize(size).fillColor('#000')
+      // Remarks in the chord row ("REPEAT 3 X", "N.C.") print as notes
+      if (isChord(seg.chord)) doc.font(CHORD).fontSize(size).fillColor('#000')
+      else
+        doc
+          .font('Helvetica-Oblique')
+          .fontSize(size * 0.9)
+          .fillColor('#444')
       cw = doc.widthOfString(seg.chord) + chordGap(line, size)
       doc.text(seg.chord, cx, chordY, {lineBreak: false})
     }

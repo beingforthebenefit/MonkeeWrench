@@ -1,3 +1,4 @@
+import {isChord} from '@/lib/chordpro'
 import type {Chart, ChartLine, Section, Segment} from '@/lib/chordpro'
 
 /**
@@ -88,7 +89,9 @@ function Line({line}: {line: ChartLine}) {
           {group.map((seg, i) => (
             <span key={i} className="chart-seg">
               {hasChords && (
-                <span className="chart-chord">
+                <span
+                  className={`chart-chord${seg.chord && !isChord(seg.chord) ? ' chart-note' : ''}`}
+                >
                   {seg.chord ?? ''}
                   {!hasWords && seg.chord ? ' ' : ''}
                 </span>
