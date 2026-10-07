@@ -1,0 +1,17 @@
+# Secrets: injected at runtime by compose, never baked into an image layer
+.env
+.env.*
+!.env.example
+
+# Copyrighted chart exports and local previews (see .gitignore)
+data/
+tmp-preview/
+
+# Build output, dependencies and tooling the image rebuilds itself
+node_modules/
+.next/
+coverage/
+.git/
+.github/
+tests/
+*.log
