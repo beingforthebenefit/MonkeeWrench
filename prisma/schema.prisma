@@ -25,23 +25,27 @@ enum AuditAction {
 }
 
 model User {
-  id             String           @id @default(cuid())
-  name           String?
-  email          String?          @unique
-  emailVerified  DateTime?
-  image          String?
-  isAdmin        Boolean          @default(false)
-  accounts       Account[]
-  sessions       Session[]
-  proposals      Proposal[]       @relation("Proposer")
-  votes          Vote[]
-  chartVersions  ChartVersion[]
-  songsEdited    Song[]           @relation("SongEditor")
-  setlistsEdited Setlist[]        @relation("SetlistEditor")
-  unavailability Unavailability[]
-  activities     Activity[]
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id                    String           @id @default(cuid())
+  name                  String?
+  email                 String?          @unique
+  emailVerified         DateTime?
+  image                 String?
+  isAdmin               Boolean          @default(false)
+  accounts              Account[]
+  sessions              Session[]
+  proposals             Proposal[]       @relation("Proposer")
+  votes                 Vote[]
+  chartVersions         ChartVersion[]
+  songsEdited           Song[]           @relation("SongEditor")
+  setlistsEdited        Setlist[]        @relation("SetlistEditor")
+  unavailability        Unavailability[]
+  // Set the first time someone marks their days, so "hasn't answered" can be
+  // told apart from "free every day" (no rows means free)
+  availabilityUpdatedAt DateTime?
+  rehearsalsCreated     Rehearsal[]
+  activities            Activity[]
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
 }
 
 model Proposal {
@@ -233,4 +237,17 @@ model Activity {
 
   @@index([targetType, targetId, createdAt])
   @@index([createdAt])
+}
+
+model Rehearsal {
+  id          String   @id @default(cuid())
+  date        DateTime @db.Date
+  time        String? // free text, e.g. "7pm"
+  place       String?
+  note        String?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@index([date])
 }
