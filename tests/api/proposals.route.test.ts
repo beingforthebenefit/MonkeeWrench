@@ -23,6 +23,7 @@ describe('/api/proposals route', () => {
     prisma = {
       auditLog: {count: vi.fn().mockResolvedValue(0), create: vi.fn()},
       proposal: {create: vi.fn(), findMany: vi.fn()},
+      activity: {create: vi.fn()},
     }
   })
 

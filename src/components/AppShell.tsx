@@ -9,7 +9,7 @@ const TABS = [
   {href: '/songs', label: 'Songs'},
   {href: '/setlists', label: 'Setlists'},
   {href: '/rehearsals', label: 'Rehearsals'},
-  {href: '/vote', label: 'Proposals'},
+  {href: '/proposals', label: 'Proposals'},
 ]
 
 // The band's Discord server (carried over from the old nav)
@@ -19,8 +19,6 @@ const DISCORD_URL = 'https://discord.com/channels/1347070995122622545'
 const BARE = [/^\/perform\//, /^\/login/]
 
 function isActive(pathname: string, href: string) {
-  if (href === '/vote')
-    return pathname.startsWith('/vote') || pathname.startsWith('/propose')
   return pathname === href || pathname.startsWith(href + '/')
 }
 

@@ -6,6 +6,7 @@ import {z} from 'zod'
 import {isHttpUrl} from '@/lib/url'
 import {bus, EVENTS} from '@/lib/events'
 import {route} from '@/lib/route'
+import {logActivity} from '@/lib/songs'
 
 // Helper: only allow http(s) URLs, and allow empty string -> undefined
 const httpUrl = z.string().trim().refine(isHttpUrl, 'Must be http(s) URL')
@@ -48,6 +49,13 @@ export const POST = route(async (req: Request) => {
 
   await prisma.auditLog.create({
     data: {userId: user.id, action: 'PROPOSE', targetId: p.id},
+  })
+  await logActivity(prisma, {
+    userId: user.id,
+    action: 'proposal.create',
+    targetType: 'proposal',
+    targetId: p.id,
+    summary: `proposed ${p.title}${p.artist ? ` (${p.artist})` : ''}`,
   })
   bus.emit(EVENTS.PROPOSAL_CREATED, {id: p.id})
   return Response.json({id: p.id})

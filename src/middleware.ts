@@ -7,11 +7,7 @@ const SESSION_COOKIES = [
 ]
 
 // Read-only endpoints that are deliberately public
-const PUBLIC_API = [
-  /^\/api\/auth\//,
-  /^\/api\/health$/,
-  /^\/api\/proposals\/(pending|pending\/count|approved)$/,
-]
+const PUBLIC_API = [/^\/api\/auth\//, /^\/api\/health$/]
 
 export function middleware(req: NextRequest) {
   const {pathname, search} = req.nextUrl

@@ -5,6 +5,7 @@ import {requireAdmin} from '@/lib/guard'
 import {z} from 'zod'
 import {isHttpUrl} from '@/lib/url'
 import {route} from '@/lib/route'
+import {addSongFromProposal, logActivity} from '@/lib/songs'
 
 const PatchBody = z.object({
   title: z.string().trim().min(1).optional(),
@@ -56,11 +57,28 @@ export const PATCH = route(
     const json = await req.json()
     const parsed = PatchBody.safeParse(json)
     if (!parsed.success) return new Response('Bad Request', {status: 400})
+    const before = await prisma.proposal.findUnique({where: {id: params.id}})
+    if (!before) return new Response('Not Found', {status: 404})
     await prisma.$transaction(async (tx) => {
-      await tx.proposal.update({where: {id: params.id}, data: parsed.data})
+      const p = await tx.proposal.update({
+        where: {id: params.id},
+        data: parsed.data,
+      })
       await tx.auditLog.create({
         data: {userId: admin.id, action: 'ADMIN_EDIT', targetId: params.id},
       })
+      // An admin approving directly does what reaching the vote threshold
+      // does: the song joins the book to learn
+      if (p.status === 'APPROVED' && before.status !== 'APPROVED')
+        await addSongFromProposal(tx, p, admin.id)
+      else if (p.status === 'ARCHIVED' && before.status !== 'ARCHIVED')
+        await logActivity(tx, {
+          userId: admin.id,
+          action: 'proposal.archive',
+          targetType: 'proposal',
+          targetId: p.id,
+          summary: `archived the proposal ${p.title}`,
+        })
     })
     return new Response(null, {status: 204})
   },
