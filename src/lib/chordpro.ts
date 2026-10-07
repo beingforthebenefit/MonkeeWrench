@@ -15,6 +15,8 @@ export type Segment = {chord: string | null; lyric: string}
 export type ChartLine =
   | {kind: 'lyrics'; segments: Segment[]}
   | {kind: 'comment'; text: string}
+  /** Guitar tablature: shown verbatim in a monospace font */
+  | {kind: 'tab'; text: string}
 
 export type Section = {
   /** verse | chorus | bridge | intro | interlude | outro | solo | part … */
@@ -23,8 +25,6 @@ export type Section = {
   /** Parenthesised remark after the label, e.g. "x2, 2nd time fade out" */
   note: string
   lines: ChartLine[]
-  /** Index of an earlier section with identical content, if any */
-  repeatOf: number | null
 }
 
 export type Chart = {
@@ -84,26 +84,6 @@ function parseLyricLine(line: string): ChartLine {
   return {kind: 'lyrics', segments}
 }
 
-function lineKey(line: ChartLine): string {
-  if (line.kind === 'comment') return `#${line.text}`
-  return line.segments.map((s) => `[${s.chord ?? ''}]${s.lyric}`).join('')
-}
-
-function markRepeats(sections: Section[]) {
-  sections.forEach((s, i) => {
-    if (s.repeatOf !== null || s.lines.length === 0) return
-    const body = s.lines.map(lineKey).join('\n')
-    for (let j = 0; j < i; j++) {
-      const prev = sections[j]
-      if (prev.repeatOf !== null || prev.type !== s.type) continue
-      if (prev.lines.map(lineKey).join('\n') === body) {
-        s.repeatOf = j
-        return
-      }
-    }
-  })
-}
-
 export function parseChordPro(source: string): Chart {
   const chart: Chart = {title: '', key: null, meta: {}, sections: []}
   let current: Section | null = null
@@ -111,7 +91,7 @@ export function parseChordPro(source: string): Chart {
 
   const open = (type: string, rawLabel: string, isImplicit = false) => {
     const {label, note} = splitLabel(rawLabel)
-    current = {type, label, note, lines: [], repeatOf: null}
+    current = {type, label, note, lines: []}
     chart.sections.push(current)
     implicit = isImplicit
   }
@@ -132,15 +112,17 @@ export function parseChordPro(source: string): Chart {
         continue
       }
       if (name === 'chorus') {
-        // A bare {chorus} repeats the most recent chorus
-        const idx = chart.sections.map((s) => s.type).lastIndexOf('chorus')
-        const {label, note} = splitLabel(value || 'Chorus')
+        // A bare {chorus} repeats the most recent chorus. It is written out
+        // in full: charts are read mid-song, so never "same as above".
+        const prev = [...chart.sections]
+          .reverse()
+          .find((s) => s.type === 'chorus')
+        const {label, note} = splitLabel(value || prev?.label || 'Chorus')
         chart.sections.push({
           type: 'chorus',
           label,
           note,
-          lines: [],
-          repeatOf: idx >= 0 ? idx : null,
+          lines: structuredClone(prev?.lines ?? []),
         })
         current = null
         continue
@@ -156,6 +138,12 @@ export function parseChordPro(source: string): Chart {
       continue
     }
 
+    // (TS narrows `current` to null here because it is assigned in a closure)
+    const cur = current as Section | null
+    if (cur?.type === 'tab') {
+      if (line.trim()) cur.lines.push({kind: 'tab', text: line})
+      continue
+    }
     if (!line.trim()) {
       if (implicit) current = null
       continue
@@ -164,10 +152,7 @@ export function parseChordPro(source: string): Chart {
     current!.lines.push(parseLyricLine(line))
   }
 
-  chart.sections = chart.sections.filter(
-    (s) => s.lines.length > 0 || s.repeatOf !== null || s.label,
-  )
-  markRepeats(chart.sections)
+  chart.sections = chart.sections.filter((s) => s.lines.length > 0 || s.label)
   return chart
 }
 
@@ -298,7 +283,7 @@ export function transposeChart(chart: Chart, semitones: number): Chart {
     sections: chart.sections.map((s) => ({
       ...s,
       lines: s.lines.map((l) =>
-        l.kind === 'comment'
+        l.kind !== 'lyrics'
           ? l
           : {
               kind: 'lyrics',
@@ -321,6 +306,7 @@ export function transposeChart(chart: Chart, semitones: number): Chart {
 /** Render one lyric line as a chord line above a lyric line, column-aligned. */
 export function lineToChordsOverWords(line: ChartLine): string[] {
   if (line.kind === 'comment') return [`(${line.text})`]
+  if (line.kind === 'tab') return [line.text]
   let chords = ''
   let words = ''
   for (const seg of line.segments) {
@@ -342,10 +328,6 @@ export function chartToChordsOverWords(chart: Chart): string {
     if (i > 0) out.push('')
     const head = s.label || cap(s.type)
     out.push(`[${head}]${s.note ? ` (${s.note})` : ''}`)
-    if (s.repeatOf !== null && s.lines.length === 0) {
-      out.push('(as above)')
-      return
-    }
     for (const l of s.lines) out.push(...lineToChordsOverWords(l))
   })
   return out.join('\n')
@@ -367,22 +349,92 @@ const NON_CHORD_TOKENS = new Set([
   ')',
 ])
 
+/** "(x2)", "x4", "F(x2)" → the repeat part, if the token is one */
+const REPEAT = /^\(?x\d+\)?$/i
+
 function isChordLine(line: string): boolean {
   const tokens = line.trim().split(/\s+/).filter(Boolean)
   if (!tokens.length) return false
   let chords = 0
   for (const t of tokens) {
     const bare = t.replace(/^\(|\)$/g, '')
-    if (isChord(bare)) chords++
-    else if (!NON_CHORD_TOKENS.has(t) && !/^x\d+$/i.test(t)) return false
+    const glued = t.match(/^(.+?)(\(x\d+\))$/i)
+    if (isChord(bare) || (glued && isChord(glued[1]))) chords++
+    else if (!NON_CHORD_TOKENS.has(t) && !REPEAT.test(t)) return false
   }
   return chords > 0
 }
 
-const HEADER = /^\[([^\]]+)\]\s*(.*)$/
+/** "C F Bb F (x4)" → "[C] [F] [Bb] [F] (x4)": chords become chords, the rest stays text. */
+function inlineChords(text: string): string {
+  return text
+    .trim()
+    .split(/\s+/)
+    .map((t) => {
+      const glued = t.match(/^(.+?)(\(x\d+\))$/i)
+      if (glued && isChord(glued[1])) return `[${glued[1]}]${glued[2]}`
+      return isChord(t) ? `[${t}]` : t
+    })
+    .join(' ')
+}
+
+/** A tablature string line: `e|---7---5p4p0---|` */
+const TAB_LINE = /^\s*[A-Ga-g]\|[-0-9a-z|~/\\^().*\s]*$/
+
+const SECTION_WORDS =
+  /^(intro|verse|pre-?chorus|chorus|bridge|interlude|instrumental|solo|outro|coda|ending|tag|refrain|break)\b/i
+
+/** Recognise a section header line and split it into label, note and any chords that follow. */
+function parseHeader(
+  line: string,
+): {label: string; note: string; chords: string} | null {
+  let label: string
+  let rest: string
+  const bracket = line.match(/^\[([^\]]+)\]\s*(.*)$/)
+  const numbered = line.match(/^#\s*(\d+)\.?\s*$/)
+  const colon = line.match(/^([A-Za-z][A-Za-z0-9 '&/.-]{0,30}?)\s*:\s*(.*)$/)
+  if (bracket && !isChord(bracket[1])) {
+    ;[label, rest] = [bracket[1], bracket[2]]
+  } else if (numbered) {
+    return {label: `Verse ${numbered[1]}`, note: '', chords: ''}
+  } else if (
+    colon &&
+    (colon[1] === colon[1].toUpperCase() || SECTION_WORDS.test(colon[1]))
+  ) {
+    ;[label, rest] = [colon[1], colon[2]]
+  } else {
+    return null
+  }
+
+  const notes: string[] = []
+  const dash = label.match(/^(.*?)\s+-\s+(.*)$/)
+  if (dash) {
+    label = dash[1]
+    notes.push(dash[2])
+  }
+  rest = rest.trim()
+  let chords = ''
+  if (rest && isChordLine(rest)) chords = inlineChords(rest)
+  else if (rest) notes.push(rest.replace(/^[-–]\s*|:$|^\(|\)$/g, '').trim())
+  return {
+    label: titleCase(label),
+    note: notes.filter(Boolean).map(titleCase).join('; '),
+    chords,
+  }
+}
+
+function titleCase(s: string): string {
+  if (s !== s.toUpperCase()) return s.trim()
+  return s
+    .toLowerCase()
+    .replace(/\b([a-z])/g, (c) => c.toUpperCase())
+    .replace(/\b(\d+)X\b/gi, '$1x')
+    .trim()
+}
 
 function sectionType(name: string): string {
   const n = name.toLowerCase()
+  if (/pre-?chorus/.test(n)) return 'prechorus'
   for (const t of [
     'chorus',
     'verse',
@@ -393,7 +445,8 @@ function sectionType(name: string): string {
     'solo',
   ])
     if (n.includes(t)) return t
-  if (n.includes('instrumental')) return 'solo'
+  if (/instrumental|break/.test(n)) return 'solo'
+  if (/coda|ending/.test(n)) return 'outro'
   return 'part'
 }
 
@@ -416,8 +469,9 @@ export function mergeChordLine(chordLine: string, lyricLine: string): string {
 export type ImportResult = {source: string; key: string | null}
 
 /**
- * Convert an Ultimate-Guitar style chart (chord lines above lyric lines,
- * `[Verse 1]` headers) into ChordPro.
+ * Convert a chords-over-words chart (chord lines above lyric lines) into
+ * ChordPro. Understands both header styles in the band's old Docs:
+ * `[Verse 1]` / `[Intro] A` and `INTRO: C F Bb F (x4)` / `#1.` / `CHORUS:`.
  */
 export function importChordsOverWords(
   text: string,
@@ -444,13 +498,31 @@ export function importChordsOverWords(
     const trimmed = line.trim()
     if (!trimmed) continue
 
-    const h = trimmed.match(HEADER)
-    if (h && !isChord(h[1])) {
+    const h = parseHeader(trimmed)
+    if (h) {
       close()
-      openType = sectionType(h[1])
-      const label = h[2] ? `${h[1]} ${h[2]}` : h[1]
+      openType = sectionType(h.label)
       if (out.length > 1) out.push('')
-      out.push(`{start_of_${openType}: ${label}}`)
+      out.push(
+        `{start_of_${openType}: ${h.label}${h.note ? ` (${h.note})` : ''}}`,
+      )
+      if (h.chords) out.push(h.chords)
+      continue
+    }
+
+    if (TAB_LINE.test(line)) {
+      // Tablature can't live inside a lyric section in ChordPro
+      close()
+      out.push('{start_of_tab}')
+      while (
+        i < lines.length &&
+        (TAB_LINE.test(lines[i]) || !lines[i].trim())
+      ) {
+        if (lines[i].trim()) out.push(lines[i])
+        i++
+      }
+      out.push('{end_of_tab}')
+      i--
       continue
     }
 
@@ -460,7 +532,7 @@ export function importChordsOverWords(
         next !== undefined &&
         next.trim() &&
         !isChordLine(next) &&
-        !HEADER.test(next.trim())
+        !parseHeader(next.trim())
       ) {
         out.push(mergeChordLine(line, next))
         i++

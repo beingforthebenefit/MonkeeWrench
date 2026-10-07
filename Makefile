@@ -35,6 +35,7 @@ help:
 	@echo "  prisma-deploy  Prisma migrate deploy (prod style)"
 	@echo "  prisma-dev     Prisma migrate dev (create new migration)"
 	@echo "  seed           Run seed script"
+	@echo "  import         Import songs from Drive export JSON (FILE=, AS=)"
 	@echo "  lint           Lint code"
 	@echo "  lint-fix       Lint code and fix issues"
 	@echo "  test           Run tests"
@@ -123,6 +124,13 @@ prisma-deploy:
 prisma-dev:
 	@if [ -z "$(NAME)" ]; then echo "Usage: make prisma-dev NAME=my_migration"; exit 1; fi
 	$(COMPOSE_DEV) exec $(APP_SVC) sh -lc 'npx prisma migrate dev --name "$(NAME)"'
+
+# Import songs/charts from a Google Drive export (see scripts/drive-export-to-json.py)
+# Usage: make import FILE=data/import.json AS=you@example.com
+.PHONY: import
+import:
+	@if [ -z "$(FILE)" ] || [ -z "$(AS)" ]; then echo "Usage: make import FILE=data/import.json AS=you@example.com"; exit 1; fi
+	$(COMPOSE_DEV) exec $(APP_SVC) npx tsx scripts/import-songs.ts "$(FILE)" "$(AS)"
 
 .PHONY: seed
 seed:

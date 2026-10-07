@@ -105,11 +105,15 @@ Oh [G]hello [Am]there
     })
   })
 
-  it('marks identical and {chorus} sections as repeats', () => {
-    expect(chart.sections[2].repeatOf).toBe(1)
+  it('keeps repeated sections written out in full', () => {
     expect(chart.sections[2].note).toBe('x2')
-    expect(chart.sections[3].repeatOf).toBe(2)
-    expect(chart.sections[3].lines).toEqual([])
+    expect(chart.sections[2].lines).toEqual(chart.sections[1].lines)
+  })
+
+  it('expands a bare {chorus} into the full last chorus', () => {
+    expect(chart.sections[3].note).toBe('fade')
+    expect(chart.sections[3].lines).toEqual(chart.sections[2].lines)
+    expect(chart.sections[3].lines.length).toBe(1)
   })
 })
 
@@ -160,11 +164,13 @@ describe('chartToChordsOverWords', () => {
     )
   })
 
-  it('writes a repeat reference as "as above"', () => {
+  it('writes a {chorus} reference out in full', () => {
     const chart = parseChordPro(
       '{start_of_chorus: Chorus}\n[C]la\n{end_of_chorus}\n{chorus}\n',
     )
-    expect(chartToChordsOverWords(chart)).toContain('[Chorus]\n(as above)')
+    expect(chartToChordsOverWords(chart)).toBe(
+      '[Chorus]\nC\nla\n\n[Chorus]\nC\nla',
+    )
   })
 })
 
@@ -189,5 +195,89 @@ describe('isChord', () => {
       expect(isChord(c)).toBe(true)
     for (const w of ['Chorus', 'Bridge', 'Ah', 'Got', 'Elec'])
       expect(isChord(w)).toBe(false)
+  })
+})
+
+describe('importChordsOverWords — colon-style headers', () => {
+  const DOC2 = `INTRO: C F Bb F (x4)
+
+#1.
+C        Bb C
+Walking down the street
+
+CHORUS:AD LIB:
+F     Bb F
+Hey hey hey
+
+KEYBOARD SOLO: C Bb C Bb (x8)
+INTRO: C F C F(x2) C F A7
+[Intro] A
+[INTRO RIFF 1X] E7
+[Bridge - see tablature at bottom]
+Some words
+`
+  const {source} = importChordsOverWords(DOC2, 'T')
+
+  it('turns INTRO: chords into a section with a chord line', () => {
+    expect(source).toContain('{start_of_intro: Intro}\n[C] [F] [Bb] [F] (x4)')
+  })
+
+  it('turns #1. into Verse 1', () => {
+    expect(source).toContain('{start_of_verse: Verse 1}')
+  })
+
+  it('keeps a header remark as the note', () => {
+    expect(source).toContain('{start_of_chorus: Chorus (Ad Lib)}')
+  })
+
+  it('title-cases shouted labels and keeps glued repeats', () => {
+    expect(source).toContain('{start_of_solo: Keyboard Solo}')
+    expect(source).toContain('[C] [F] [C] [F](x2) [C] [F] [A7]')
+    expect(source).toContain('{start_of_intro: Intro Riff 1x}\n[E7]')
+  })
+
+  it('moves chords after a bracket header into the section', () => {
+    expect(source).toContain('{start_of_intro: Intro}\n[A]')
+  })
+
+  it('splits "Label - remark" into label and note', () => {
+    expect(source).toContain(
+      '{start_of_bridge: Bridge (see tablature at bottom)}',
+    )
+  })
+
+  it('does not treat ordinary lyrics with a colon as a header', () => {
+    const {source: s} = importChordsOverWords(
+      '[Verse]\nG\nShe said: go home\n',
+      'T',
+    )
+    expect(s).toContain('[G]She said: go home')
+  })
+})
+
+describe('tablature', () => {
+  const DOC3 = `[Intro] A
+
+e|------------|
+G|------------| x2
+D|---7----5p4p0|
+
+[Verse 1]
+A       G
+Words here
+`
+  const {source} = importChordsOverWords(DOC3, 'T')
+
+  it('wraps tab lines in a tab block, verbatim', () => {
+    expect(source).toContain(
+      '{start_of_tab}\ne|------------|\nG|------------| x2\nD|---7----5p4p0|\n{end_of_tab}',
+    )
+  })
+
+  it('parses tab lines as tab, not lyrics', () => {
+    const chart = parseChordPro(source)
+    const tab = chart.sections.find((s) => s.type === 'tab')!
+    expect(tab.lines[2]).toEqual({kind: 'tab', text: 'D|---7----5p4p0|'})
+    expect(chart.sections.find((s) => s.label === 'Verse 1')).toBeTruthy()
   })
 })
