@@ -216,6 +216,7 @@ model SetlistItem {
 enum UnavailableKind {
   OUT // all day/evening
   PM_OUT // afternoon only
+  PREFER_NOT // can make it if needed, would rather another day
 }
 
 /// No row means free; a row records that someone can't make it.

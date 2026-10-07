@@ -1,10 +1,11 @@
 /**
  * Rehearsal availability. Like the old sheet, people record when they CAN'T
  * make it; no entry means free. "PM out" means out in the afternoon only, so
- * still available for an evening rehearsal.
+ * still available for an evening rehearsal. "Prefer not" means they can make
+ * it if they have to but would rather another day.
  */
 
-export type Kind = 'OUT' | 'PM_OUT'
+export type Kind = 'OUT' | 'PM_OUT' | 'PREFER_NOT'
 export type Member = {id: string; name: string; answered: boolean}
 export type Entry = {userId: string; date: string; kind: Kind}
 
@@ -36,6 +37,7 @@ export type DayScore = {
   total: number
   out: string[]
   pmOut: string[]
+  preferNot: string[]
   unanswered: string[]
 }
 
@@ -58,6 +60,9 @@ export function scoreDays(
     const pmOut = members
       .filter((m) => marks.get(m.id) === 'PM_OUT')
       .map((m) => m.name)
+    const preferNot = members
+      .filter((m) => marks.get(m.id) === 'PREFER_NOT')
+      .map((m) => m.name)
     const unanswered = members.filter((m) => !m.answered).map((m) => m.name)
     // Only people who have answered count as free: silence isn't a yes
     const free = members.filter(
@@ -69,9 +74,18 @@ export function scoreDays(
       total: members.length,
       out,
       pmOut,
+      preferNot,
       unanswered,
     }
   })
+}
+
+/**
+ * The next days nobody has marked Out, soonest first, however far ahead.
+ * Afternoon-only and prefer-not days still count: the caller shows who.
+ */
+export function nextAllFree(scores: DayScore[], limit = 5) {
+  return scores.filter((s) => s.out.length === 0).slice(0, limit)
 }
 
 /** The best days: most people free, then fewest afternoon conflicts, then soonest. */

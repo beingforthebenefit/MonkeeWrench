@@ -3,7 +3,7 @@
 import {useRouter} from 'next/navigation'
 import {useMemo, useState} from 'react'
 import {
-  bestDays,
+  nextAllFree,
   formatDay,
   scoreDays,
   weekday,
@@ -24,6 +24,7 @@ type RehearsalRow = {
 
 const STATES: {kind: Kind | null; label: string; on: string}[] = [
   {kind: null, label: 'Free', on: 'bg-[#1f3a2f] text-[#b6f0d4]'},
+  {kind: 'PREFER_NOT', label: 'Prefer not', on: 'bg-[#20304a] text-[#b9d4ff]'},
   {kind: 'PM_OUT', label: 'PM out', on: 'bg-[#3a3220] text-[#f2d18a]'},
   {kind: 'OUT', label: 'Out', on: 'bg-[#4a2a26] text-[#ffb3a6]'},
 ]
@@ -32,6 +33,7 @@ export default function Rehearsals({
   me,
   isAdmin,
   days,
+  horizon,
   members,
   entries: initialEntries,
   rehearsals,
@@ -39,6 +41,8 @@ export default function Rehearsals({
   me: string
   isAdmin: boolean
   days: string[]
+  /** Every day ahead that the suggestions may search */
+  horizon: string[]
   members: Member[]
   entries: Entry[]
   rehearsals: RehearsalRow[]
@@ -59,7 +63,12 @@ export default function Rehearsals({
     () => scoreDays(days, liveMembers, entries),
     [days, liveMembers, entries],
   )
-  const best = bestDays(scores.slice(0, 14))
+  const ahead = useMemo(
+    () => nextAllFree(scoreDays(horizon, liveMembers, entries), 5),
+    [horizon, liveMembers, entries],
+  )
+  const lastMarked = entries.reduce((m, e) => (e.date > m ? e.date : m), '')
+  const booked = new Set(rehearsals.map((r) => r.date))
   const mineOn = (date: string) =>
     entries.find((e) => e.userId === me && e.date === date)?.kind ?? null
   const unanswered = liveMembers.filter((m) => !m.answered).map((m) => m.name)
@@ -146,20 +155,21 @@ export default function Rehearsals({
           id="best-h"
           className="text-xs font-bold uppercase tracking-widest text-muted"
         >
-          Best dates · next 2 weeks
+          Next days everyone can make
         </h2>
-        {best[0] && best[0].free < best[0].total && (
-          <p className="mt-2 text-sm text-bad">
-            No day in the next two weeks works for everyone.
-          </p>
-        )}
         {unanswered.length > 0 && (
           <p className="mt-1 text-sm text-muted">
-            Not answered yet: {unanswered.join(', ')}
+            Not answered yet: {unanswered.join(', ')} — counted as free until
+            they do.
+          </p>
+        )}
+        {!ahead.length && (
+          <p className="mt-2 text-sm text-bad">
+            No day in the next year has nobody out.
           </p>
         )}
         <ul className="mt-2">
-          {best.map((d) => (
+          {ahead.map((d) => (
             <li
               key={d.date}
               className="border-t border-line py-2 first:border-t-0"
@@ -169,31 +179,39 @@ export default function Rehearsals({
                   {formatDay(d.date)}
                 </span>
                 <span className="flex-1 text-sm">
-                  <strong>
-                    {d.free} of {d.total} free
-                  </strong>
-                  {d.out.length > 0 && (
-                    <span className="text-muted">
-                      {' '}
-                      · out: {d.out.join(', ')}
-                    </span>
-                  )}
-                  {d.pmOut.length > 0 && (
-                    <span className="text-muted">
-                      {' '}
-                      · afternoon only out: {d.pmOut.join(', ')}
-                    </span>
+                  {d.pmOut.length || d.preferNot.length ? (
+                    <>
+                      {d.pmOut.length > 0 && (
+                        <span className="text-[#f2d18a]">
+                          Evening only (afternoon out: {d.pmOut.join(', ')})
+                        </span>
+                      )}
+                      {d.pmOut.length > 0 && d.preferNot.length > 0 && ' · '}
+                      {d.preferNot.length > 0 && (
+                        <span className="text-[#b9d4ff]">
+                          Would rather not: {d.preferNot.join(', ')}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <strong className="text-good">Everyone free</strong>
                   )}
                 </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setPlanning(planning === d.date ? null : d.date)
-                  }
-                  className="min-h-11 rounded-lg border border-line-2 px-3 text-sm font-semibold"
-                >
-                  Set rehearsal
-                </button>
+                {booked.has(d.date) ? (
+                  <span className="min-h-11 px-3 text-sm font-semibold leading-[44px] text-good">
+                    Booked ✓
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPlanning(planning === d.date ? null : d.date)
+                    }
+                    className="min-h-11 rounded-lg border border-line-2 px-3 text-sm font-semibold"
+                  >
+                    Set rehearsal
+                  </button>
+                )}
               </div>
               {planning === d.date && (
                 <PlanForm
@@ -204,6 +222,12 @@ export default function Rehearsals({
             </li>
           ))}
         </ul>
+        {lastMarked && ahead.some((d) => d.date > lastMarked) && (
+          <p className="mt-2 text-xs text-faint">
+            Nobody has marked any days after {formatDay(lastMarked)} yet, so
+            later dates are only free as far as we know.
+          </p>
+        )}
       </section>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
@@ -217,7 +241,8 @@ export default function Rehearsals({
             </span>
           </div>
           <p className="mt-1 text-[13px] text-muted">
-            Mark only the days you can’t make. Everything else counts as free.
+            Mark the days you can’t make, or would rather not. Everything else
+            counts as free.
           </p>
           {weeks.map((w, wi) => (
             <div key={wi} className="mt-3">
@@ -237,7 +262,7 @@ export default function Rehearsals({
                     <div
                       role="radiogroup"
                       aria-label={formatDay(d)}
-                      className="grid flex-1 grid-cols-3 overflow-hidden rounded-lg border border-line-2"
+                      className="grid flex-1 grid-cols-4 overflow-hidden rounded-lg border border-line-2"
                     >
                       {STATES.map((s) => (
                         <button
@@ -306,18 +331,22 @@ export default function Rehearsals({
                                 ? 'bg-[#4a2a26] text-[#ffb3a6]'
                                 : k === 'PM_OUT'
                                   ? 'bg-[#3a3220] text-[#f2d18a]'
-                                  : m.answered
-                                    ? 'bg-[#1f3a2f] text-[#b6f0d4]'
-                                    : 'border border-dashed border-line-2 text-faint'
+                                  : k === 'PREFER_NOT'
+                                    ? 'bg-[#20304a] text-[#b9d4ff]'
+                                    : m.answered
+                                      ? 'bg-[#1f3a2f] text-[#b6f0d4]'
+                                      : 'border border-dashed border-line-2 text-faint'
                             }`}
                           >
                             {k === 'OUT'
                               ? 'OUT'
                               : k === 'PM_OUT'
                                 ? 'PM'
-                                : m.answered
-                                  ? ''
-                                  : '?'}
+                                : k === 'PREFER_NOT'
+                                  ? 'PREF'
+                                  : m.answered
+                                    ? ''
+                                    : '?'}
                           </span>
                         </td>
                       )
@@ -328,8 +357,8 @@ export default function Rehearsals({
             </table>
           </div>
           <p className="mt-2 text-[13px] text-faint">
-            Blank = free · PM = out in the afternoon · OUT = out all day · ? =
-            hasn’t answered
+            Blank = free · PREF = would rather not · PM = out in the afternoon ·
+            OUT = out all day · ? = hasn’t answered
           </p>
         </section>
       </div>

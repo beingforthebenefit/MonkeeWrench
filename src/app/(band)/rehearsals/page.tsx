@@ -9,6 +9,8 @@ import Rehearsals from '@/components/Rehearsals'
 export const metadata = {title: 'Rehearsals · Monkee Wrench'}
 
 const WEEKS = 8
+// How far ahead to look for a day everyone can make
+const HORIZON_DAYS = 365
 
 export default async function RehearsalsPage() {
   const {user} = await requireSession()
@@ -20,7 +22,7 @@ export default async function RehearsalsPage() {
       where: {
         date: {
           gte: new Date(today + 'T00:00:00Z'),
-          lte: new Date(addDays(today, WEEKS * 7) + 'T00:00:00Z'),
+          lte: new Date(addDays(today, HORIZON_DAYS) + 'T00:00:00Z'),
         },
       },
     }),
@@ -37,6 +39,7 @@ export default async function RehearsalsPage() {
       me={user.id}
       isAdmin={user.isAdmin}
       days={days}
+      horizon={dayRange(today, HORIZON_DAYS)}
       members={users.map((u) => ({
         id: u.id,
         name: displayName(u),

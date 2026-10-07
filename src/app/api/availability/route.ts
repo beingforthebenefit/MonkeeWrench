@@ -8,7 +8,7 @@ import {route} from '@/lib/route'
 
 const Body = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  kind: z.enum(['OUT', 'PM_OUT']).nullable(),
+  kind: z.enum(['OUT', 'PM_OUT', 'PREFER_NOT']).nullable(),
   // Admins can fill in for someone (e.g. copying from a text message)
   userId: z.string().optional(),
 })

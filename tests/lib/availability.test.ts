@@ -2,6 +2,7 @@ import {describe, it, expect} from 'vitest'
 import {
   addDays,
   bestDays,
+  nextAllFree,
   dayRange,
   scoreDays,
   todayKey,
@@ -48,6 +49,33 @@ describe('scoreDays / bestDays', () => {
       '2026-10-10',
       '2026-10-11',
       '2026-10-09',
+    ])
+  })
+})
+
+describe('prefer not / next days everyone can make', () => {
+  const days = dayRange('2026-10-20', 40)
+  const scores = scoreDays(days, members, [
+    {userId: 'ed', date: '2026-10-20', kind: 'OUT'},
+    {userId: 'mi', date: '2026-10-21', kind: 'PREFER_NOT'},
+    {userId: 'mi', date: '2026-10-22', kind: 'PM_OUT'},
+    ...dayRange('2026-10-23', 30).map((date) => ({
+      userId: 'ed',
+      date,
+      kind: 'OUT' as const,
+    })),
+  ])
+
+  it('counts prefer-not as available but names them', () => {
+    expect(scores[1].free).toBe(2)
+    expect(scores[1].preferNot).toEqual(['Mischelle'])
+  })
+
+  it('lists the next days with nobody out, however far ahead', () => {
+    expect(nextAllFree(scores, 3).map((s) => s.date)).toEqual([
+      '2026-10-21',
+      '2026-10-22',
+      '2026-11-22',
     ])
   })
 })
