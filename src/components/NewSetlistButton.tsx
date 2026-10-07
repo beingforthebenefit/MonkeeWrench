@@ -13,7 +13,7 @@ export default function NewSetlistButton() {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({name: 'New setlist'}),
     })
-    if (r.ok) router.push(`/setlists/${(await r.json()).id}`)
+    if (r.ok) router.push(`/setlists/${(await r.json()).id}/edit`)
     else setBusy(false)
   }
   return (

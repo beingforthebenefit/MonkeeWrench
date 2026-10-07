@@ -47,7 +47,12 @@ export default async function SetlistsPage() {
             Next up
           </p>
           <h2 id="next-h" className="mt-1 text-2xl font-extrabold">
-            {next.name}
+            <Link
+              href={`/setlists/${next.id}`}
+              className="no-underline hover:underline"
+            >
+              {next.name}
+            </Link>
           </h2>
           <p className="mt-1 text-sm text-muted">
             {[
@@ -65,15 +70,32 @@ export default async function SetlistsPage() {
                 {i.song.title}
               </li>
             ))}
-            {next.items.length > 5 && (
-              <li className="pl-8 text-faint">
-                + {next.items.length - 5} more
-              </li>
-            )}
           </ol>
-          <div className="mt-4 grid grid-cols-2 gap-2">
+          {next.items.length > 5 && (
+            // Expands in place: no need to open the setlist to see it all
+            <details className="group mt-1 text-[15px]">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center pl-8 text-faint group-open:hidden">
+                + {next.items.length - 5} more
+              </summary>
+              <ol start={6} className="space-y-1">
+                {next.items.slice(5).map((i, n) => (
+                  <li key={i.id} className="flex gap-3">
+                    <span className="w-5 font-mono text-faint">{n + 6}</span>
+                    {i.song.title}
+                  </li>
+                ))}
+              </ol>
+            </details>
+          )}
+          <div className="mt-4 grid grid-cols-3 gap-2">
             <Link
               href={`/setlists/${next.id}`}
+              className="flex min-h-12 items-center justify-center rounded-xl border border-line-2 font-semibold no-underline"
+            >
+              View
+            </Link>
+            <Link
+              href={`/setlists/${next.id}/edit`}
               className="flex min-h-12 items-center justify-center rounded-xl border border-line-2 font-semibold no-underline"
             >
               Edit

@@ -127,10 +127,10 @@ export default function SetlistEditor({
   return (
     <main className="mx-auto max-w-3xl px-4 pb-32 pt-4">
       <Link
-        href="/setlists"
+        href={`/setlists/${id}`}
         className="text-sm text-muted no-underline hover:text-text"
       >
-        ‹ Setlists
+        ‹ Back to the setlist
       </Link>
       <label className="mt-1 block">
         <span className="sr-only">Setlist name</span>

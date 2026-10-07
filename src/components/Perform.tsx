@@ -107,7 +107,7 @@ export default function Perform({
     return (
       <main className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-stage p-6 text-center">
         <p className="text-xl">This setlist has no songs yet.</p>
-        <Link href={`/setlists/${setId}`} className="text-amber">
+        <Link href={`/setlists/${setId}/edit`} className="text-amber">
           Add songs
         </Link>
       </main>
