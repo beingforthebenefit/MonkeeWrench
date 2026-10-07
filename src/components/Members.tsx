@@ -111,50 +111,57 @@ export default function Members({
       <ul className="mt-5">
         {members.map((m) => (
           <li key={m.id} className="border-t border-line py-3">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <label className="flex items-center">
-                <span className="sr-only">
-                  Name shown in the app for {m.name}
-                </span>
-                <input
-                  defaultValue={m.displayName}
-                  onBlur={(e) => rename(m, e.target.value)}
-                  className="min-h-10 w-28 rounded-lg border border-transparent bg-transparent px-2 text-lg font-bold hover:border-line-2 focus:border-line-2"
-                />
-              </label>
-              <span className="min-w-0 flex-1 text-sm text-muted">
-                {m.name} · {m.email}
-                {m.isAdmin && (
-                  <span className="ml-2 rounded bg-line px-1.5 py-0.5 text-xs text-text">
-                    admin
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <label className="flex shrink-0 items-center">
+                  <span className="sr-only">
+                    Name shown in the app for {m.name}
                   </span>
+                  <input
+                    defaultValue={m.displayName}
+                    onBlur={(e) => rename(m, e.target.value)}
+                    className="min-h-10 w-28 rounded-lg border border-transparent bg-transparent px-2 text-lg font-bold hover:border-line-2 focus:border-line-2"
+                  />
+                </label>
+                <span className="flex min-w-0 flex-1 flex-col text-sm text-muted">
+                  <span>
+                    {m.name}
+                    {m.isAdmin && (
+                      <span className="ml-2 rounded bg-line px-1.5 py-0.5 text-xs text-text">
+                        admin
+                      </span>
+                    )}
+                  </span>
+                  <span className="break-all text-faint">{m.email}</span>
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-2 pl-2 sm:pl-0">
+                <button
+                  type="button"
+                  onClick={() => newPassword(m)}
+                  className={`min-h-11 rounded-lg px-3 text-sm font-semibold ${m.hasPassword ? 'border border-line-2' : 'bg-amber text-ink'}`}
+                >
+                  {m.hasPassword ? 'Reset password' : 'Create password'}
+                </button>
+                {m.id !== me && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => toggleAdmin(m)}
+                      className="min-h-11 px-2 text-sm text-muted underline"
+                    >
+                      {m.isAdmin ? 'Remove admin' : 'Make admin'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => remove(m)}
+                      className="min-h-11 px-2 text-sm text-bad underline"
+                    >
+                      Remove
+                    </button>
+                  </>
                 )}
-              </span>
-              <button
-                type="button"
-                onClick={() => newPassword(m)}
-                className={`min-h-11 rounded-lg px-3 text-sm font-semibold ${m.hasPassword ? 'border border-line-2' : 'bg-amber text-ink'}`}
-              >
-                {m.hasPassword ? 'Reset password' : 'Create password'}
-              </button>
-              {m.id !== me && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => toggleAdmin(m)}
-                    className="min-h-11 px-2 text-sm text-muted underline"
-                  >
-                    {m.isAdmin ? 'Remove admin' : 'Make admin'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => remove(m)}
-                    className="min-h-11 px-2 text-sm text-bad underline"
-                  >
-                    Remove
-                  </button>
-                </>
-              )}
+              </div>
             </div>
             {!m.hasPassword && (
               <p className="mt-1 pl-2 text-xs text-faint">

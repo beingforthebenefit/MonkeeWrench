@@ -14,6 +14,8 @@ export type LibrarySong = {
   hasChart: boolean
   editedBy: string | null
   editedAt: string | null
+  /** Latest version came from an import, not someone editing */
+  imported?: boolean
 }
 
 type Filter = 'all' | 'ready' | 'needs'
@@ -111,10 +113,13 @@ export default function SongLibrary({songs}: {songs: LibrarySong[]}) {
                       {' · '}
                       <span
                         className={
-                          isRecent(s.editedAt) ? 'text-amber' : undefined
+                          isRecent(s.editedAt) && !s.imported
+                            ? 'text-amber'
+                            : undefined
                         }
                       >
-                        {s.editedBy} · {shortDate(s.editedAt)}
+                        {s.imported ? 'imported' : s.editedBy} ·{' '}
+                        {shortDate(s.editedAt)}
                       </span>
                     </>
                   )}

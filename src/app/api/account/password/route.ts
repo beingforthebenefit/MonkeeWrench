@@ -8,7 +8,8 @@ import {logActivity} from '@/lib/songs'
 import {route} from '@/lib/route'
 
 const Body = z.object({
-  current: z.string().min(1),
+  // Not needed when setting a first password (Google sign-in members)
+  current: z.string().optional(),
   next: z.string().min(MIN_PASSWORD_LENGTH).max(200),
 })
 
@@ -23,7 +24,10 @@ export const POST = route(async (req: Request) => {
       },
       {status: 400},
     )
-  if (!(await verifyPassword(parsed.data.current, user.passwordHash)))
+  if (
+    user.passwordHash &&
+    !(await verifyPassword(parsed.data.current ?? '', user.passwordHash))
+  )
     return Response.json({error: 'Current password is wrong.'}, {status: 403})
   const passwordHash = await hashPassword(parsed.data.next)
   await prisma.$transaction(async (tx) => {

@@ -111,6 +111,7 @@ export async function listSongs() {
         select: {
           number: true,
           createdAt: true,
+          note: true,
           author: authorSelect,
           source: true,
         },
@@ -211,4 +212,14 @@ export async function addSongFromProposal(
     summary: `voted ${p.title} in — it's on the list to learn`,
   })
   return song
+}
+
+/** A version written by the importer (or the empty placeholder), not by a person editing. */
+export function isImportNote(note: string | null | undefined) {
+  return Boolean(
+    note &&
+      (note.startsWith('Imported from') ||
+        note === 'No chart yet' ||
+        note === 'Created'),
+  )
 }

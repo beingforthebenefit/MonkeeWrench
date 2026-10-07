@@ -6,7 +6,11 @@ import {useState} from 'react'
 
 const MIN = 10
 
-export default function ChangePassword() {
+export default function ChangePassword({
+  hasPassword = true,
+}: {
+  hasPassword?: boolean
+}) {
   const router = useRouter()
   const {data: session} = useSession()
   const [current, setCurrent] = useState('')
@@ -25,7 +29,7 @@ export default function ChangePassword() {
     const r = await fetch('/api/account/password', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({current, next}),
+      body: JSON.stringify({current: hasPassword ? current : undefined, next}),
     })
     if (!r.ok) {
       setBusy(false)
@@ -73,9 +77,17 @@ export default function ChangePassword() {
 
   return (
     <main className="mx-auto max-w-sm px-4 pt-5">
-      <h1 className="text-3xl font-extrabold">Change password</h1>
+      <h1 className="text-3xl font-extrabold">
+        {hasPassword ? 'Change password' : 'Set a password'}
+      </h1>
+      {!hasPassword && (
+        <p className="mt-1 text-muted">
+          You sign in with Google. A password lets you sign in without it too.
+        </p>
+      )}
       <form onSubmit={submit} className="mt-5 flex flex-col gap-4">
-        {field('Current password', current, setCurrent, 'current-password')}
+        {hasPassword &&
+          field('Current password', current, setCurrent, 'current-password')}
         {field(
           `New password (at least ${MIN} characters)`,
           next,

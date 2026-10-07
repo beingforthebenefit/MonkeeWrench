@@ -34,7 +34,7 @@ export const POST = route(
           : 'member.password.set',
         targetType: 'user',
         targetId: u.id,
-        summary: `${u.passwordHash ? 'reset' : 'set'} ${displayName(u)}’s password`,
+        summary: `${u.passwordHash ? 'reset' : 'set'} ${u.id === admin.id ? 'their own' : `${displayName(u)}’s`} password`,
       })
     })
     return Response.json(

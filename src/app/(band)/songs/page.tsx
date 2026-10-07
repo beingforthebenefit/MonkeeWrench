@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import {detectKey, parseChordPro} from '@/lib/chordpro'
-import {displayName, listSongs} from '@/lib/songs'
+import {displayName, isImportNote, listSongs} from '@/lib/songs'
 import SongLibrary, {type LibrarySong} from '@/components/SongLibrary'
 
 export const metadata = {title: 'Songs · Monkee Wrench'}
@@ -20,6 +20,7 @@ export default async function SongsPage() {
       hasChart: Boolean(chart?.sections.length),
       editedBy: s.latest ? displayName(s.latest.author) : null,
       editedAt: s.latest?.createdAt.toISOString() ?? null,
+      imported: isImportNote(s.latest?.note),
     }
   })
   return <SongLibrary songs={rows} />

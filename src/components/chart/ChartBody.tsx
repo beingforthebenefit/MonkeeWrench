@@ -62,11 +62,16 @@ export function words(segments: Segment[]): Segment[][] {
       pieces.push({chord: i === 0 ? seg.chord : null, lyric}),
     )
   }
+  // Chords after the last word (a turnaround) stay with that word, so a
+  // wrapped line never leaves a chord alone on a row with no lyric under it
+  let lastWord = -1
+  pieces.forEach((p, i) => p.lyric.trim() && (lastWord = i))
   const groups: Segment[][] = []
   let cur: Segment[] = []
-  for (const seg of pieces) {
+  for (const [i, seg] of pieces.entries()) {
     const prev = cur[cur.length - 1]
-    if (prev && (prev.lyric === '' || /\s$/.test(prev.lyric))) {
+    const trailing = lastWord >= 0 && i > lastWord
+    if (prev && !trailing && (prev.lyric === '' || /\s$/.test(prev.lyric))) {
       groups.push(cur)
       cur = []
     }

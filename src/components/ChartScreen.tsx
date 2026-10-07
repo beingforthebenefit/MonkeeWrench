@@ -31,6 +31,7 @@ export default function ChartScreen({
   versions,
   editedBy,
   editedAt,
+  imported = false,
 }: {
   song: ChartSong
   source: string
@@ -38,6 +39,7 @@ export default function ChartScreen({
   versions: number
   editedBy: string | null
   editedAt: string | null
+  imported?: boolean
 }) {
   const [steps, setSteps] = useStoredState(`mw:transpose:${song.id}`, 0)
   const [sizeIdx, setSizeIdx] = useStoredState('mw:text-size', 2)
@@ -166,8 +168,14 @@ export default function ChartScreen({
         <span className="flex-1" />
         {editedBy && editedAt && (
           <span>
-            Edited by <strong className="text-text">{editedBy}</strong> ·{' '}
-            {shortDate(editedAt)}
+            {imported ? (
+              <>Imported · {shortDate(editedAt)}</>
+            ) : (
+              <>
+                Edited by <strong className="text-text">{editedBy}</strong> ·{' '}
+                {shortDate(editedAt)}
+              </>
+            )}
           </span>
         )}
         <Link

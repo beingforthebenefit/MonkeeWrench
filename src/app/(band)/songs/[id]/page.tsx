@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import {notFound} from 'next/navigation'
 import {prisma} from '@/lib/db'
-import {displayName, getSong} from '@/lib/songs'
+import {displayName, getSong, isImportNote} from '@/lib/songs'
 import ChartScreen from '@/components/ChartScreen'
 
 export async function generateMetadata({params}: {params: {id: string}}) {
@@ -37,6 +37,7 @@ export default async function SongPage({params}: {params: {id: string}}) {
       versions={versions}
       editedBy={song.latest ? displayName(song.latest.author) : null}
       editedAt={song.latest?.createdAt.toISOString() ?? null}
+      imported={isImportNote(song.latest?.note)}
     />
   )
 }

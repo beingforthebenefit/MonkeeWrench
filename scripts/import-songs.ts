@@ -132,7 +132,7 @@ async function main() {
           action: 'song.import',
           targetType: 'song',
           targetId: existing.id,
-          summary: `imported a chart for ${existing.title} (${note.replace(/^Imported from /, 'from ')})`,
+          summary: `imported a chart for ${existing.title} ${note.replace(/^Imported /, '')}`,
         },
       })
     })

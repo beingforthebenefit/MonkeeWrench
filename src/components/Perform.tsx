@@ -123,13 +123,14 @@ export default function Perform({
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <header className="flex shrink-0 items-center gap-4">
+      <header className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1">
         <span className="font-mono text-muted">
           {i + 1} / {songs.length}
         </span>
-        <h1 className="min-w-0 flex-1 truncate text-2xl font-extrabold md:text-[34px]">
+        <h1 className="order-last w-full text-2xl font-extrabold leading-tight sm:order-none sm:w-auto sm:min-w-0 sm:flex-1 sm:truncate md:text-[34px]">
           {song.title}
         </h1>
+        <span className="flex-1 sm:hidden" />
         {page.pages > 1 && (
           <span className="rounded-full border border-line px-2.5 py-1 font-mono text-sm text-muted">
             page {page.page + 1}/{page.pages}
@@ -311,7 +312,7 @@ const FittedChart = forwardRef<
         fontSize: size,
         // Columns fill top-to-bottom, then the next column, like a printed
         // page; overflow continues to the right as further "pages".
-        columnWidth: '18em',
+        columnWidth: '21em',
         columnGap: `${GAP_EM}em`,
         columnFill: 'auto',
       }}

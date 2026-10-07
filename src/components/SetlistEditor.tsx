@@ -24,6 +24,7 @@ import {CSS} from '@dnd-kit/utilities'
 import {transposeKey} from '@/lib/chordpro'
 import {shortDate} from '@/lib/dates'
 import PdfDialog from '@/components/PdfDialog'
+import AutoTextarea from '@/components/AutoTextarea'
 
 export type PickSong = {
   id: string
@@ -134,10 +135,13 @@ export default function SetlistEditor({
       </Link>
       <label className="mt-1 block">
         <span className="sr-only">Setlist name</span>
-        <input
+        <AutoTextarea
+          singleLine
           value={v.name}
-          onChange={(e) => setV({...v, name: e.target.value})}
-          className="w-full rounded-lg border border-transparent bg-transparent px-1 text-3xl font-extrabold hover:border-line-2 focus:border-line-2"
+          onChange={(e) =>
+            setV({...v, name: e.target.value.replace(/\n/g, ' ')})
+          }
+          className="block w-full rounded-lg border border-transparent bg-transparent px-1 text-3xl font-extrabold leading-tight hover:border-line-2 focus:border-line-2"
         />
       </label>
       <p className="mt-1 px-1 text-sm text-muted">
@@ -375,7 +379,7 @@ function Row({
         </button>
         <span className="w-6 font-mono text-sm text-faint">{n + 1}</span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate font-semibold">
+          <span className="block font-semibold leading-snug">
             {song?.title ?? 'Deleted song'}
           </span>
           {song?.leadSinger && (
@@ -383,7 +387,7 @@ function Row({
           )}
         </span>
         {keys.length > 0 && (
-          <label className="flex items-center">
+          <label className="hidden items-center sm:flex">
             <span className="sr-only">Key for {song?.title}</span>
             <select
               value={item.key || keys[0]}
@@ -432,15 +436,36 @@ function Row({
           ×
         </button>
       </div>
-      <div className="pl-16">
+      <div className="flex items-start gap-2 pl-16">
+        {keys.length > 0 && (
+          <label className="flex shrink-0 items-center sm:hidden">
+            <span className="sr-only">Key for {song?.title}</span>
+            <select
+              value={item.key || keys[0]}
+              onChange={(e) =>
+                onChange({
+                  key: e.target.value === keys[0] ? '' : e.target.value,
+                })
+              }
+              className={`min-h-11 rounded-lg border border-line-2 bg-panel px-2 font-mono font-bold ${item.key ? 'text-amber' : 'text-muted'}`}
+            >
+              {keys.map((k, i) => (
+                <option key={k} value={k}>
+                  {k}
+                  {i === 0 ? ' (orig)' : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         {noteOpen ? (
-          <label className="flex items-center gap-2">
+          <label className="flex min-w-0 flex-1 items-center gap-2">
             <span className="sr-only">Note for {song?.title}</span>
-            <input
+            <AutoTextarea
               value={item.note}
               onChange={(e) => onChange({note: e.target.value})}
               placeholder="e.g. Micky counts it in · straight into the next song"
-              className="min-h-10 flex-1 rounded-lg border border-line-2 bg-panel px-3 text-[15px]"
+              className="min-h-10 w-full rounded-lg border border-line-2 bg-panel px-3 py-2 text-[15px] leading-snug"
             />
           </label>
         ) : (

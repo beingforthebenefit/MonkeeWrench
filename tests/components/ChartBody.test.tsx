@@ -16,6 +16,17 @@ describe('ChartBody', () => {
     expect(words).toEqual(['A ', 'homeEmcoming ', 'A7queen'])
   })
 
+  it('keeps chords after the last word with that word', () => {
+    const chart = parseChordPro(
+      '{start_of_verse: V}\nWould never [A7]ring   [D7]\n{end_of_verse}\n',
+    )
+    const {container} = render(<ChartBody chart={chart} />)
+    const words = Array.from(container.querySelectorAll('.chart-word')).map(
+      (w) => w.textContent,
+    )
+    expect(words[words.length - 1]).toBe('A7ring   D7')
+  })
+
   it('writes every section out, with its label and note', () => {
     const chart = parseChordPro(
       '{start_of_chorus: Chorus}\n[C]la\n{end_of_chorus}\n{chorus: Chorus (x2)}\n',

@@ -257,13 +257,14 @@ export default function ChartEditor({
         </div>
       </section>
 
-      <div className="sticky bottom-20 z-20 mt-6 flex flex-wrap items-center gap-3 rounded-xl border border-line-2 bg-panel p-3 md:bottom-4">
+      <div className="sticky bottom-20 z-20 mt-6 flex flex-wrap items-center gap-2 rounded-xl border border-line-2 bg-panel p-2 sm:gap-3 sm:p-3 md:bottom-4">
         <label className="flex min-w-0 flex-1 basis-64 items-center gap-2 text-sm text-muted">
-          <span className="shrink-0">What changed?</span>
+          <span className="hidden shrink-0 sm:inline">What changed?</span>
           <input
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="e.g. added the C under “to a”"
+            placeholder="What changed? e.g. added the C under “to a”"
+            aria-label="What changed?"
             disabled={!chartChanged}
             className="min-h-11 min-w-0 flex-1 rounded-lg border border-line-2 bg-ink px-3 text-base text-text disabled:opacity-50"
           />

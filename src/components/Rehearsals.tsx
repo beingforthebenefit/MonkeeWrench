@@ -184,31 +184,33 @@ export default function Rehearsals({
                     {monthName(d.date)}
                   </p>
                 )}
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="w-28 font-mono font-bold text-amber">
-                  {formatDay(d.date)}
-                </span>
-                <span className="flex-1 text-sm">
-                  {d.pmOut.length || d.preferNot.length ? (
-                    <>
-                      {d.pmOut.length > 0 && (
-                        <span className="text-[#f2d18a]">
-                          Evening only (afternoon out: {d.pmOut.join(', ')})
-                        </span>
-                      )}
-                      {d.pmOut.length > 0 && d.preferNot.length > 0 && ' · '}
-                      {d.preferNot.length > 0 && (
-                        <span className="text-[#b9d4ff]">
-                          Would rather not: {d.preferNot.join(', ')}
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    <strong className="text-good">Everyone free</strong>
-                  )}
+              <div className="flex items-center gap-3">
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
+                  <span className="shrink-0 font-mono font-bold text-amber sm:w-28">
+                    {formatDay(d.date)}
+                  </span>
+                  <span className="min-w-0 text-sm">
+                    {d.pmOut.length || d.preferNot.length ? (
+                      <>
+                        {d.pmOut.length > 0 && (
+                          <span className="text-[#f2d18a]">
+                            Evening only (afternoon out: {d.pmOut.join(', ')})
+                          </span>
+                        )}
+                        {d.pmOut.length > 0 && d.preferNot.length > 0 && ' · '}
+                        {d.preferNot.length > 0 && (
+                          <span className="text-[#b9d4ff]">
+                            Would rather not: {d.preferNot.join(', ')}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <strong className="text-good">Everyone free</strong>
+                    )}
+                  </span>
                 </span>
                 {booked.has(d.date) ? (
-                  <span className="min-h-11 px-3 text-sm font-semibold leading-[44px] text-good">
+                  <span className="shrink-0 px-3 text-sm font-semibold leading-[44px] text-good">
                     Booked ✓
                   </span>
                 ) : (
@@ -217,7 +219,7 @@ export default function Rehearsals({
                     onClick={() =>
                       setPlanning(planning === d.date ? null : d.date)
                     }
-                    className="min-h-11 rounded-lg border border-line-2 px-3 text-sm font-semibold"
+                    className="min-h-11 shrink-0 rounded-lg border border-line-2 px-3 text-sm font-semibold"
                   >
                     Set rehearsal
                   </button>
