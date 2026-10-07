@@ -2,6 +2,7 @@
 
 import {useRouter} from 'next/navigation'
 import {AddToCalendar, SubscribeCalendar} from '@/components/CalendarLinks'
+import MapLink from '@/components/MapLink'
 import {useMemo, useState} from 'react'
 import {
   nextAllFree,
@@ -130,7 +131,12 @@ export default function Rehearsals({
               >
                 <strong className="text-lg">{formatDay(r.date)}</strong>
                 {r.time && <span>{r.time}</span>}
-                {r.place && <span className="text-muted">{r.place}</span>}
+                {r.place && (
+                  <MapLink
+                    place={r.place}
+                    className="text-sky no-underline hover:underline"
+                  />
+                )}
                 {r.note && (
                   <span className="basis-full text-sm text-muted">
                     {r.note}
