@@ -50,7 +50,8 @@ async function main() {
   const author = await prisma.user.upsert({
     where: {email},
     update: {},
-    create: {email, name: email.split('@')[0], isAdmin: true},
+    // No name: Google sign-in fills in the real one
+    create: {email, isAdmin: true},
   })
 
   const counts = {created: 0, updated: 0, unchanged: 0, skipped: 0}

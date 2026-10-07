@@ -1,33 +1,39 @@
 import '@/app/globals.css'
 import {ReactNode} from 'react'
+import type {Metadata, Viewport} from 'next'
+import {Archivo, JetBrains_Mono} from 'next/font/google'
 import {getServerSession} from 'next-auth'
 import {authOptions} from '@/lib/auth'
 import Providers from '@/components/Providers'
-import Nav from '@/components/Nav' // Nav is already a client component
+import AppShell from '@/components/AppShell'
 
-export const metadata = {title: 'Monkee Wrench'}
+const archivo = Archivo({subsets: ['latin'], variable: '--font-archivo'})
+const jetbrains = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['500', '700'],
+  variable: '--font-jetbrains',
+})
+
+export const metadata: Metadata = {
+  title: 'Monkee Wrench',
+  description: 'Charts, setlists and rehearsals for Monkee Business',
+  appleWebApp: {capable: true, title: 'Monkee Wrench', statusBarStyle: 'black'},
+}
+
+export const viewport: Viewport = {
+  themeColor: '#111315',
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+}
 
 export default async function RootLayout({children}: {children: ReactNode}) {
   const session = await getServerSession(authOptions)
   return (
-    <html lang="en">
-      <body style={{background: '#0b0b0b'}}>
+    <html lang="en" className={`${archivo.variable} ${jetbrains.variable}`}>
+      <body>
         <Providers session={session}>
-          <Nav />
-          {!session?.user && (
-            <div className="mx-auto max-w-[900px] px-4">
-              <div className="mt-2 mb-2 rounded-md bg-[#222224] text-gray-200 text-sm px-3 py-2">
-                Viewing as guest — sign in to propose songs, vote, or manage the
-                setlist.
-                <a href="/login" className="ml-2 underline text-[#B71C1C]">
-                  Sign in
-                </a>
-              </div>
-            </div>
-          )}
-          <main style={{maxWidth: 900, margin: '0 auto', padding: '16px'}}>
-            {children}
-          </main>
+          <AppShell>{children}</AppShell>
         </Providers>
       </body>
     </html>

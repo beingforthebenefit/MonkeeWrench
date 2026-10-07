@@ -150,5 +150,6 @@ export function displayName(
 ) {
   if (!u) return 'someone'
   if (u.name) return u.name.split(' ')[0]
-  return u.email?.split('@')[0] ?? 'someone'
+  const local = u.email?.split('@')[0]
+  return local ? local.charAt(0).toUpperCase() + local.slice(1) : 'someone'
 }
