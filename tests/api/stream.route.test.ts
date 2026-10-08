@@ -23,7 +23,6 @@ describe('/api/stream GET', () => {
     const res = await GET()
     expect(res.body).toBeTruthy()
     // Cancel the stream to trigger cleanup
-    // @ts-expect-error types for web streams
     await res.body?.cancel()
     const {bus} = await import('@/lib/events')
     expect(bus.off as any).toHaveBeenCalled()

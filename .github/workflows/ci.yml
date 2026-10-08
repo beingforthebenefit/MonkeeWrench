@@ -34,6 +34,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Type check
+        run: npx prisma generate && npm run typecheck
+
       - name: Test (with coverage)
         run: |
           npm run test:coverage | tee vitest-output.txt

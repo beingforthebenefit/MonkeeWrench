@@ -1,0 +1,7 @@
+{
+  // Type-check the source and tests without Next's generated .next/types,
+  // which go stale between builds (CI and `make ci` run this; `next build`
+  // checks the same code again with fresh types)
+  "extends": "./tsconfig.json",
+  "include": ["src", "prisma", "tests"]
+}

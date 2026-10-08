@@ -14,7 +14,7 @@ export type BandSettingsValues = {
 }
 
 const FIELDS: {
-  key: keyof BandSettingsValues
+  key: Exclude<keyof BandSettingsValues, 'scheduling'>
   label: string
   hint: string
   type?: string

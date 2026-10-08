@@ -185,8 +185,12 @@ lint-ci:
 test-ci:
 	$(TOOLS) npm test --silent
 
+.PHONY: typecheck
+typecheck: ## TypeScript errors (what `next build` would fail on)
+	$(TOOLS) npm run typecheck --silent
+
 .PHONY: ci
-ci: format-check lint-ci test-ci
+ci: format-check lint-ci typecheck test-ci
 
 # ------------------------------------------------------------------------------
 # Dependencies
