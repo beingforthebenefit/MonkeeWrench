@@ -349,3 +349,46 @@ describe('remarks and bare tab lines in imports', () => {
     expect(source).toContain('[G7]')
   })
 })
+
+describe('notation sections ({start_of_abc})', () => {
+  const src = [
+    '{key: G}',
+    '{start_of_abc: Horn riff}',
+    'K:G',
+    '"G"g2 fe d2 BG |',
+    '',
+    '"D"A8 |]',
+    '{end_of_abc}',
+    '{start_of_verse}',
+    '[G]la',
+    '{end_of_verse}',
+  ].join('\n')
+
+  it('keeps the notation verbatim, blank lines and all', () => {
+    const c = parseChordPro(src)
+    expect(c.sections[0]).toMatchObject({
+      type: 'abc',
+      label: 'Horn riff',
+      lines: [],
+      abc: 'K:G\n"G"g2 fe d2 BG |\n\n"D"A8 |]',
+    })
+  })
+
+  it('has no heading unless given one', () => {
+    const c = parseChordPro('{start_of_abc}\n"C"C8 |]\n{end_of_abc}')
+    expect(c.sections).toHaveLength(1)
+    expect(c.sections[0].label).toBe('')
+  })
+
+  it('counts how far the chart is transposed, for the notation to follow', () => {
+    const up = transposeChart(transposeChart(parseChordPro(src), 2), 3)
+    expect(up.sections[0].abcSteps).toBe(5)
+    expect(up.sections[0].abc).toContain('"G"g2')
+  })
+
+  it('shows the ABC text in history diffs', () => {
+    expect(chartToChordsOverWords(parseChordPro(src))).toContain(
+      '[Horn riff]\nK:G\n"G"g2 fe d2 BG |',
+    )
+  })
+})

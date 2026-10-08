@@ -25,6 +25,13 @@ export type Section = {
   /** Parenthesised remark after the label, e.g. "x2, 2nd time fade out" */
   note: string
   lines: ChartLine[]
+  /**
+   * Music notation, for a {start_of_abc} section: ABC text, drawn as a
+   * staff. It is written in the chart's original key; `abcSteps` is how far
+   * the chart has been transposed since, which the notation follows.
+   */
+  abc?: string
+  abcSteps?: number
 }
 
 export type Chart = {
@@ -122,7 +129,8 @@ export function parseChordPro(source: string): Chart {
       const value = d[2] ?? ''
       const start = name.match(/^start_of_(\w+)$/)
       if (start) {
-        open(start[1], value || cap(start[1]))
+        // Notation has no heading unless it is given one ("Horn riff")
+        open(start[1], value || (start[1] === 'abc' ? '' : cap(start[1])))
         continue
       }
       if (/^end_of_\w+$/.test(name)) {
@@ -158,6 +166,11 @@ export function parseChordPro(source: string): Chart {
 
     // (TS narrows `current` to null here because it is assigned in a closure)
     const cur = current as Section | null
+    if (cur?.type === 'abc') {
+      // Kept verbatim, blank lines and all: it's another language
+      cur.abc = cur.abc === undefined ? rawLine : `${cur.abc}\n${rawLine}`
+      continue
+    }
     if (cur?.type === 'tab') {
       if (line.trim()) cur.lines.push({kind: 'tab', text: line})
       continue
@@ -170,7 +183,10 @@ export function parseChordPro(source: string): Chart {
     current!.lines.push(parseLyricLine(line))
   }
 
-  chart.sections = chart.sections.filter((s) => s.lines.length > 0 || s.label)
+  for (const s of chart.sections) if (s.abc !== undefined) s.abc = s.abc.trim()
+  chart.sections = chart.sections.filter(
+    (s) => s.lines.length > 0 || s.label || s.abc,
+  )
   return chart
 }
 
@@ -306,6 +322,7 @@ export function transposeChart(chart: Chart, semitones: number): Chart {
     key: chart.key ? toKey : chart.key,
     sections: chart.sections.map((s) => ({
       ...s,
+      ...(s.abc ? {abcSteps: (s.abcSteps ?? 0) + steps} : {}),
       lines: s.lines.map((l) =>
         l.kind !== 'lyrics'
           ? l
@@ -350,9 +367,11 @@ export function chartToChordsOverWords(chart: Chart): string {
   const out: string[] = []
   chart.sections.forEach((s, i) => {
     if (i > 0) out.push('')
-    const head = s.label || cap(s.type)
+    const head = s.label || (s.abc ? 'Notation' : cap(s.type))
     out.push(`[${head}]${s.note ? ` (${s.note})` : ''}`)
     for (const l of s.lines) out.push(...lineToChordsOverWords(l))
+    // Notation shows as its ABC text, so a history diff shows what changed
+    if (s.abc) out.push(...s.abc.split('\n'))
   })
   return out.join('\n')
 }

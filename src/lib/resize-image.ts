@@ -83,3 +83,40 @@ export async function squareIcon(
     URL.revokeObjectURL(url)
   }
 }
+
+/**
+ * Browser only. A picture for a cue: no wider than `max` pixels. A PNG (a
+ * screenshot of sheet music) stays PNG so the notes stay crisp; a photo
+ * becomes a JPEG.
+ */
+export async function fitImage(file: Blob, max = 1600) {
+  const url = URL.createObjectURL(file)
+  try {
+    const img = new Image()
+    img.src = url
+    await img.decode()
+    const k = Math.min(1, max / img.naturalWidth)
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.round(img.naturalWidth * k)
+    canvas.height = Math.round(img.naturalHeight * k)
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('No canvas')
+    const png = file.type === 'image/png'
+    if (!png) {
+      // JPEG has no transparency: put it on white, like paper
+      ctx.fillStyle = '#fff'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+    }
+    ctx.imageSmoothingQuality = 'high'
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+    return await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error('Could not encode'))),
+        png ? 'image/png' : 'image/jpeg',
+        0.88,
+      ),
+    )
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}

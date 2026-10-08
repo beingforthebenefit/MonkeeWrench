@@ -12,6 +12,7 @@ export default function PdfDialog({
   shownKey,
   originalKey,
   footnote,
+  hasCues = false,
   onClose,
 }: {
   title: string
@@ -20,10 +21,13 @@ export default function PdfDialog({
   shownKey: string | null
   originalKey: string | null
   footnote?: string
+  /** The reader has cues on this: offer to print them */
+  hasCues?: boolean
   onClose: () => void
 }) {
   const [useShown, setUseShown] = useState(Boolean(shownKey))
   const [paper, setPaper] = useState<'letter' | 'a4'>('letter')
+  const [withCues, setWithCues] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
@@ -35,6 +39,7 @@ export default function PdfDialog({
 
   const params = new URLSearchParams({download: '1', paper})
   if (useShown && shownKey) params.set('key', shownKey)
+  if (withCues) params.set('cues', '1')
   const href = `${baseUrl}?${params}`
 
   return (
@@ -89,6 +94,18 @@ export default function PdfDialog({
           value={paper}
           onChange={(v) => setPaper(v as 'letter' | 'a4')}
         />
+
+        {hasCues && (
+          <Choice
+            legend="Your cues"
+            options={[
+              ['off', 'Leave off'],
+              ['on', 'Print them'],
+            ]}
+            value={withCues ? 'on' : 'off'}
+            onChange={(v) => setWithCues(v === 'on')}
+          />
+        )}
 
         {footnote && <p className="my-4 text-[13px] text-muted">{footnote}</p>}
 

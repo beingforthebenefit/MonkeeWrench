@@ -1,4 +1,6 @@
-import {isChord} from '@/lib/chordpro'
+import type {ReactNode} from 'react'
+import {detectKey, isChord, transposeKey} from '@/lib/chordpro'
+import AbcNotation from '@/components/cues/AbcNotation'
 import type {Chart, ChartLine, Section, Segment} from '@/lib/chordpro'
 
 /**
@@ -10,23 +12,67 @@ export default function ChartBody({
   chart,
   columns = true,
   className = '',
+  top,
+  extra,
 }: {
   chart: Chart
   columns?: boolean
   className?: string
+  /** Shown before the first section, flowing with the chart (personal cues) */
+  top?: ReactNode
+  /** Shown under a section's heading, by section index (personal cues) */
+  extra?: (index: number) => ReactNode
 }) {
-  if (!chart.sections.length) return <p className="text-muted">No chart yet.</p>
+  if (!chart.sections.length)
+    return (
+      <>
+        {top}
+        <p className="text-muted">No chart yet.</p>
+      </>
+    )
   return (
     <div className={`${columns ? 'chart-columns' : ''} ${className}`}>
+      {top}
       {chart.sections.map((s, i) => (
-        <ChartSection key={i} section={s} />
+        <ChartSection
+          key={i}
+          section={s}
+          extra={extra?.(i)}
+          songKey={s.abc ? originalKey(chart, s.abcSteps ?? 0) : null}
+        />
       ))}
     </div>
   )
 }
 
-function ChartSection({section}: {section: Section}) {
-  const label = section.label || (section.type === 'tab' ? '' : section.type)
+/** The key the chart was written in, before transposing by `steps`. */
+function originalKey(chart: Chart, steps: number) {
+  const key = detectKey(chart)
+  return key && steps ? transposeKey(key, -steps) : key
+}
+
+function ChartSection({
+  section,
+  extra,
+  songKey,
+}: {
+  section: Section
+  extra?: ReactNode
+  /** The chart's original key, for notation without a K: line */
+  songKey: string | null
+}) {
+  const label =
+    section.label ||
+    (section.type === 'tab' || section.type === 'abc' ? '' : section.type)
+  const notation = section.abc ? (
+    <div className="chart-abc">
+      <AbcNotation
+        abc={section.abc}
+        songKey={songKey}
+        steps={section.abcSteps ?? 0}
+      />
+    </div>
+  ) : null
   const blocks = runs(section.lines).map((run, i) =>
     run[0].kind === 'tab' ? (
       // One scroll area per tab block, so the strings move together
@@ -59,9 +105,12 @@ function ChartSection({section}: {section: Section}) {
       {heading && (
         <div className="chart-keep">
           {heading}
-          {blocks[0]}
+          {extra}
+          {notation ?? blocks[0]}
         </div>
       )}
+      {!heading && extra}
+      {!heading && notation}
       {blocks.length > (heading ? 1 : 0) && (
         <div
           className={`flex flex-col gap-[0.35em] ${heading ? 'mt-[0.35em]' : ''}`}

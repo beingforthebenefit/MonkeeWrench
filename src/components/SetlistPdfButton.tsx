@@ -28,6 +28,7 @@ export default function SetlistPdfButton({
           baseUrl={`/api/setlists/${id}/pdf`}
           shownKey={null}
           originalKey={null}
+          hasCues
           onClose={() => setOpen(false)}
         />
       )}

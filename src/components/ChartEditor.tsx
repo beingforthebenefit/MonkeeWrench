@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import {useRouter} from 'next/navigation'
-import {useMemo, useState} from 'react'
-import {importChordsOverWords, parseChordPro} from '@/lib/chordpro'
+import {useMemo, useRef, useState} from 'react'
+import {detectKey, importChordsOverWords, parseChordPro} from '@/lib/chordpro'
+import {abcPresets} from '@/lib/abc'
 import ChartBody from '@/components/chart/ChartBody'
 
 export type SongFormValues = {
@@ -60,6 +61,26 @@ export default function ChartEditor({
   const chart = useMemo(() => parseChordPro(source), [source])
   const chartChanged = source !== initialSource
   const fieldsChanged = JSON.stringify(fields) !== JSON.stringify(initialFields)
+
+  const textarea = useRef<HTMLTextAreaElement>(null)
+
+  /** Drop a notation block in at the cursor (between lines), in the song's key. */
+  function insertNotation() {
+    const el = textarea.current
+    const at = el ? el.selectionStart : source.length
+    const lineStart = source.lastIndexOf('\n', at - 1) + 1
+    const pattern = abcPresets(detectKey(chart))[0].abc
+    const block = `{start_of_abc: Riff}\n${pattern}\n{end_of_abc}\n`
+    const next = source.slice(0, lineStart) + block + source.slice(lineStart)
+    setSource(next)
+    requestAnimationFrame(() => {
+      if (!el) return
+      el.focus()
+      // Select the music so it can be typed over straight away
+      const start = lineStart + block.indexOf('\n') + 1
+      el.setSelectionRange(start, start + pattern.length)
+    })
+  }
 
   function convertPasted() {
     // Turn a chords-over-lyrics paste (e.g. from a website) into ChordPro
@@ -201,6 +222,13 @@ export default function ChartEditor({
             ))}
           </div>
           <span className="flex-1" />
+          <button
+            type="button"
+            onClick={insertNotation}
+            className="min-h-10 rounded-lg border border-line-2 px-3 text-sm font-semibold"
+          >
+            ♪ Insert notation
+          </button>
           {looksLikeChordsOverWords && (
             <button
               type="button"
@@ -217,6 +245,7 @@ export default function ChartEditor({
               Chart (ChordPro)
             </label>
             <textarea
+              ref={textarea}
               id="chart-source"
               value={source}
               onChange={(e) => setSource(e.target.value)}
@@ -242,6 +271,16 @@ export default function ChartEditor({
                   {'{end_of_intro}'}
                 </p>
                 <p>{'{comment: Micky counts it in}'}</p>
+                <p>
+                  {'{start_of_abc: Horn riff}'} &quot;G&quot;B2 B2 B4 |
+                  &quot;C&quot;B8 |] {'{end_of_abc}'}
+                </p>
+                <p className="font-sans">
+                  Notation is ABC (abcnotation.com): letters are notes, numbers
+                  are lengths, z is a rest, “G” is a chord, | is a bar. Write it
+                  in the song’s key; it transposes with the chart. The preview
+                  draws it as you type.
+                </p>
                 <p className="font-sans">
                   Or paste chords-above-lyrics text from anywhere and press
                   “Convert”.

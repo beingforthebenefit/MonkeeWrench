@@ -7,6 +7,7 @@ import {pageSession} from '@/lib/guard'
 import {followToBand} from '@/lib/band'
 import {getSetlist} from '@/lib/setlists'
 import Perform, {type PerformSong} from '@/components/Perform'
+import {myCues} from '@/lib/cues-server'
 
 export const metadata = {title: 'Perform'}
 
@@ -24,6 +25,10 @@ export default async function PerformPage({params}: {params: {id: string}}) {
   }
   // Every chart in the set is sent with the page, so once it has loaded the
   // whole set works without a connection.
+  const cues = await myCues(
+    user.id,
+    set.items.map((i) => i.songId),
+  )
   const songs: PerformSong[] = set.items.map((i) => ({
     id: i.song.id,
     title: i.song.title,
@@ -31,6 +36,7 @@ export default async function PerformPage({params}: {params: {id: string}}) {
     source: i.song.chartVersions[0]?.source ?? '',
     key: i.key,
     note: i.note,
+    cues: cues.get(i.songId) ?? [],
   }))
   return <Perform setId={set.id} name={set.name} songs={songs} />
 }

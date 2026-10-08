@@ -16,6 +16,16 @@ const songs = [
     source: '{start_of_verse: Verse 1}\n[C]la la [G]la\n{end_of_verse}\n',
     key: null,
     note: null,
+    cues: [
+      {
+        id: 'c1',
+        anchor: 'verse 1#1',
+        position: 0,
+        kind: 'TEXT' as const,
+        text: 'Drums only first time',
+        image: null,
+      },
+    ],
   },
 ]
 
@@ -32,5 +42,11 @@ describe('Perform', () => {
     await userEvent.click(screen.getByRole('button', {name: 'Show as pages'}))
     expect(localStorage.getItem('mw:perform-mode')).toBe('"pages"')
     localStorage.clear()
+  })
+
+  it('shows your cues on the chart, under their section', () => {
+    localStorage.clear()
+    render(<Perform setId="y" name="Set" songs={songs} />)
+    expect(screen.getByText('Drums only first time')).toBeInTheDocument()
   })
 })

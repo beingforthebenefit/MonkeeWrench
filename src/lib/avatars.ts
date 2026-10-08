@@ -22,3 +22,50 @@ export function sniffImage(b: Uint8Array): string | null {
   if (ascii(0, 4) === 'RIFF' && ascii(8, 12) === 'WEBP') return 'image/webp'
   return null
 }
+
+/** Width and height from a PNG, JPEG or WebP's own header; null if unreadable. */
+export function imageSize(
+  b: Uint8Array,
+): {width: number; height: number} | null {
+  const type = sniffImage(b)
+  const u16 = (i: number) => (b[i] << 8) | b[i + 1]
+  const u32 = (i: number) =>
+    ((b[i] << 24) | (b[i + 1] << 16) | (b[i + 2] << 8) | b[i + 3]) >>> 0
+  if (type === 'image/png' && b.length >= 24)
+    return {width: u32(16), height: u32(20)}
+  if (type === 'image/jpeg') {
+    // Walk the segments to the frame header (SOF0..SOF15, not DHT/JPG/DAC)
+    let i = 2
+    while (i + 9 < b.length) {
+      if (b[i] !== 0xff) return null
+      const marker = b[i + 1]
+      const len = u16(i + 2)
+      if (
+        marker >= 0xc0 &&
+        marker <= 0xcf &&
+        ![0xc4, 0xc8, 0xcc].includes(marker)
+      )
+        return {height: u16(i + 5), width: u16(i + 7)}
+      i += 2 + len
+    }
+    return null
+  }
+  if (type === 'image/webp' && b.length >= 30) {
+    const chunk = String.fromCharCode(...b.slice(12, 16))
+    if (chunk === 'VP8X')
+      return {
+        width: 1 + (b[24] | (b[25] << 8) | (b[26] << 16)),
+        height: 1 + (b[27] | (b[28] << 8) | (b[29] << 16)),
+      }
+    if (chunk === 'VP8 ')
+      return {
+        width: (b[26] | (b[27] << 8)) & 0x3fff,
+        height: (b[28] | (b[29] << 8)) & 0x3fff,
+      }
+    if (chunk === 'VP8L') {
+      const bits = b[21] | (b[22] << 8) | (b[23] << 16) | (b[24] << 24)
+      return {width: (bits & 0x3fff) + 1, height: ((bits >> 14) & 0x3fff) + 1}
+    }
+  }
+  return null
+}

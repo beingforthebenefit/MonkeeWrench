@@ -7,6 +7,8 @@ import {shortDate} from '@/lib/dates'
 import ChartBody from '@/components/chart/ChartBody'
 import PdfDialog from '@/components/PdfDialog'
 import {useStoredState} from '@/components/useStoredState'
+import {useCueSlots} from '@/components/cues/useCueSlots'
+import type {Cue} from '@/lib/cues'
 
 export type ChartSong = {
   id: string
@@ -32,6 +34,7 @@ export default function ChartScreen({
   editedBy,
   editedAt,
   imported = false,
+  cues = [],
 }: {
   song: ChartSong
   source: string
@@ -40,6 +43,8 @@ export default function ChartScreen({
   editedBy: string | null
   editedAt: string | null
   imported?: boolean
+  /** Your own cues on this song */
+  cues?: Cue[]
 }) {
   const [steps, setSteps] = useStoredState(`mw:transpose:${song.id}`, 0)
   const [sizeIdx, setSizeIdx] = useStoredState('mw:text-size', 2)
@@ -53,6 +58,15 @@ export default function ChartScreen({
   const originalKey = detectKey(original)
   const key = detectKey(chart)
   const size = TEXT_SIZES[Math.min(Math.max(sizeIdx, 0), TEXT_SIZES.length - 1)]
+  const [cueMode, setCueMode] = useState(false)
+  const slots = useCueSlots({
+    songId: song.id,
+    chart,
+    songKey: originalKey,
+    steps,
+    initial: cues,
+    editing: cueMode,
+  })
 
   const details = [
     song.writer,
@@ -135,6 +149,19 @@ export default function ChartScreen({
               A
             </button>
           </div>
+          <button
+            type="button"
+            aria-pressed={cueMode}
+            onClick={() => setCueMode(!cueMode)}
+            className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg px-4 ${cueMode ? 'bg-accent font-bold text-on-accent' : 'border border-line-2'}`}
+          >
+            {cueMode ? 'Done' : 'My cues'}
+            {!cueMode && slots.count > 0 && (
+              <span className="font-mono text-sm text-amber">
+                {slots.count}
+              </span>
+            )}
+          </button>
           <Link
             href={`/songs/${song.id}/edit`}
             className="inline-flex min-h-11 items-center rounded-lg border border-line-2 px-4 no-underline"
@@ -192,8 +219,15 @@ export default function ChartScreen({
         </p>
       )}
 
+      {cueMode && (
+        <p className="mt-3 rounded-lg border border-amber/60 px-4 py-2 text-sm text-muted">
+          Your cues — notes, pictures of a few bars, or notation — sit on the
+          chart where you put them. Only you see them; the chart itself doesn’t
+          change.
+        </p>
+      )}
       <div className="mt-5" style={{fontSize: size}}>
-        <ChartBody chart={chart} />
+        <ChartBody chart={chart} top={slots.top} extra={slots.extra} />
       </div>
 
       {pdfOpen && (
@@ -203,6 +237,7 @@ export default function ChartScreen({
           baseUrl={`/api/songs/${song.id}/pdf`}
           shownKey={steps % 12 !== 0 ? key : null}
           originalKey={originalKey}
+          hasCues={slots.count > 0}
           footnote={`Every page says version ${version}${editedBy ? `, edited by ${editedBy}` : ''}, so an old printout is easy to spot.`}
         />
       )}

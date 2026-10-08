@@ -4,7 +4,7 @@ import {
   semitonesBetween,
   transposeChart,
 } from './chordpro'
-import type {PdfItem} from './pdf'
+import type {PdfCue, PdfItem} from './pdf'
 import {displayName} from './songs'
 
 type SongLike = {
@@ -55,6 +55,8 @@ export function buildPdfItem(
     subtitle,
     chart,
     note: opts.note,
+    originalKey: fromKey,
+    steps,
     footer: `${band.name}  ·  ${song.title}  ·  version ${version.number}, edited by ${displayName(version.author)} on ${dateFmt(band.timezone).format(version.createdAt)}`,
   }
 }
@@ -72,4 +74,33 @@ export function pdfResponse(buf: Buffer, filename: string, download: boolean) {
 
 export function paperFrom(url: URL): 'LETTER' | 'A4' {
   return url.searchParams.get('paper')?.toUpperCase() === 'A4' ? 'A4' : 'LETTER'
+}
+
+/** Someone's own cues on these songs, with picture bytes, for a PDF. */
+export async function pdfCues(userId: string, songIds: string[]) {
+  const {prisma} = await import('./db')
+  const rows = await prisma.cue.findMany({
+    where: {userId, songId: {in: songIds}},
+    include: {image: true},
+  })
+  const out = new Map<string, PdfCue[]>()
+  for (const r of rows)
+    out.set(r.songId, [
+      ...(out.get(r.songId) ?? []),
+      {
+        id: r.id,
+        anchor: r.anchor,
+        position: r.position,
+        kind: r.kind,
+        text: r.text,
+        image: r.image
+          ? {
+              data: Buffer.from(r.image.data),
+              width: r.image.width,
+              height: r.image.height,
+            }
+          : null,
+      },
+    ])
+  return out
 }

@@ -20,6 +20,8 @@ import {
 import ChartBody from '@/components/chart/ChartBody'
 import {useStoredState} from '@/components/useStoredState'
 import {TEXT_SIZES} from '@/components/ChartScreen'
+import {readOnlyCueSlots} from '@/components/cues/useCueSlots'
+import type {Cue} from '@/lib/cues'
 
 export type PerformSong = {
   id: string
@@ -29,6 +31,8 @@ export type PerformSong = {
   /** Key for this set, when it differs from the chart */
   key: string | null
   note: string | null
+  /** Your own cues on this song */
+  cues: Cue[]
 }
 
 type PerformMode = 'auto' | 'scroll' | 'pages'
@@ -55,9 +59,12 @@ export default function Perform({
       songs.map((s) => {
         const chart = parseChordPro(s.source)
         const from = detectKey(chart)
-        return s.key && from
-          ? transposeChart(chart, semitonesBetween(from, s.key))
-          : chart
+        const steps = s.key && from ? semitonesBetween(from, s.key) : 0
+        const shown = steps ? transposeChart(chart, steps) : chart
+        return {
+          chart: shown,
+          cues: readOnlyCueSlots(shown, s.cues, from, steps),
+        }
       }),
     [songs],
   )
@@ -170,9 +177,9 @@ export default function Perform({
       </main>
     )
 
-  const chart = charts[i]
+  const {chart, cues} = charts[i]
   const next = songs[i + 1]
-  const nextKey = next ? detectKey(charts[i + 1]) : null
+  const nextKey = next ? detectKey(charts[i + 1].chart) : null
 
   return (
     <main
@@ -225,10 +232,21 @@ export default function Perform({
 
       {scroll ? (
         <div className="mt-4 flex-1 pb-6" style={{fontSize: scrollSize}}>
-          <ChartBody chart={chart} columns={false} />
+          <ChartBody
+            chart={chart}
+            columns={false}
+            top={cues.top}
+            extra={cues.extra}
+          />
         </div>
       ) : (
-        <FittedChart key={i} ref={chartRef} chart={chart} onPage={setPage} />
+        <FittedChart
+          key={i}
+          ref={chartRef}
+          chart={chart}
+          cues={cues}
+          onPage={setPage}
+        />
       )}
 
       <footer
@@ -315,9 +333,10 @@ const FittedChart = forwardRef<
   FittedChartHandle,
   {
     chart: ReturnType<typeof parseChordPro>
+    cues: ReturnType<typeof readOnlyCueSlots>
     onPage: (p: {page: number; pages: number}) => void
   }
->(function FittedChart({chart, onPage}, ref) {
+>(function FittedChart({chart, cues, onPage}, ref) {
   const box = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState(READABLE)
   const [pages, setPages] = useState(1)
@@ -398,7 +417,12 @@ const FittedChart = forwardRef<
         columnFill: 'auto',
       }}
     >
-      <ChartBody chart={chart} columns={false} />
+      <ChartBody
+        chart={chart}
+        columns={false}
+        top={cues.top}
+        extra={cues.extra}
+      />
     </div>
   )
 })

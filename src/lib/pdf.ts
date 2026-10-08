@@ -1,6 +1,10 @@
 import PDFDocument from 'pdfkit'
-import {isChord} from './chordpro'
+import SVGtoPDF from 'svg-to-pdfkit'
+import {detectKey, isChord, transposeKey} from './chordpro'
 import type {Chart, ChartLine, Section} from './chordpro'
+import {anchorLabel, placeCues} from './cues'
+import {withAbcHeader} from './abc'
+import {renderAbcSvgs, type AbcSvg} from './abc-svg'
 
 /**
  * Chart PDFs, generated on request from the stored ChordPro — there is no
@@ -19,7 +23,35 @@ export type PdfItem = {
   footer: string
   /** Setlist note for this song, printed in a box under the title */
   note?: string | null
+  /** The reader's own cues, when they asked for them on the PDF */
+  cues?: PdfCue[]
+  /** The chart's original key and how far it's transposed (for cue notation) */
+  originalKey?: string | null
+  steps?: number
 }
+
+export type PdfCue = {
+  id: string
+  anchor: string
+  position: number
+  kind: 'TEXT' | 'IMAGE' | 'ABC'
+  text: string | null
+  image: {data: Buffer; width: number; height: number} | null
+}
+
+/** A picture in the flow: drawn notation, or a cue's photo. */
+type Graphic =
+  | {kind: 'svg'; svg: string; width: number; height: number}
+  | {kind: 'img'; data: Buffer; width: number; height: number}
+
+/** Extras for one chart, ready to lay out. */
+type Extras = {
+  top: Extra[]
+  sections: Map<number, Extra[]>
+  /** Drawn notation for {start_of_abc} sections, by section index */
+  abc: Map<number, Graphic | null>
+}
+type Extra = {text?: string; graphic?: Graphic | null; where?: string}
 
 export type PdfOptions = {paper?: 'LETTER' | 'A4'}
 
@@ -73,20 +105,80 @@ function lineWidth(doc: Doc, line: ChartLine, size: number) {
   return w
 }
 
-/** A unit of vertical flow: a section label or one line of a section. */
+/** A unit of vertical flow: a label, a line, a cue or a picture. */
 type Block =
   | {kind: 'label'; section: Section; h: number}
   | {kind: 'line'; line: ChartLine; h: number}
+  | {kind: 'cue'; text: string; h: number}
+  | {kind: 'graphic'; g: Graphic; w: number; h: number}
 
-function toBlocks(chart: Chart, size: number): Block[] {
-  const blocks: Block[] = []
-  for (const s of chart.sections) {
-    blocks.push({kind: 'label', section: s, h: size * 1.5})
+const CUE_FONT = 'Helvetica-Oblique'
+const NO_EXTRAS: Extras = {top: [], sections: new Map(), abc: new Map()}
+
+/**
+ * A picture's size in a column: notation follows the type size; a photo
+ * takes the column. Either is capped in height so one picture can't take
+ * over the page.
+ */
+function graphicSize(g: Graphic, size: number, colW: number) {
+  const aspect = g.height / g.width
+  // abcjs draws in CSS px; 0.75 pt each at 12 pt type
+  let w = g.kind === 'svg' ? g.width * 0.75 * (size / 12) : colW
+  w = Math.min(w, colW)
+  let h = w * aspect
+  const maxH = size * 16
+  if (h > maxH) {
+    h = maxH
+    w = h / aspect
+  }
+  return {w, h}
+}
+
+function extraBlocks(doc: Doc, list: Extra[], size: number, colW: number) {
+  const out: Block[] = []
+  for (const e of list) {
+    const text = [e.where, e.text].filter(Boolean).join(' — ')
+    if (e.graphic) {
+      const {w, h} = graphicSize(e.graphic, size, colW)
+      out.push({kind: 'graphic', g: e.graphic, w, h: h + size * 0.4})
+    }
+    if (text) {
+      doc.font(CUE_FONT).fontSize(size * 0.85)
+      const h = doc.heightOfString(text, {width: colW - 10})
+      out.push({kind: 'cue', text, h: h + size * 0.45})
+    }
+  }
+  return out
+}
+
+function toBlocks(
+  doc: Doc,
+  chart: Chart,
+  size: number,
+  colW: number,
+  extras: Extras = NO_EXTRAS,
+): Block[] {
+  const blocks: Block[] = extraBlocks(doc, extras.top, size, colW)
+  chart.sections.forEach((s, si) => {
+    if (s.label || s.type !== 'abc')
+      blocks.push({kind: 'label', section: s, h: size * 1.5})
+    blocks.push(...extraBlocks(doc, extras.sections.get(si) ?? [], size, colW))
+    const notation = extras.abc.get(si)
+    if (notation) {
+      const {w, h} = graphicSize(notation, size, colW)
+      blocks.push({kind: 'graphic', g: notation, w, h: h + size * 0.6})
+    } else if (s.abc)
+      // Couldn't draw it: print the notation as text rather than nothing
+      blocks.push({
+        kind: 'cue',
+        text: s.abc,
+        h: size * 1.3 * s.abc.split('\n').length,
+      })
     s.lines.forEach((line, i) => {
       const gap = i === s.lines.length - 1 ? size * 0.6 : 0
       blocks.push({kind: 'line', line, h: lineHeight(line, size) + gap})
     })
-  }
+  })
   return blocks
 }
 
@@ -118,7 +210,7 @@ function flow(
     y = top
   }
   blocks.forEach((b, i) => {
-    // Keep a label together with the first line after it
+    // Keep a label together with whatever comes right after it
     const need =
       b.kind === 'label' && blocks[i + 1] ? b.h + blocks[i + 1].h : b.h
     if (y + need > bottom && y > top) nextColumn()
@@ -145,13 +237,15 @@ function fitLayout(
   firstTop: number,
   contTop: number,
   bottom: number,
+  extras: Extras = NO_EXTRAS,
 ): Layout {
   const colW = (width - GUTTER) / 2
+  const colWidth = (cols: number) => (cols === 2 ? colW : width)
   for (let size = MAX_SIZE; size >= MIN_SIZE; size -= 0.5) {
     const w = widest(doc, chart, size)
-    const blocks = toBlocks(chart, size)
     for (const cols of [1, 2]) {
-      if (w > (cols === 2 ? colW : width)) continue
+      if (w > colWidth(cols)) continue
+      const blocks = toBlocks(doc, chart, size, colWidth(cols), extras)
       const f = flow(blocks, cols, firstTop, contTop, bottom)
       if (f.pages === 1) return {size, cols, ...f}
     }
@@ -160,11 +254,40 @@ function fitLayout(
   let size = READABLE_SIZE
   while (size > MIN_SIZE && widest(doc, chart, size) > width) size -= 0.5
   const cols = widest(doc, chart, size) <= colW ? 2 : 1
-  return {
-    size,
-    cols,
-    ...flow(toBlocks(chart, size), cols, firstTop, contTop, bottom),
-  }
+  const blocks = toBlocks(doc, chart, size, colWidth(cols), extras)
+  return {size, cols, ...flow(blocks, cols, firstTop, contTop, bottom)}
+}
+
+/** A cue: a thin bar on the left, then the note in italics. */
+function drawCue(
+  doc: Doc,
+  text: string,
+  x: number,
+  y: number,
+  size: number,
+  colW: number,
+) {
+  doc.font(CUE_FONT).fontSize(size * 0.85)
+  const h = doc.heightOfString(text, {width: colW - 10})
+  doc.rect(x, y, 2, h).fill('#888')
+  doc.fillColor('#333').text(text, x + 8, y, {width: colW - 10})
+}
+
+function drawGraphic(
+  doc: Doc,
+  g: Graphic,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+) {
+  if (g.kind === 'img') doc.image(g.data, x, y, {width: w, height: h})
+  else
+    SVGtoPDF(doc, g.svg, x, y, {
+      width: w,
+      height: h,
+      preserveAspectRatio: 'xMinYMin meet',
+    })
 }
 
 function drawLine(
@@ -228,7 +351,7 @@ function drawLabel(doc: Doc, s: Section, x: number, y: number, size: number) {
   })
 }
 
-function drawPage(doc: Doc, item: PdfItem) {
+function drawPage(doc: Doc, item: PdfItem, extras: Extras) {
   const pageH = doc.page.height
   const width = doc.page.width - MARGIN * 2
   let y = MARGIN
@@ -255,7 +378,8 @@ function drawPage(doc: Doc, item: PdfItem) {
 
   const contTop = MARGIN + 22
   const bottom = pageH - MARGIN - 6
-  const layout = fitLayout(doc, item.chart, width, y, contTop, bottom)
+  const layout = fitLayout(doc, item.chart, width, y, contTop, bottom, extras)
+  const colW = layout.cols === 2 ? (width - GUTTER) / 2 : width
   const colX = (col: number) =>
     layout.cols === 2 ? MARGIN + col * ((width - GUTTER) / 2 + GUTTER) : MARGIN
 
@@ -282,17 +406,86 @@ function drawPage(doc: Doc, item: PdfItem) {
       doc.font('Helvetica-Bold').fontSize(11).fillColor('#444')
       doc.text(`${item.title} (continued)`, MARGIN, MARGIN, {lineBreak: false})
     }
-    if (p.block.kind === 'label')
-      drawLabel(doc, p.block.section, colX(p.col), p.y, layout.size)
-    else drawLine(doc, p.block.line, colX(p.col), p.y, layout.size)
+    const b = p.block
+    if (b.kind === 'label')
+      drawLabel(doc, b.section, colX(p.col), p.y, layout.size)
+    else if (b.kind === 'line')
+      drawLine(doc, b.line, colX(p.col), p.y, layout.size)
+    else if (b.kind === 'cue')
+      drawCue(doc, b.text, colX(p.col), p.y, layout.size, colW)
+    else drawGraphic(doc, b.g, colX(p.col), p.y, b.w, b.h - layout.size * 0.5)
   }
   footer(page)
 }
 
-export function renderChartsPdf(
+/**
+ * Notation and cues, prepared for layout. All notation in the PDF is drawn
+ * in one worker run (see abc-svg.ts).
+ */
+async function prepareExtras(items: PdfItem[]): Promise<Extras[]> {
+  type Pending = {item: number; set: (g: Graphic | null) => void}
+  const jobs: {abc: string; steps: number}[] = []
+  const pending: Pending[] = []
+  const svg = (s: AbcSvg | null): Graphic | null =>
+    s ? {kind: 'svg', ...s} : null
+
+  const out = items.map((item, n) => {
+    const extras: Extras = {top: [], sections: new Map(), abc: new Map()}
+    const shownKey = detectKey(item.chart)
+    item.chart.sections.forEach((s, si) => {
+      if (!s.abc) return
+      const steps = s.abcSteps ?? 0
+      const key = shownKey && steps ? transposeKey(shownKey, -steps) : shownKey
+      jobs.push({abc: withAbcHeader(s.abc, key ?? 'C'), steps})
+      pending.push({item: n, set: (g) => extras.abc.set(si, g)})
+    })
+    if (item.cues?.length) {
+      const placed = placeCues(item.chart, item.cues)
+      const toExtra = (c: PdfCue, where?: string): Extra => {
+        const e: Extra = {where, text: c.text ?? undefined}
+        if (c.kind === 'IMAGE' && c.image) e.graphic = {kind: 'img', ...c.image}
+        if (c.kind === 'ABC' && c.text) {
+          e.text = undefined
+          jobs.push({
+            abc: withAbcHeader(c.text, item.originalKey ?? 'C'),
+            steps: item.steps ?? 0,
+          })
+          pending.push({
+            item: n,
+            set: (g) => {
+              e.graphic = g
+              // Couldn't draw it: print the notation as text instead
+              if (!g) e.text = c.text ?? undefined
+            },
+          })
+        }
+        return e
+      }
+      extras.top = [
+        ...placed.lost.map((c) =>
+          toExtra(c, `Was on ${anchorLabel(c.anchor)}`),
+        ),
+        ...placed.top.map((c) => toExtra(c)),
+      ]
+      placed.sections.forEach((list, si) =>
+        extras.sections.set(
+          si,
+          list.map((c) => toExtra(c)),
+        ),
+      )
+    }
+    return extras
+  })
+  const drawn = await renderAbcSvgs(jobs)
+  drawn.forEach((d, i) => pending[i].set(svg(d)))
+  return out
+}
+
+export async function renderChartsPdf(
   items: PdfItem[],
   opts: PdfOptions = {},
 ): Promise<Buffer> {
+  const extras = await prepareExtras(items)
   const doc = new PDFDocument({
     size: opts.paper ?? 'LETTER',
     margin: MARGIN,
@@ -307,10 +500,10 @@ export function renderChartsPdf(
     doc.on('end', () => resolve(Buffer.concat(chunks)))
     doc.on('error', reject)
   })
-  for (const item of items) {
+  items.forEach((item, i) => {
     doc.addPage()
-    drawPage(doc, item)
-  }
+    drawPage(doc, item, extras[i])
+  })
   if (!items.length) doc.addPage()
   doc.end()
   return done
