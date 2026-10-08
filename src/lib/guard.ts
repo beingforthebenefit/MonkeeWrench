@@ -43,6 +43,11 @@ export async function requireAdmin() {
   return ctx
 }
 
+/** A band with rehearsal scheduling off has no such pages or API. */
+export function requireScheduling(band: {scheduling: boolean}) {
+  if (!band.scheduling) throw new Response('Not Found', {status: 404})
+}
+
 export async function requireOwner() {
   const ctx = await requireUser()
   if (!ctx.user.isOwner) throw new Response('Forbidden', {status: 403})

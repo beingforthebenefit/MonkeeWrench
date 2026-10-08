@@ -8,12 +8,15 @@ vi.mock('@/lib/db', () => ({
   },
 }))
 let share = true
+let scheduling = true
 vi.mock('@/lib/guard', async () => {
   const {ctx} = await import('../band')
+  const actual: any = await vi.importActual('@/lib/guard')
   return {
     requireSession: vi.fn(async () =>
-      ctx({id: 'u1', shareAvailability: share}),
+      ctx({id: 'u1', shareAvailability: share}, {band: {scheduling}}),
     ),
+    requireScheduling: actual.requireScheduling,
   }
 })
 
@@ -93,5 +96,16 @@ describe('PUT /api/availability/range', () => {
       (await PUT(put({from: '2026-01-01', to: '2028-01-01', kind: 'OUT'})))
         .status,
     ).toBe(400)
+  })
+
+  it("doesn't exist for a band that schedules elsewhere", async () => {
+    scheduling = false
+    const {PUT} = await import('@/app/api/availability/range/route')
+    const res = await PUT(
+      put({from: '2026-12-30', to: '2026-12-31', kind: 'OUT'}),
+    )
+    scheduling = true
+    expect(res.status).toBe(404)
+    expect(tx.unavailability.createMany).not.toHaveBeenCalled()
   })
 })

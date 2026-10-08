@@ -27,6 +27,7 @@ export const bandSelect = {
   chatUrl: true,
   tributeTo: true,
   voteThreshold: true,
+  scheduling: true,
   iconAt: true,
 } as const
 
@@ -39,6 +40,7 @@ export type Band = {
   chatUrl: string | null
   tributeTo: string | null
   voteThreshold: number
+  scheduling: boolean
   iconAt: Date | null
 }
 

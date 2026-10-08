@@ -5,6 +5,7 @@ import {useRef, useState} from 'react'
 import {squareIcon} from '@/lib/resize-image'
 
 export type BandSettingsValues = {
+  scheduling: boolean
   name: string
   appName: string
   timezone: string
@@ -89,6 +90,23 @@ export default function BandSettings({
       className="mt-3 flex flex-col gap-4 rounded-xl border border-line-2 bg-panel p-4"
     >
       <IconPicker src={iconSrc} hasIcon={hasIcon} />
+      <label className="flex items-start gap-3 text-sm">
+        <input
+          type="checkbox"
+          checked={v.scheduling}
+          onChange={(e) => setV({...v, scheduling: e.target.checked})}
+          className="mt-0.5 h-5 w-5 shrink-0"
+        />
+        <span>
+          <span className="block font-semibold text-text">
+            Rehearsal scheduling
+          </span>
+          <span className="text-muted">
+            Availability and rehearsals (the Rehearsals tab). Off if the band
+            schedules somewhere else: the tab and its pages go away.
+          </span>
+        </span>
+      </label>
       {FIELDS.map((f) => (
         <label key={f.key} className="flex flex-col gap-1 text-sm text-muted">
           {f.label}

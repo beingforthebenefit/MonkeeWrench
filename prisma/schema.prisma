@@ -334,6 +334,9 @@ model Band {
   // theirs, and their songs don't get an "Originally by" note.
   tributeTo     String?
   voteThreshold Int          @default(2)
+  // Rehearsal scheduling (availability, rehearsals). Off: the Rehearsals
+  // tab and its pages and API are gone for this band.
+  scheduling    Boolean      @default(true)
   // Home-screen icon; null = the default Bandstand icon
   iconAt        DateTime?
   icon          BandIcon?

@@ -65,4 +65,16 @@ describe('ChartBody', () => {
     expect(keep.querySelectorAll('.chart-line')).toHaveLength(1)
     expect(container.querySelectorAll('.chart-line')).toHaveLength(2)
   })
+
+  it('never lets a break come between a remark and the line it is about', () => {
+    const chart = parseChordPro(
+      '[G]one\n\n{comment: softer, hold each chord}\n[Em7]la la [G]la\n[D7]la\n',
+    )
+    const {container} = render(<ChartBody chart={chart} />)
+    const keep = Array.from(container.querySelectorAll('.chart-keep')).find(
+      (k) => k.textContent?.includes('softer'),
+    )
+    expect(keep?.textContent).toContain('la la')
+    expect(keep?.textContent).not.toContain('D7')
+  })
 })

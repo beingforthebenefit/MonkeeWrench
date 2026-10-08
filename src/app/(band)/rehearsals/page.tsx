@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic'
 
+import {notFound} from 'next/navigation'
 import {prisma} from '@/lib/db'
 import {pageSession} from '@/lib/guard'
 import {addDays, dayRange, keyOf, todayKey} from '@/lib/availability'
@@ -15,6 +16,7 @@ const HORIZON_DAYS = 730
 
 export default async function RehearsalsPage() {
   const {user, band, isAdmin} = await pageSession()
+  if (!band.scheduling) notFound()
   const today = todayKey(new Date(), band.timezone)
   const from = new Date(today + 'T00:00:00Z')
   const to = new Date(addDays(today, HORIZON_DAYS) + 'T00:00:00Z')

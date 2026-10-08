@@ -23,7 +23,9 @@ export const GET = async (
     where: {calendarToken: token},
     select: {
       id: true,
+      // Only bands that schedule rehearsals here
       memberships: {
+        where: {band: {scheduling: true}},
         select: {band: {select: {id: true, name: true, timezone: true}}},
       },
     },

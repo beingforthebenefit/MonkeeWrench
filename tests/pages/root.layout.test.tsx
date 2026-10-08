@@ -25,6 +25,7 @@ vi.mock('@/lib/band', async (orig) => {
     chatUrl: b.id === 'mb' ? 'https://discord.com/channels/1' : null,
     tributeTo: null,
     voteThreshold: 2,
+    scheduling: b.id !== 'h',
     iconAt: null,
   })
   return {
@@ -80,5 +81,15 @@ describe('Root layout', () => {
       template: '%s · Monkee Wrench',
     })
     expect(m.manifest).toBe('/manifest.webmanifest')
+  })
+
+  it('hides the Rehearsals tab for a band that schedules elsewhere', async () => {
+    bands = [{id: 'h', name: 'The Hollies', isAdmin: false}]
+    const Layout = (await import('@/app/layout')).default
+    render(await Layout({children: <div>x</div>}))
+    expect(screen.getAllByRole('link', {name: 'Songs'}).length).toBeGreaterThan(
+      0,
+    )
+    expect(screen.queryByRole('link', {name: 'Rehearsals'})).toBeNull()
   })
 })

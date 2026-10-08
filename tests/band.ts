@@ -8,6 +8,7 @@ export const BAND = {
   chatUrl: null,
   tributeTo: null,
   voteThreshold: 2,
+  scheduling: true,
   iconAt: null,
   isAdmin: false,
 }

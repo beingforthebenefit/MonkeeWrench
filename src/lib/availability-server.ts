@@ -64,7 +64,12 @@ export async function otherBandBlocks(
   const bandIds = [...new Set(elsewhere.map((m) => m.band.id))]
   const [rehearsals, gigs, viewerBands] = await Promise.all([
     prisma.rehearsal.findMany({
-      where: {bandId: {in: bandIds}, date: {gte: from, lte: to}},
+      // A band that has scheduling off has no rehearsals to speak of
+      where: {
+        bandId: {in: bandIds},
+        band: {scheduling: true},
+        date: {gte: from, lte: to},
+      },
       select: {bandId: true, date: true, time: true},
     }),
     prisma.setlist.findMany({

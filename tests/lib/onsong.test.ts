@@ -164,4 +164,9 @@ describe('OnSong import', () => {
     )
     expect(c.sections.map((s) => s.type)).toEqual(['tab', 'abc', 'tab'])
   })
+
+  it('reads a bracketed instruction heading a verse as a remark', () => {
+    const r = song('(softer, hold each chord)\n[Em7]la la [G]la\n')
+    expect(r.source).toContain('{comment: softer, hold each chord}\n[Em7]la')
+  })
 })

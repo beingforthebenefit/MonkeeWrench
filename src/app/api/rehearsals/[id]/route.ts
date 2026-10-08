@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import {prisma} from '@/lib/db'
-import {requireSession} from '@/lib/guard'
+import {requireScheduling, requireSession} from '@/lib/guard'
 import {logActivity} from '@/lib/songs'
 import {formatDay, keyOf} from '@/lib/availability'
 import {route} from '@/lib/route'
@@ -9,6 +9,7 @@ import {route} from '@/lib/route'
 export const DELETE = route(
   async (_req: Request, {params}: {params: {id: string}}) => {
     const {user, band, isAdmin} = await requireSession()
+    requireScheduling(band)
     const r = await prisma.rehearsal.findFirst({
       where: {id: params.id, bandId: band.id},
     })

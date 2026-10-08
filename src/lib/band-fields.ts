@@ -34,6 +34,7 @@ export const BandFields = z.object({
     .nullable()
     .optional(),
   voteThreshold: z.number().int().min(1).max(50).optional(),
+  scheduling: z.boolean().optional(),
 })
 
 /** "members.example.com" — lowercase, no scheme, port or path. */

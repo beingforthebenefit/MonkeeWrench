@@ -24,11 +24,14 @@ const timeFmt = (timeZone: string) =>
     timeZone,
   })
 
-function hrefFor(a: {
-  targetType: string
-  targetId: string | null
-  action: string
-}) {
+function hrefFor(
+  a: {
+    targetType: string
+    targetId: string | null
+    action: string
+  },
+  scheduling: boolean,
+) {
   if (!a.targetId) return null
   if (a.targetType === 'song')
     return a.action.startsWith('chart.')
@@ -37,7 +40,7 @@ function hrefFor(a: {
   if (a.targetType === 'setlist' && a.action !== 'setlist.delete')
     return `/setlists/${a.targetId}`
   if (a.targetType === 'rehearsal' || a.targetType === 'availability')
-    return '/rehearsals'
+    return scheduling ? '/rehearsals' : null
   return null
 }
 
@@ -92,7 +95,7 @@ export default async function ActivityPage() {
           </h2>
           <ul>
             {g.rows.map((r) => {
-              const href = hrefFor(r)
+              const href = hrefFor(r, band.scheduling)
               const body = (
                 <>
                   <span className="w-16 shrink-0 font-mono text-xs text-faint">

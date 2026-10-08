@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import {z} from 'zod'
 import {prisma} from '@/lib/db'
-import {requireSession} from '@/lib/guard'
+import {requireScheduling, requireSession} from '@/lib/guard'
 import {logActivity} from '@/lib/songs'
 import {formatDay} from '@/lib/availability'
 import {route} from '@/lib/route'
@@ -16,6 +16,7 @@ const Body = z.object({
 
 export const POST = route(async (req: Request) => {
   const {user, band} = await requireSession()
+  requireScheduling(band)
   const parsed = Body.safeParse(await req.json())
   if (!parsed.success) return new Response('Bad Request', {status: 400})
   const {date, time, place, note} = parsed.data

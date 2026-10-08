@@ -49,4 +49,12 @@ describe('Perform', () => {
     render(<Perform setId="y" name="Set" songs={songs} />)
     expect(screen.getByText('Drums only first time')).toBeInTheDocument()
   })
+
+  it('marks the end of a song that fits on one page', () => {
+    localStorage.clear()
+    render(<Perform setId="z" name="Set" songs={songs} />)
+    // jsdom lays nothing out, so the song is one page: no "More"
+    expect(screen.getByText('End')).toBeInTheDocument()
+    expect(screen.queryByRole('button', {name: 'More ›'})).toBeNull()
+  })
 })

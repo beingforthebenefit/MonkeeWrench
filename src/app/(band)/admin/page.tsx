@@ -61,6 +61,7 @@ export default async function AdminPage() {
         </h2>
         <BandSettings
           initial={{
+            scheduling: band.scheduling,
             name: band.name,
             appName: band.appName,
             timezone: band.timezone,

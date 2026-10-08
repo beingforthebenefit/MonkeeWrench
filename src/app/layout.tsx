@@ -67,6 +67,7 @@ export default async function RootLayout({children}: {children: ReactNode}) {
             ? {url: band.chatUrl, label: chatLabel(band.chatUrl)}
             : null,
           isAdmin: band.isAdmin || Boolean(user?.isOwner),
+          scheduling: band.scheduling,
         }
       : null,
     bands: bands.map((b) => ({id: b.id, name: b.name})),

@@ -240,6 +240,14 @@ function convertParagraph(p: string[], ctx: Ctx): string[] {
     }
   }
   if (!label) rest = p
+  // "(softer, hold each chord)" heading a paragraph: a remark about it
+  if (
+    !label &&
+    rest.length > 1 &&
+    /^\([^[\]]*\)$/.test(rest[0].trim()) &&
+    !readNoteLine(rest[0])
+  )
+    rest = [`{comment: ${rest[0].trim().slice(1, -1)}}`, ...rest.slice(1)]
 
   const lines: string[] = []
   for (let i = 0; i < rest.length; i++) {

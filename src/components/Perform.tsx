@@ -119,6 +119,26 @@ export default function Perform({
     [scroll, toSong],
   )
 
+  // Scroll mode: is there more of the song below the screen?
+  const [below, setBelow] = useState(false)
+  useEffect(() => {
+    if (!scroll) return
+    const check = () => {
+      const el = document.scrollingElement ?? document.documentElement
+      setBelow(el.scrollTop + window.innerHeight < el.scrollHeight - 8)
+    }
+    check()
+    window.addEventListener('scroll', check, {passive: true})
+    window.addEventListener('resize', check)
+    // Images and notation settle after the first paint
+    const t = setTimeout(check, 400)
+    return () => {
+      window.removeEventListener('scroll', check)
+      window.removeEventListener('resize', check)
+      clearTimeout(t)
+    }
+  }, [scroll, i])
+
   // A new song starts at its top
   useEffect(() => {
     if (scroll) window.scrollTo({top: 0})
@@ -256,6 +276,16 @@ export default function Perform({
             top={cues.top}
             extra={cues.extra}
           />
+          <div className="mt-6 flex justify-end">
+            <PageMark more={false} />
+          </div>
+          {below && (
+            <PageMark
+              more
+              onMore={() => go(1)}
+              className="fixed bottom-[calc(max(env(safe-area-inset-bottom),12px)+4.5rem)] right-4 z-20"
+            />
+          )}
         </div>
       ) : (
         <FittedChart
@@ -419,46 +449,85 @@ const FittedChart = forwardRef<
   }, [fit])
   useEffect(() => onPage({page, pages}), [page, pages, onPage])
 
-  useImperativeHandle(
-    ref,
-    () => ({
-      turn(d: number) {
-        const el = box.current
-        const target = page + d
-        if (!el || target < 0 || target >= pages) return false
-        el.scrollTo({
-          left: target * (el.clientWidth + size * GAP_EM),
-          behavior: 'instant',
-        })
-        setPageState(target)
-        return true
-      },
-    }),
+  const turn = useCallback(
+    (d: number) => {
+      const el = box.current
+      const target = page + d
+      if (!el || target < 0 || target >= pages) return false
+      el.scrollTo({
+        left: target * (el.clientWidth + size * GAP_EM),
+        behavior: 'instant',
+      })
+      setPageState(target)
+      return true
+    },
     [page, pages, size],
   )
 
+  useImperativeHandle(ref, () => ({turn}), [page, pages, size])
+
   return (
-    <div
-      ref={box}
-      className="mt-4 min-h-0 flex-1 overflow-hidden"
-      style={{
-        fontSize: size,
-        // Columns fill top-to-bottom, then the next column, like a printed
-        // page; overflow continues to the right as further "pages".
-        columnWidth: '21em',
-        columnGap: `${GAP_EM}em`,
-        columnFill: 'auto',
-      }}
-    >
-      <ChartBody
-        chart={chart}
-        columns={false}
-        top={cues.top}
-        extra={cues.extra}
+    <div className="relative mt-4 flex min-h-0 flex-1 flex-col">
+      <div
+        ref={box}
+        // The strip under it holds the More / End marker, never over a chord
+        className="mb-11 min-h-0 flex-1 overflow-hidden"
+        style={{
+          fontSize: size,
+          // Columns fill top-to-bottom, then the next column, like a printed
+          // page; overflow continues to the right as further "pages".
+          columnWidth: '21em',
+          columnGap: `${GAP_EM}em`,
+          columnFill: 'auto',
+        }}
+      >
+        <ChartBody
+          chart={chart}
+          columns={false}
+          top={cues.top}
+          extra={cues.extra}
+        />
+      </div>
+      <PageMark
+        more={page < pages - 1}
+        onMore={() => turn(1)}
+        className="absolute bottom-0 right-0"
       />
     </div>
   )
 })
+
+/**
+ * Bottom right: "More ›" while there's more of this song (another page, or
+ * more below), "End" once you've reached its end. Tapping More turns the
+ * page, like the pedal.
+ */
+function PageMark({
+  more,
+  onMore,
+  className = '',
+}: {
+  more: boolean
+  onMore?: () => void
+  className?: string
+}) {
+  return more ? (
+    <button
+      type="button"
+      onClick={onMore}
+      className={`flex min-h-9 items-center rounded-full bg-accent px-3 text-sm font-bold text-on-accent shadow-lg ${className}`}
+    >
+      More ›
+    </button>
+  ) : (
+    <span
+      className={`flex min-h-9 items-center gap-1.5 rounded-full border border-line bg-stage px-3 text-sm text-muted ${className}`}
+    >
+      <span aria-hidden="true" className="h-2 w-2 bg-muted" />
+      End
+    </span>
+  )
+}
 
 /** True on phone-width screens (and while the window is that narrow). */
 function useNarrow() {

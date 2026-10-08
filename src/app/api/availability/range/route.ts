@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import {z} from 'zod'
 import {prisma} from '@/lib/db'
-import {requireSession} from '@/lib/guard'
+import {requireScheduling, requireSession} from '@/lib/guard'
 import {route} from '@/lib/route'
 import {dayRange, formatDay} from '@/lib/availability'
 import {scopeFor} from '@/lib/availability-server'
@@ -21,6 +21,7 @@ const MAX_DAYS = 400
 /** Mark a whole stretch at once: "away Dec 18 – Jan 4", "out every Tuesday". */
 export const PUT = route(async (req: Request) => {
   const {user, band} = await requireSession()
+  requireScheduling(band)
   const scope = scopeFor(user, band.id)
   const parsed = Body.safeParse(await req.json())
   if (!parsed.success) return new Response('Bad Request', {status: 400})

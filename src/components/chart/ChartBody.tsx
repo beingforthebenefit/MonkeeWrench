@@ -74,7 +74,8 @@ function ChartSection({
       />
     </div>
   ) : null
-  const blocks = runs(section.lines).map((run, i) =>
+  const allRuns = runs(section.lines)
+  const units = allRuns.map((run, i) =>
     run[0].kind === 'tab' ? (
       // One scroll area per tab block, so the strings move together
       <div key={i} className="chart-tab-block" data-hscroll="">
@@ -88,6 +89,24 @@ function ChartSection({
       run.map((l, j) => <Line key={`${i}-${j}`} line={l} />)
     ),
   )
+  // A remark ("softer, hold each chord") is about what comes next: never
+  // let a column or page break come between them
+  const blocks: ReactNode[] = []
+  for (let i = 0; i < units.length; i++) {
+    if (allRuns[i][0].kind !== 'comment' || i === units.length - 1) {
+      blocks.push(units[i])
+      continue
+    }
+    const glued: ReactNode[] = []
+    while (i < units.length - 1 && allRuns[i][0].kind === 'comment')
+      glued.push(units[i++])
+    glued.push(units[i])
+    blocks.push(
+      <div key={`keep-${i}`} className="chart-keep flex flex-col gap-[0.35em]">
+        {glued}
+      </div>,
+    )
+  }
   const heading = (label || section.note) && (
     <h3 className="mb-[0.4em] text-[0.62em] font-bold uppercase tracking-[0.15em] text-sky">
       {label}

@@ -25,6 +25,8 @@ export type ShellBand = {
     name: string
     chat: {url: string; label: string} | null
     isAdmin: boolean
+    /** Rehearsal scheduling on: the Rehearsals tab shows */
+    scheduling: boolean
   } | null
   /** Every band they're in, for switching */
   bands: {id: string; name: string}[]
@@ -63,6 +65,7 @@ export default function AppShell({
   const name = session?.user?.name || session?.user?.email || ''
   const {band} = ctx
   const others = ctx.bands.filter((b) => b.id !== band?.id)
+  const tabs = TABS.filter((t) => t.href !== '/rehearsals' || band?.scheduling)
   return (
     <div className="flex min-h-dvh flex-col">
       <div className="sticky top-0 z-30 border-b border-line bg-ink/95 backdrop-blur">
@@ -77,7 +80,7 @@ export default function AppShell({
             aria-label="Main"
             className={`hidden flex-1 gap-1 ${band ? 'md:flex' : ''}`}
           >
-            {(band ? TABS : []).map((t) => {
+            {(band ? tabs : []).map((t) => {
               const on = isActive(pathname, t.href)
               return (
                 <Link
@@ -157,9 +160,9 @@ export default function AppShell({
         {band && (
           <nav
             aria-label="Main"
-            className="grid grid-cols-4 gap-1 px-2 pb-2 md:hidden"
+            className={`grid gap-1 px-2 pb-2 md:hidden ${tabs.length === 4 ? 'grid-cols-4' : 'grid-cols-3'}`}
           >
-            {TABS.map((t) => {
+            {tabs.map((t) => {
               const on = isActive(pathname, t.href)
               return (
                 <Link
