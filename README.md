@@ -49,7 +49,7 @@ The band hub for **Monkee Business**: chord charts with full version history, se
 - Data: Prisma ORM, PostgreSQL 16
 - Realtime: EventEmitter + SSE
 - Tooling: ESLint, Prettier, Vitest (jsdom), Testing Library
-- Containers: Dockerfile + Compose (dev + prod)
+- Containers: Dockerfile + Compose (dev stack, live server stack)
 
 ## AI Agents
 
@@ -91,7 +91,7 @@ Production runs on the `popos` server from `docker-compose.server.yml`, a standa
    # = docker compose -f docker-compose.server.yml --env-file .env.production up -d --build
    ```
 
-   Don't use `make prod` on the server: it shares the `monkeewrench` project name and replaces the production containers.
+   The live stack (project `monkeewrench`, port 7120) and the dev stack (project `monkeewrench-dev`, port 3002) share no containers, volumes, networks or ports, so both can run at once. The dev server polls for file changes and uses about a core and 1 GB of RAM: start it when working on the app and `make down` afterwards.
 
 The entrypoint applies migrations on start. The first admin: add the band with `scripts/import-members.ts` (or any user row with `isAdmin`), then `npx tsx scripts/set-password.ts you@example.com` inside the app container prints a password once; everyone else's comes from `/members`. Demo seed data is created only when `APP_ENV=development`. `GET /api/health` is public and queries the database (`{"ok":true,"songs":N}`); the container healthcheck and the server's monitoring use it.
 
@@ -129,8 +129,8 @@ The editor also converts pasted chords-above-lyrics text with one button.
 ## Make Targets
 
 - `dev`/`dev-d`/`dev-up`/`dev-up-d`: run dev stack with/without rebuild, fg/bg
-- `prod`/`prod-up`: run production stack
-- `build`: Next.js build inside the app container
+- `deploy`: build and (re)start the live stack on popos, then wait for `/api/health`
+- `build`: Next.js production build in a one-off container (checks it compiles)
 - `logs`: tail logs for app + db
 - `app-sh`/`db-sh`/`psql`: shells and psql into the DB
 - `prisma-gen`: prisma format + generate (inside app)
@@ -138,6 +138,7 @@ The editor also converts pasted chords-above-lyrics text with one button.
 - `prisma-dev NAME=…`: create a new migration interactively
 - `seed`: run `prisma/seed.mjs`
 - `lint`/`lint-fix`/`format`/`format-check`: code quality
+- `lint`, `format*`, `test*`, `build`, `deps` run in a one-off `tools` container (no ports, no database, removed afterwards), so they don't need the dev stack running
 - `test`/`test-watch`/`test-cov`: run tests (watch/coverage) in the app container
 - `down`/`nuke`: stop; stop + remove volumes (danger: wipes DB)
 
@@ -176,7 +177,7 @@ Key models: `prisma/schema.prisma`. Seed data (dev only): `prisma/seed.mjs`.
 
 ## Testing
 
-- Preferred (inside container via Make): `make test`, `make test-watch`, or `make test-cov`. These run in the dev container, so start it first (`make dev-d`).
+- Preferred (inside container via Make): `make test`, `make test-watch`, or `make test-cov`. They run in a one-off container; the dev stack doesn't need to be running.
 - Test env: Vitest with jsdom and Testing Library (see `vitest.config.mts` and `tests/setup.ts`)
 
 In CI, coverage HTML is uploaded as an artifact.

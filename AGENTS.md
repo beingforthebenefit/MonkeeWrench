@@ -37,7 +37,7 @@ Authoritative guidelines for AI coding assistants (Copilot, Codex, Claude, etc.)
 
 ## Dev Commands: Make vs npm
 
-- Default to Make targets which execute inside the Docker app container.
+- Default to Make targets which execute inside Docker (`lint`/`format`/`test`/`build` in a one-off `tools` container; the rest in the dev `app` container).
 - Only use `npm` scripts when:
   - You are attached to the app container (e.g., `make app-sh`), or
   - You are explicitly following the "Running Locally (no Docker)" path in `README.md`.
@@ -69,10 +69,10 @@ make lint-fix
 make format
 
 # Build options:
-# - Containerized prod build/run:
-make prod           # builds image and runs
-# - Next.js build inside container:
+# - Next.js production build (one-off container):
 make build
+# - Deploy the live site (popos only):
+make deploy
 # - Local (no Docker): see README "Running Locally (no Docker)"
 ```
 
@@ -116,7 +116,7 @@ make build
 2. Make minimal, surgical changes consistent with existing patterns and style.
 3. Add/modify tests under `/tests` that mirror the changed code path(s).
 4. Update `README.md` and `.env.example` if setup, commands, or envs change.
-5. Prefer containerized checks: `make lint` and `make test`. For builds, use `make prod` or `make build` as appropriate. Avoid running raw `npm` on the host unless following the no‑Docker flow.
+5. Prefer containerized checks: `make lint` and `make test`. For builds, use `make build`; `make deploy` is only for deploying the live site. Avoid running raw `npm` on the host unless following the no‑Docker flow.
 6. Use clear, Conventional Commit messages and open a focused PR with rationale and evidence (test results, screenshots).
 
 This document is the single source of truth for AI assistants in this repository. If in doubt, ask for guidance or propose an update here.

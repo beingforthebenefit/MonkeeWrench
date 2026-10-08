@@ -1,12 +1,14 @@
 # Monkee Wrench — Makefile
-# Quick commands for dev/prod, Prisma, logs, DB, lint/tests.
+# Quick commands for dev, deploy, Prisma, logs, DB, lint/tests.
 
 SHELL := /bin/bash
 
 # Compose commands
 COMPOSE        ?= docker compose
 COMPOSE_DEV    ?= $(COMPOSE) -f docker-compose.yml -f docker-compose.dev.yml
-COMPOSE_PROD   ?= $(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml
+# One-off container for lint/format/test/build: no ports, no database, removed
+# when done, so none of these need the dev stack running
+TOOLS          ?= $(COMPOSE_DEV) run --rm --no-deps tools
 
 # Service names (must match docker-compose services, not container_name)
 APP_SVC        ?= app
@@ -24,10 +26,8 @@ help:
 	@echo "  dev-up         Run in dev without rebuild"
 	@echo "  dev-up-d       Run dev detached without rebuild"
 	@echo "  dev-restart    Restart dev containers"
-	@echo "  prod           Build & run in prod (optimized)"
-	@echo "  prod-up        Run in prod without rebuild"
 	@echo "  deploy         Build & (re)start the live server stack (popos)"
-	@echo "  build          Next.js build inside app container"
+	@echo "  build          Next.js production build (one-off container)"
 	@echo "  logs           Tail app+db logs"
 	@echo "  app-sh         Shell into app container"
 	@echo "  db-sh          Shell into db container"
@@ -71,16 +71,8 @@ dev-up-d: ## Run dev stack detached without rebuild
 dev-restart:
 	$(COMPOSE_DEV) restart $(APP_SVC)
 
-.PHONY: prod
-prod: ## Build & run production image (prod override)
-	$(COMPOSE_PROD) up --build
-
-.PHONY: prod-up
-prod-up: ## Run production stack without rebuild (prod override)
-	$(COMPOSE_PROD) up
-
-# The live site (members.monkeebusinessband.com) on popos. Not `prod`: that
-# stack shares the `monkeewrench` project name and would replace these containers.
+# The live site (members.monkeebusinessband.com) on popos: Compose project
+# "monkeewrench", separate from the dev stack ("monkeewrench-dev").
 COMPOSE_SERVER ?= $(COMPOSE) -f docker-compose.server.yml --env-file .env.production
 
 .PHONY: deploy
@@ -98,8 +90,9 @@ deploy: ## Build & (re)start production, then wait for it to report healthy
 # ------------------------------------------------------------------------------
 
 .PHONY: build
-build: ## Next.js build inside the app container
-	$(COMPOSE_DEV) exec $(APP_SVC) npm run build --silent
+# Shares .next with the dev server: run `make dev-restart` afterwards if dev is up
+build: ## Next.js production build in a one-off container (checks it compiles)
+	$(TOOLS) npm run build --silent
 
 # ------------------------------------------------------------------------------
 # Logs / Shells
@@ -157,40 +150,40 @@ seed:
 
 .PHONY: lint
 lint:
-	$(COMPOSE_DEV) exec $(APP_SVC) npm run lint --silent
+	$(TOOLS) npm run lint --silent
 
-.PHONEY: lint-fix
+.PHONY: lint-fix
 lint-fix:
-	$(COMPOSE_DEV) exec $(APP_SVC) npm run lint:eslint:fix --silent || true
+	$(TOOLS) npm run lint:eslint:fix --silent || true
 
-.PHONEY: format
+.PHONY: format
 format:
-	$(COMPOSE_DEV) exec $(APP_SVC) npm run format --silent || true
+	$(TOOLS) npm run format --silent || true
 
 .PHONY: test
 test:
-	$(COMPOSE_DEV) exec $(APP_SVC) npm test --silent
+	$(TOOLS) npm test --silent
 
 .PHONY: test-watch
 test-watch:
-	$(COMPOSE_DEV) exec $(APP_SVC) npm run test:watch --silent || true
+	$(TOOLS) npm run test:watch --silent || true
 
 .PHONY: test-cov
 test-cov:
-	$(COMPOSE_DEV) exec $(APP_SVC) npm run test:coverage --silent
+	$(TOOLS) npm run test:coverage --silent
 
 # Strict CI-style targets (no exit swallowing)
 .PHONY: format-check
 format-check:
-	$(COMPOSE_DEV) exec $(APP_SVC) npm run format:check --silent
+	$(TOOLS) npm run format:check --silent
 
 .PHONY: lint-ci
 lint-ci:
-	$(COMPOSE_DEV) exec $(APP_SVC) npm run lint --silent
+	$(TOOLS) npm run lint --silent
 
 .PHONY: test-ci
 test-ci:
-	$(COMPOSE_DEV) exec $(APP_SVC) npm test --silent
+	$(TOOLS) npm test --silent
 
 .PHONY: ci
 ci: format-check lint-ci test-ci
@@ -200,8 +193,8 @@ ci: format-check lint-ci test-ci
 # ------------------------------------------------------------------------------
 
 .PHONY: deps
-deps: ## Install dependencies inside the app container based on lockfile
-	$(COMPOSE_DEV) exec $(APP_SVC) npm ci --no-audit --no-fund
+deps: ## Reinstall node_modules (shared by the app and tools containers) from the lockfile
+	$(TOOLS) npm ci --no-audit --no-fund
 
 # ------------------------------------------------------------------------------
 # Teardown / Env
