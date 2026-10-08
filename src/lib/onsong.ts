@@ -5,6 +5,7 @@ import {
   parseHeader,
   sectionType,
 } from './chordpro'
+import {linesToAbc, lineToTab, readNoteLine, type WrittenLine} from './notes'
 
 /**
  * OnSong → ChordPro. OnSong songs are plain text: the title, the artist and
@@ -56,8 +57,12 @@ export function convertOnSong(song: OnSongIn): OnSongOut {
   const partNotes: string[] = []
   const body: string[] = []
   let inHeader = true
+  // Where the music starts: a chord, a section label, or written-out notes
   const hasChord = (l: string) =>
-    /\[[^\]]+\]/.test(l) || isChordLine(l) || Boolean(parseHeader(l.trim()))
+    /\[[^\]]+\]/.test(l) ||
+    isChordLine(l) ||
+    Boolean(parseHeader(l.trim())) ||
+    (/^\s*\(/.test(l) && readNoteLine(l) !== null)
   for (const [i, line] of lines.entries()) {
     const t = line.trim()
     if (inHeader) {
@@ -95,6 +100,11 @@ export function convertOnSong(song: OnSongIn): OnSongOut {
       }
     }
     if (HEADER_DIRECTIVE.test(t) || META.test(t)) continue
+    // A rule of dashes is a divider, not tab: a paragraph break
+    if (/^[-_=]{3,}$/.test(t)) {
+      body.push('')
+      continue
+    }
     body.push(line)
   }
 
@@ -112,14 +122,57 @@ export function convertOnSong(song: OnSongIn): OnSongOut {
 
   const out: string[] = [`{title: ${song.title}}`]
   if (song.key) out.push(`{key: ${song.key}}`)
+  const ctx: Ctx = {key: song.key ?? null, known: new Set()}
   for (const p of paragraphs) {
     out.push('')
-    out.push(...convertParagraph(p))
+    out.push(...convertParagraph(p, ctx))
   }
   return {source: out.join('\n') + '\n', partNotes}
 }
 
-function convertParagraph(p: string[]): string[] {
+type Ctx = {
+  key: string | null
+  /** Note lines seen so far in this song: a repeat of one is one too */
+  known: Set<string>
+}
+
+/** A line that says what the notes under it are: "horn line is" */
+const DESCRIBES =
+  /\b(notes?|horns?|line|riff|melody|lick|sax|keyboards?|keys|piano|organ|strings?|guitar|bass|plays?|under this|unison)\b/i
+const TAB_PART = /\b(guitar|bass|riff)\b/i
+const NOT_TAB =
+  /\b(horns?|sax|keyboards?|keys|piano|organ|strings?|trumpet|trombone)\b/i
+
+const signature = (w: WrittenLine) =>
+  w.notes
+    .slice(0, 6)
+    .map((n) => n.letter + n.acc)
+    .join(' ')
+
+/**
+ * Is this line written-out notes rather than chords? Letters alone can be
+ * either ("D D C C G G G G" is four bars of chords). Notes when bracketed
+ * the way players write melodies, when the line above says so ("horn line
+ * is", "intro keyboard notes"), or when it repeats a line already read as
+ * notes -- never when the line above says "chords".
+ */
+function noteLine(line: string, before: string, ctx: Ctx) {
+  const w = readNoteLine(line)
+  if (!w) return null
+  const bracketed = /^\(/.test(line.trim())
+  const said = DESCRIBES.test(before) && !/chord/i.test(before)
+  if (
+    bracketed ||
+    ctx.known.has(signature(w)) ||
+    (said && w.notes.length >= 5)
+  ) {
+    ctx.known.add(signature(w))
+    return w
+  }
+  return null
+}
+
+function convertParagraph(p: string[], ctx: Ctx): string[] {
   const first = p[0].trim()
   // A directive on its own ({chorus}, {comment: ...}) passes through
   if (p.length === 1 && /^\{.*\}$/.test(first)) return [first]
@@ -163,6 +216,54 @@ function convertParagraph(p: string[]): string[] {
   for (let i = 0; i < rest.length; i++) {
     const line = rest[i]
     const t = line.trim()
+    const before = i > 0 ? rest[i - 1].trim() : first
+    const written = noteLine(line, before, ctx)
+    if (written) {
+      // The run of note lines, and the line above that names them
+      const run: WrittenLine[] = [written]
+      while (i + 1 < rest.length) {
+        const w = noteLine(rest[i + 1], rest[i].trim(), ctx)
+        if (!w) break
+        run.push(w)
+        i++
+      }
+      let name = ''
+      const last = lines[lines.length - 1]
+      if (
+        last !== undefined &&
+        !last.startsWith('\u0000') &&
+        !/\[/.test(last) &&
+        last.trim().length <= 50 &&
+        DESCRIBES.test(last)
+      ) {
+        name = capitalise(
+          lines
+            .pop()!
+            .trim()
+            .replace(/[:>-]+$/, '')
+            .trim(),
+        )
+      }
+      // Notes straight under the paragraph's label: the label names them
+      if (!name && !lines.length && label) {
+        name = [label.label, label.note].filter(Boolean).join(' ')
+        const about = name
+        label = null
+        lines.push(
+          '\u0000written',
+          JSON.stringify({
+            name,
+            asTab: TAB_PART.test(about) && !NOT_TAB.test(about),
+            run,
+          }),
+        )
+        continue
+      }
+      const about = `${name} ${label?.label ?? ''} ${label?.note ?? ''}`
+      const asTab = TAB_PART.test(about) && !NOT_TAB.test(about)
+      lines.push('\u0000written', JSON.stringify({name, asTab, run}))
+      continue
+    }
     if (/^\{.*\}$/.test(t)) {
       lines.push(t)
       continue
@@ -210,6 +311,30 @@ function convertParagraph(p: string[]): string[] {
   }
   openSection()
   for (let i = 0; i < lines.length; i++) {
+    if (lines[i] === '\u0000written') {
+      const {name, asTab, run} = JSON.parse(lines[++i]) as {
+        name: string
+        asTab: boolean
+        run: WrittenLine[]
+      }
+      closeSection()
+      const head = name ? `: ${name}` : ''
+      if (asTab) {
+        out.push(`{start_of_tab${head}}`)
+        for (const w of run) {
+          const tab = lineToTab(w)
+          if (w.repeats) tab[0] += `  ${w.repeats}`
+          out.push(...tab)
+        }
+        out.push('{end_of_tab}')
+      } else
+        out.push(
+          `{start_of_abc${head}}`,
+          linesToAbc(run, ctx.key),
+          '{end_of_abc}',
+        )
+      continue
+    }
     if (lines[i] === '\u0000tab') {
       closeSection()
       out.push('{start_of_tab}')

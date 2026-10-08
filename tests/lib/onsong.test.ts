@@ -90,4 +90,41 @@ describe('OnSong import', () => {
     expect(c.sections[0].lines[0]).toMatchObject({kind: 'lyrics'})
     expect(c.sections[1]).toMatchObject({type: 'chorus', label: 'Chorus'})
   })
+
+  it('turns written-out horn lines into notation and guitar riffs into tab', () => {
+    const r = song(
+      [
+        'horn line is',
+        'B B D# B C# A. B B B B A C#',
+        '[B]la la',
+        '',
+        'guitar plays this 2x',
+        '(B B B DD F# E   B A F# B A B)',
+        '',
+        'D D   C C   G G G G',
+      ].join('\n'),
+    )
+    const c = parseChordPro(r.source)
+    expect(c.sections[0]).toMatchObject({type: 'abc', label: 'Horn line is'})
+    expect(c.sections[0].abc).toContain('B2 B2 ^d2 B2 ^c2 A2 |')
+    expect(c.sections[2]).toMatchObject({
+      type: 'tab',
+      label: 'Guitar plays this 2x',
+    })
+    // Four bars of chords with no note-ish label stay chords
+    expect(r.source).toContain('[D]')
+  })
+
+  it('starts the music at a riff at the very top', () => {
+    const r = song('Test Song\nmain riff\n(G G G FF F# G) x4\n\n[G]la\n')
+    expect(parseChordPro(r.source).sections[0]).toMatchObject({
+      type: 'tab',
+      label: 'Main riff',
+    })
+  })
+
+  it('reads a rule of dashes as a divider, not tab', () => {
+    const c = parseChordPro(song('[G]one\n-------\n[C]two\n').source)
+    expect(c.sections.map((s) => s.type)).toEqual(['part', 'part'])
+  })
 })
