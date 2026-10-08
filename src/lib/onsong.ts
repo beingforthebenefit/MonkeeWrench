@@ -122,7 +122,7 @@ export function convertOnSong(song: OnSongIn): OnSongOut {
 
   const out: string[] = [`{title: ${song.title}}`]
   if (song.key) out.push(`{key: ${song.key}}`)
-  const ctx: Ctx = {key: song.key ?? null, known: new Set()}
+  const ctx: Ctx = {key: song.key ?? null, known: new Map()}
   for (const p of paragraphs) {
     out.push('')
     out.push(...convertParagraph(p, ctx))
@@ -133,14 +133,18 @@ export function convertOnSong(song: OnSongIn): OnSongOut {
 type Ctx = {
   key: string | null
   /** Note lines seen so far in this song: a repeat of one is one too */
-  known: Set<string>
+  /** ...and whether each became tab: a repeat is written the same way */
+  known: Map<string, boolean | null>
 }
 
 /** A line that says what the notes under it are: "horn line is" */
 const DESCRIBES =
   /\b(notes?|horns?|line|riff|melody|lick|sax|keyboards?|keys|piano|organ|strings?|guitar|bass|plays?|under this|unison)\b/i
 const SAYS_NOTES = /\b(notes?|horns?|line|riff|melody|lick|unison)\b/i
-const TAB_PART = /\b(guitar|bass|riff)\b/i
+/** Named instruments: these decide outright */
+const TAB_PART = /\b(guitar|bass)\b/i
+/** "Riff" leans to tab, but only if nothing else has decided */
+const RIFF = /\briff\b/i
 const NOT_TAB =
   /\b(horns?|sax|keyboards?|keys|piano|organ|strings?|trumpet|trombone)\b/i
 
@@ -169,10 +173,32 @@ function noteLine(line: string, before: string, ctx: Ctx) {
     ctx.known.has(signature(w)) ||
     (said && w.notes.length >= 5)
   ) {
-    ctx.known.add(signature(w))
+    if (!ctx.known.has(signature(w))) ctx.known.set(signature(w), null)
     return w
   }
   return null
+}
+
+/** A line already written once keeps its first form (notation or tab). */
+/**
+ * Notation or tab for a run of note lines: an instrument named in its own
+ * label decides ("sax comes in, plays this"); otherwise the way the same
+ * line was written the first time; otherwise "riff", or the instrument in
+ * the paragraph's label.
+ */
+function chooseTab(ctx: Ctx, w: WrittenLine, name: string, para: string) {
+  const key = signature(w)
+  const seen = ctx.known.get(key)
+  let asTab: boolean
+  if (NOT_TAB.test(name)) asTab = false
+  else if (TAB_PART.test(name)) asTab = true
+  else if (seen !== null && seen !== undefined) asTab = seen
+  else
+    asTab =
+      RIFF.test(name) ||
+      (!NOT_TAB.test(para) && (TAB_PART.test(para) || RIFF.test(para)))
+  if (seen === null || seen === undefined) ctx.known.set(key, asTab)
+  return asTab
 }
 
 function convertParagraph(p: string[], ctx: Ctx): string[] {
@@ -249,21 +275,17 @@ function convertParagraph(p: string[], ctx: Ctx): string[] {
       }
       // Notes straight under the paragraph's label: the label names them
       if (!name && !lines.length && label) {
-        name = [label.label, label.note].filter(Boolean).join(' ')
-        const about = name
+        name = [label.label, label.note]
+          .filter(Boolean)
+          .join(' ')
+          .replace(/[\s:>-]+$/, '')
         label = null
-        lines.push(
-          '\u0000written',
-          JSON.stringify({
-            name,
-            asTab: TAB_PART.test(about) && !NOT_TAB.test(about),
-            run,
-          }),
-        )
+        const asTab = chooseTab(ctx, run[0], name, '')
+        lines.push('\u0000written', JSON.stringify({name, asTab, run}))
         continue
       }
-      const about = `${name} ${label?.label ?? ''} ${label?.note ?? ''}`
-      const asTab = TAB_PART.test(about) && !NOT_TAB.test(about)
+      const para = `${label?.label ?? ''} ${label?.note ?? ''}`
+      const asTab = chooseTab(ctx, run[0], name, para)
       lines.push('\u0000written', JSON.stringify({name, asTab, run}))
       continue
     }
@@ -281,7 +303,15 @@ function convertParagraph(p: string[], ctx: Ctx): string[] {
     }
     if (!/\[/.test(line) && isChordLine(line)) {
       const next = rest[i + 1]
+      // Not onto a line that introduces written-out notes: that line is a
+      // label, not lyrics
+      const introducesNotes =
+        next !== undefined &&
+        SAYS_NOTES.test(next) &&
+        rest[i + 2] !== undefined &&
+        readNoteLine(rest[i + 2]) !== null
       if (
+        !introducesNotes &&
         next !== undefined &&
         next.trim() &&
         !/\[/.test(next) &&

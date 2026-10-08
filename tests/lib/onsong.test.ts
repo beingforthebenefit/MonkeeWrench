@@ -133,4 +133,35 @@ describe('OnSong import', () => {
     expect(r.source).not.toContain('start_of_tab')
     expect(r.source).toContain('[C]')
   })
+
+  it('names a horn line under a guitar solo, and writes it for horns', () => {
+    const c = parseChordPro(
+      song(
+        'solo- guitar\nC  C  C  C  F  F  C  C\nhorn line thru this on these notes\nG C C Eb Eb C C A G.  C C\n',
+      ).source,
+    )
+    const notes = c.sections.find((s) => s.type === 'abc' || s.type === 'tab')
+    expect(notes).toMatchObject({
+      type: 'abc',
+      label: 'Horn line thru this on these notes',
+    })
+  })
+
+  it('writes a repeated line the way it was written the first time', () => {
+    const c = parseChordPro(
+      song(
+        'horn line is\nB B D# B C# A. B B\n\nRIFF x2 with the riff\nB B D# B C# A. B B\n',
+      ).source,
+    )
+    expect(c.sections.map((s) => s.type)).toEqual(['abc', 'abc'])
+  })
+
+  it('follows the instrument a block names over how the line was first written', () => {
+    const c = parseChordPro(
+      song(
+        'guitar plays this 2x\n(B B B DD F# E)\n\nsax comes in, plays this 2x\n(B B B DD F# E)\n\nguitar again x2\n(B B B DD F# E)\n',
+      ).source,
+    )
+    expect(c.sections.map((s) => s.type)).toEqual(['tab', 'abc', 'tab'])
+  })
 })
