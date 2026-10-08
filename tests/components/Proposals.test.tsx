@@ -18,8 +18,12 @@ const board: Board = {
       youtubeUrl: 'https://youtu.be/x',
       lyricsUrl: null,
       proposer: 'Ed',
+      proposerAvatar: null,
       proposedAt: '2026-10-01T00:00:00Z',
-      voters: ['Ed', 'Ken'],
+      voters: [
+        {name: 'Ed', avatar: '/api/avatars/u1?v=1'},
+        {name: 'Ken', avatar: null},
+      ],
       mine: false,
     },
   ],
@@ -79,7 +83,9 @@ describe('Proposals', () => {
   it('keeps the vote button on the title row after voting', () => {
     const voted = {
       ...board,
-      pending: [{...board.pending[0], mine: true, voters: ['Ed', 'Ken', 'Me']}],
+      pending: [
+        {...board.pending[0], mine: true, voters: [{name: 'Me', avatar: null}]},
+      ],
     }
     render(<Proposals board={voted} isAdmin />)
     const vote = screen.getByRole('button', {name: 'Voted ✓'})

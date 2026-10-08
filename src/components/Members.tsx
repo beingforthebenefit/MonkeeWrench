@@ -2,6 +2,7 @@
 
 import {useRouter} from 'next/navigation'
 import {useState} from 'react'
+import AvatarEditor from '@/components/AvatarEditor'
 
 type Member = {
   id: string
@@ -10,6 +11,7 @@ type Member = {
   email: string
   isAdmin: boolean
   hasPassword: boolean
+  avatar: string | null
 }
 
 const SITE = 'https://members.monkeebusinessband.com'
@@ -113,6 +115,13 @@ export default function Members({
           <li key={m.id} className="border-t border-line py-3">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
               <div className="flex min-w-0 flex-1 items-center gap-3">
+                <AvatarEditor
+                  compact
+                  userId={m.id}
+                  name={m.displayName || m.name}
+                  src={m.avatar}
+                  self={m.id === me}
+                />
                 <label className="flex shrink-0 items-center">
                   <span className="sr-only">
                     Name shown in the app for {m.name}

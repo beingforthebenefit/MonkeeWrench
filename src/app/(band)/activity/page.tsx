@@ -3,6 +3,8 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import {prisma} from '@/lib/db'
 import {displayName} from '@/lib/songs'
+import {avatarUrl} from '@/lib/avatars'
+import Avatar from '@/components/Avatar'
 
 export const metadata = {title: 'Recent changes · Monkee Wrench'}
 
@@ -41,7 +43,17 @@ export default async function ActivityPage() {
   const rows = await prisma.activity.findMany({
     orderBy: {createdAt: 'desc'},
     take: 200,
-    include: {user: {select: {name: true, displayName: true, email: true}}},
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          displayName: true,
+          email: true,
+          avatarAt: true,
+        },
+      },
+    },
   })
   const groups: {day: string; rows: typeof rows}[] = []
   for (const r of rows) {
@@ -69,6 +81,12 @@ export default async function ActivityPage() {
                   <span className="w-16 shrink-0 font-mono text-xs text-faint">
                     {timeFmt.format(r.createdAt)}
                   </span>
+                  <Avatar
+                    name={displayName(r.user)}
+                    src={r.user ? avatarUrl(r.user) : null}
+                    size={24}
+                    className="self-center"
+                  />
                   <span>
                     <strong>{displayName(r.user)}</strong> {r.summary}
                   </span>

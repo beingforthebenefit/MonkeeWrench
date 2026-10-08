@@ -4,6 +4,7 @@ import type {NextAuthOptions} from 'next-auth'
 import {prisma} from './db'
 import {verifyPassword} from './password'
 import {clearFailures, isThrottled, recordFailure} from './login-throttle'
+import {avatarUrl} from './avatars'
 
 /**
  * Email + password sign-in, plus "Sign in with Google" for members who have a
@@ -117,6 +118,8 @@ export const authOptions: NextAuthOptions = {
               displayName: true,
               isAdmin: true,
               sessionVersion: true,
+              id: true,
+              avatarAt: true,
             },
           })
         : null
@@ -125,7 +128,7 @@ export const authOptions: NextAuthOptions = {
       session.user = {
         email: u.email,
         name: u.displayName ?? u.name,
-        image: null,
+        image: avatarUrl(u),
         isAdmin: u.isAdmin,
       }
       return session

@@ -3,6 +3,7 @@
 import {useRouter} from 'next/navigation'
 import {AddToCalendar, SubscribeCalendar} from '@/components/CalendarLinks'
 import MapLink from '@/components/MapLink'
+import Avatar from '@/components/Avatar'
 import {useMemo, useState} from 'react'
 import {
   nextAllFree,
@@ -369,6 +370,12 @@ export default function Rehearsals({
                       key={m.id}
                       className="px-2 py-2 text-center font-semibold"
                     >
+                      <Avatar
+                        name={m.name}
+                        src={m.avatar}
+                        size={28}
+                        className="mx-auto mb-1"
+                      />
                       {m.name}
                       {!m.answered && (
                         <span className="block text-[11px] font-normal text-faint">

@@ -4,6 +4,7 @@ import {prisma} from '@/lib/db'
 import {requireSession} from '@/lib/guard'
 import {addDays, dayRange, keyOf, todayKey} from '@/lib/availability'
 import {displayName} from '@/lib/songs'
+import {avatarUrl} from '@/lib/avatars'
 import Rehearsals from '@/components/Rehearsals'
 
 export const metadata = {title: 'Rehearsals · Monkee Wrench'}
@@ -41,6 +42,7 @@ export default async function RehearsalsPage() {
         id: u.id,
         name: displayName(u),
         answered: Boolean(u.availabilityUpdatedAt),
+        avatar: avatarUrl(u),
       }))}
       entries={rows.map((r) => ({
         userId: r.userId,

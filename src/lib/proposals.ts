@@ -1,5 +1,6 @@
 import {prisma} from './db'
 import {displayName} from './songs'
+import {avatarUrl} from './avatars'
 
 export type BoardProposal = {
   id: string
@@ -8,8 +9,9 @@ export type BoardProposal = {
   youtubeUrl: string | null
   lyricsUrl: string | null
   proposer: string
+  proposerAvatar: string | null
   proposedAt: string
-  voters: string[]
+  voters: {name: string; avatar: string | null}[]
   mine: boolean
 }
 
@@ -19,7 +21,13 @@ export async function getBoard(userId: string) {
   const threshold =
     settings?.voteThreshold ?? Number(process.env.VOTE_THRESHOLD ?? 2)
   const who = {
-    select: {id: true, name: true, displayName: true, email: true},
+    select: {
+      id: true,
+      name: true,
+      displayName: true,
+      email: true,
+      avatarAt: true,
+    },
   } as const
   const [pending, approved, archived] = await Promise.all([
     prisma.proposal.findMany({
@@ -56,8 +64,12 @@ export async function getBoard(userId: string) {
     youtubeUrl: p.youtubeUrl,
     lyricsUrl: p.lyricsUrl,
     proposer: displayName(p.proposer),
+    proposerAvatar: avatarUrl(p.proposer),
     proposedAt: p.createdAt.toISOString(),
-    voters: p.votes.map((v) => displayName(v.user)),
+    voters: p.votes.map((v) => ({
+      name: displayName(v.user),
+      avatar: avatarUrl(v.user),
+    })),
     mine: p.votes.some((v) => v.userId === userId),
   })
 

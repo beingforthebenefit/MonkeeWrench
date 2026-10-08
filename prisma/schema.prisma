@@ -40,6 +40,10 @@ model User {
   sessionVersion        Int              @default(0)
   // Secret in this person's calendar-feed URL (calendar apps can't sign in)
   calendarToken         String?          @unique
+  // When their photo was last set; also versions its URL so browsers can
+  // cache it forever. Null = no photo (their initial is shown instead).
+  avatarAt              DateTime?
+  avatar                Avatar?
   accounts              Account[]
   sessions              Session[]
   proposals             Proposal[]       @relation("Proposer")
@@ -55,6 +59,16 @@ model User {
   activities            Activity[]
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
+}
+
+// Profile photo: a 256px square JPEG/PNG/WebP, resized in the browser before
+// upload. In its own table so loading users never pulls the image bytes.
+model Avatar {
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @id
+  mime      String
+  data      Bytes
+  updatedAt DateTime @updatedAt
 }
 
 model Proposal {

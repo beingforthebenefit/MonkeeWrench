@@ -6,7 +6,12 @@
  */
 
 export type Kind = 'OUT' | 'PM_OUT' | 'PREFER_NOT'
-export type Member = {id: string; name: string; answered: boolean}
+export type Member = {
+  id: string
+  name: string
+  answered: boolean
+  avatar?: string | null
+}
 export type Entry = {userId: string; date: string; kind: Kind}
 
 const TZ = 'America/Los_Angeles'

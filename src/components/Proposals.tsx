@@ -6,6 +6,7 @@ import {useEffect, useState} from 'react'
 import type {Board, BoardProposal} from '@/lib/proposals'
 import {shortDate} from '@/lib/dates'
 import Dropdown from '@/components/Dropdown'
+import Avatar from '@/components/Avatar'
 
 export default function Proposals({
   board,
@@ -225,8 +226,10 @@ function ProposalRow({
         <p className="text-lg font-bold leading-snug">
           {p.title} <span className="font-normal text-muted">· {p.artist}</span>
         </p>
-        <p className="mt-0.5 text-[13px] text-faint">
-          {p.proposer} · {shortDate(p.proposedAt)}
+        <p className="mt-0.5 flex flex-wrap items-center gap-x-1 text-[13px] text-faint">
+          <Avatar name={p.proposer} src={p.proposerAvatar} size={18} />
+          <span className="ml-0.5">{p.proposer}</span> ·{' '}
+          {shortDate(p.proposedAt)}
           {p.youtubeUrl && (
             <>
               {' · '}
@@ -268,8 +271,23 @@ function ProposalRow({
               />
             ),
           )}
+          {p.voters.length > 0 && (
+            <span className="ml-1 flex -space-x-1.5">
+              {p.voters.map((v, i) => (
+                <Avatar
+                  key={i}
+                  name={v.name}
+                  src={v.avatar}
+                  size={22}
+                  className="ring-2 ring-ink"
+                />
+              ))}
+            </span>
+          )}
           <span className="ml-1 text-[13px] text-muted">
-            {p.voters.length ? p.voters.join(', ') : 'No votes yet'}
+            {p.voters.length
+              ? p.voters.map((v) => v.name).join(', ')
+              : 'No votes yet'}
             {needed > 0 && ` · ${needed} more to add it`}
           </span>
         </div>

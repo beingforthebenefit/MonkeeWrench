@@ -39,6 +39,7 @@ The band hub for **Monkee Business**: chord charts with full version history, se
 - **Proposals and voting**: a proposal that reaches the vote threshold joins the book as a song to learn.
 - **Auth**: email + password (not everyone in the band has Google). An admin adds members and generates each password on **Band members** (`/members`); it is shown once, with a ready-to-send message. Resetting or changing a password signs that person out everywhere. Repeated failures are throttled. Everything except sign-in requires an account (charts are copyrighted).
 - Phone and iPad layouts throughout ("Music Stand" design: chords in amber). Light, dark or auto (match device) appearance from the sun/moon icon at the top right; one tap cycles them, remembered per device.
+- **Profile photos**: add one under the account menu → Photo & password (tap the picture). Admins can set anyone's by tapping their picture on Band members. The phone crops and shrinks it to a 256px square before upload; it is stored in the database (`Avatar` table), so it is backed up with everything else. Shown in the header, Band members, the rehearsal grid, proposals (proposer and voters) and Recent changes; people without one get their initial.
 - Installable: "Add to Home Screen" uses the band's monkey icon (`src/app/apple-icon.png`, `public/icons/*`, `src/app/manifest.ts`).
 
 ## Stack

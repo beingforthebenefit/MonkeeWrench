@@ -6,6 +6,7 @@ import {signOut, useSession} from 'next-auth/react'
 import {ReactNode} from 'react'
 import Dropdown from '@/components/Dropdown'
 import ThemeToggle from '@/components/ThemeToggle'
+import Avatar from '@/components/Avatar'
 
 const TABS = [
   {href: '/songs', label: 'Songs'},
@@ -63,16 +64,7 @@ export default function AppShell({children}: {children: ReactNode}) {
               label="Account menu"
               triggerClassName="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-panel font-bold"
               trigger={
-                session.user.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={session.user.image}
-                    alt=""
-                    className="h-9 w-9 rounded-full"
-                  />
-                ) : (
-                  name.charAt(0).toUpperCase()
-                )
+                <Avatar name={name} src={session.user.image} size={36} />
               }
             >
               <p className="px-3 py-2 text-sm text-muted">{name}</p>
@@ -85,7 +77,7 @@ export default function AppShell({children}: {children: ReactNode}) {
               >
                 Band Discord ↗
               </a>
-              <MenuLink href="/account">Change password</MenuLink>
+              <MenuLink href="/account">Photo &amp; password</MenuLink>
               {session.user.isAdmin && (
                 <MenuLink href="/members">Band members</MenuLink>
               )}

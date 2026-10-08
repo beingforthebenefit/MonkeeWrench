@@ -4,6 +4,7 @@ import {redirect} from 'next/navigation'
 import {prisma} from '@/lib/db'
 import {requireSession} from '@/lib/guard'
 import Members from '@/components/Members'
+import {avatarUrl} from '@/lib/avatars'
 
 export const metadata = {title: 'Band members · Monkee Wrench'}
 
@@ -23,6 +24,7 @@ export default async function MembersPage() {
         email: u.email ?? '',
         isAdmin: u.isAdmin,
         hasPassword: Boolean(u.passwordHash),
+        avatar: avatarUrl(u),
       }))}
     />
   )
