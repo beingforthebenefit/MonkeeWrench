@@ -464,7 +464,7 @@ const FittedChart = forwardRef<
     [page, pages, size],
   )
 
-  useImperativeHandle(ref, () => ({turn}), [page, pages, size])
+  useImperativeHandle(ref, () => ({turn}), [turn])
 
   return (
     <div className="relative mt-4 flex min-h-0 flex-1 flex-col">
