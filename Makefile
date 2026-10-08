@@ -99,7 +99,7 @@ deploy: ## Build & (re)start production, then wait for it to report healthy
 
 .PHONY: build
 build: ## Next.js build inside the app container
-	$(COMPOSE_DEV) exec $(APP_SVC) npm run build --silent || true
+	$(COMPOSE_DEV) exec $(APP_SVC) npm run build --silent
 
 # ------------------------------------------------------------------------------
 # Logs / Shells
@@ -157,7 +157,7 @@ seed:
 
 .PHONY: lint
 lint:
-	$(COMPOSE_DEV) exec $(APP_SVC) npm run lint --silent || true
+	$(COMPOSE_DEV) exec $(APP_SVC) npm run lint --silent
 
 .PHONEY: lint-fix
 lint-fix:
@@ -169,7 +169,7 @@ format:
 
 .PHONY: test
 test:
-	$(COMPOSE_DEV) exec $(APP_SVC) npm test --silent || true
+	$(COMPOSE_DEV) exec $(APP_SVC) npm test --silent
 
 .PHONY: test-watch
 test-watch:
@@ -177,7 +177,7 @@ test-watch:
 
 .PHONY: test-cov
 test-cov:
-	$(COMPOSE_DEV) exec $(APP_SVC) npm run test:coverage --silent || true
+	$(COMPOSE_DEV) exec $(APP_SVC) npm run test:coverage --silent
 
 # Strict CI-style targets (no exit swallowing)
 .PHONY: format-check

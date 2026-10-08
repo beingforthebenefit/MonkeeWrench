@@ -1,3 +1,8 @@
+# Local dev/test stack (make dev, make test, ...). Its own project name so
+# no make target can reach the live stack, project "monkeewrench" from
+# docker-compose.server.yml.
+name: monkeewrench-dev
+
 services:
   db:
     image: postgres:16

@@ -70,6 +70,7 @@ The band hub for **Monkee Business**: chord charts with full version history, se
 - `make dev` (hot‑reload) or `make dev-d` (detached)
 - App: http://localhost:3002 (mapped from container 3000)
 - Postgres data persists in the `pgdata` volume
+- The dev stack is Compose project `monkeewrench-dev`, separate from the live stack (`monkeewrench`), so dev targets (`make test`, `make down`, `make psql`, ...) can never touch production
 
 3. Give yourself an account
 
@@ -175,7 +176,7 @@ Key models: `prisma/schema.prisma`. Seed data (dev only): `prisma/seed.mjs`.
 
 ## Testing
 
-- Preferred (inside container via Make): `make test`, `make test-watch`, or `make test-cov`
+- Preferred (inside container via Make): `make test`, `make test-watch`, or `make test-cov`. These run in the dev container, so start it first (`make dev-d`).
 - Test env: Vitest with jsdom and Testing Library (see `vitest.config.mts` and `tests/setup.ts`)
 
 In CI, coverage HTML is uploaded as an artifact.
