@@ -33,7 +33,7 @@ export const PATCH = route(async (req: Request) => {
       chatUrl: 'the chat link',
       tributeTo: 'who the band covers',
       voteThreshold: 'the votes needed',
-      scheduling: 'rehearsal scheduling',
+      scheduling: 'the scheduling tool',
     }
     await logActivity(tx, {
       bandId: band.id,

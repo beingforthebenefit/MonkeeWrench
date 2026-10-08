@@ -43,7 +43,7 @@ export async function requireAdmin() {
   return ctx
 }
 
-/** A band with rehearsal scheduling off has no such pages or API. */
+/** A band with scheduling off has no availability tool (or its API). */
 export function requireScheduling(band: {scheduling: boolean}) {
   if (!band.scheduling) throw new Response('Not Found', {status: 404})
 }

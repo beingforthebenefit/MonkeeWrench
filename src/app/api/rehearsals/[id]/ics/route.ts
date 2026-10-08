@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import {prisma} from '@/lib/db'
-import {requireScheduling, requireSession} from '@/lib/guard'
+import {requireSession} from '@/lib/guard'
 import {route} from '@/lib/route'
 import {buildIcs} from '@/lib/ics'
 import {rehearsalEvent} from '@/lib/rehearsal-events'
@@ -11,7 +11,6 @@ import {bandSite} from '@/lib/band'
 export const GET = route(
   async (_req: Request, {params}: {params: {id: string}}) => {
     const {band} = await requireSession()
-    requireScheduling(band)
     const r = await prisma.rehearsal.findFirst({
       where: {id: params.id, bandId: band.id},
     })

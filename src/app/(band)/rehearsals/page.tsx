@@ -1,6 +1,5 @@
 export const dynamic = 'force-dynamic'
 
-import {notFound} from 'next/navigation'
 import {prisma} from '@/lib/db'
 import {pageSession} from '@/lib/guard'
 import {addDays, dayRange, keyOf, todayKey} from '@/lib/availability'
@@ -16,7 +15,6 @@ const HORIZON_DAYS = 730
 
 export default async function RehearsalsPage() {
   const {user, band, isAdmin} = await pageSession()
-  if (!band.scheduling) notFound()
   const today = todayKey(new Date(), band.timezone)
   const from = new Date(today + 'T00:00:00Z')
   const to = new Date(addDays(today, HORIZON_DAYS) + 'T00:00:00Z')
@@ -36,10 +34,13 @@ export default async function RehearsalsPage() {
     prisma.membership.count({where: {userId: user.id}}),
   ])
   const users = members.map((m) => m.user)
-  const [entries, blocks] = await Promise.all([
-    bandEntries(band.id, users, from, to),
-    otherBandBlocks(band.id, users, user.id, from, to),
-  ])
+  // Scheduling tool off: just the rehearsals, no one's days off
+  const [entries, blocks] = band.scheduling
+    ? await Promise.all([
+        bandEntries(band.id, users, from, to),
+        otherBandBlocks(band.id, users, user.id, from, to),
+      ])
+    : [[], []]
   return (
     <Rehearsals
       me={user.id}
@@ -63,6 +64,7 @@ export default async function RehearsalsPage() {
         mine: r.createdById === user.id,
       }))}
       bandName={band.name}
+      scheduling={band.scheduling}
       timezone={band.timezone}
       blocksOn={user.blockOtherBands && myBandCount > 1}
     />

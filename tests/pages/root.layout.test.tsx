@@ -83,13 +83,12 @@ describe('Root layout', () => {
     expect(m.manifest).toBe('/manifest.webmanifest')
   })
 
-  it('hides the Rehearsals tab for a band that schedules elsewhere', async () => {
+  it('keeps the Rehearsals tab when the scheduling tool is off', async () => {
     bands = [{id: 'h', name: 'The Hollies', isAdmin: false}]
     const Layout = (await import('@/app/layout')).default
     render(await Layout({children: <div>x</div>}))
-    expect(screen.getAllByRole('link', {name: 'Songs'}).length).toBeGreaterThan(
-      0,
-    )
-    expect(screen.queryByRole('link', {name: 'Rehearsals'})).toBeNull()
+    expect(
+      screen.getAllByRole('link', {name: 'Rehearsals'}).length,
+    ).toBeGreaterThan(0)
   })
 })

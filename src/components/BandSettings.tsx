@@ -98,12 +98,11 @@ export default function BandSettings({
           className="mt-0.5 h-5 w-5 shrink-0"
         />
         <span>
-          <span className="block font-semibold text-text">
-            Rehearsal scheduling
-          </span>
+          <span className="block font-semibold text-text">Scheduling tool</span>
           <span className="text-muted">
-            Availability and rehearsals (the Rehearsals tab). Off if the band
-            schedules somewhere else: the tab and its pages go away.
+            Everyone’s days off and the “next days everyone can make”
+            suggestions. Off if the band schedules somewhere else: Rehearsals
+            then just lists the rehearsals, and anyone can add one.
           </span>
         </span>
       </label>

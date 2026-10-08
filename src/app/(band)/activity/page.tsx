@@ -39,8 +39,8 @@ function hrefFor(
       : `/songs/${a.targetId}`
   if (a.targetType === 'setlist' && a.action !== 'setlist.delete')
     return `/setlists/${a.targetId}`
-  if (a.targetType === 'rehearsal' || a.targetType === 'availability')
-    return scheduling ? '/rehearsals' : null
+  if (a.targetType === 'rehearsal') return '/rehearsals'
+  if (a.targetType === 'availability') return scheduling ? '/rehearsals' : null
   return null
 }
 

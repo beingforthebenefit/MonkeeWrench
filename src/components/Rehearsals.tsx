@@ -46,6 +46,7 @@ export default function Rehearsals({
   bandName,
   timezone,
   blocksOn,
+  scheduling = true,
 }: {
   me: string
   isAdmin: boolean
@@ -60,6 +61,8 @@ export default function Rehearsals({
   timezone: string
   /** I'm in other bands and their dates count here */
   blocksOn: boolean
+  /** The scheduling tool (days off, suggested days); off = just the list */
+  scheduling?: boolean
 }) {
   const router = useRouter()
   const [entries, setEntries] = useState(initialEntries)
@@ -183,313 +186,330 @@ export default function Rehearsals({
         </section>
       )}
 
-      <section
-        aria-labelledby="best-h"
-        className="mt-4 rounded-2xl bg-panel p-4"
-      >
-        <h2
-          id="best-h"
-          className="text-xs font-bold uppercase tracking-widest text-muted"
-        >
-          Next days everyone can make
-        </h2>
-        {unanswered.length > 0 && (
-          <p className="mt-1 text-sm text-muted">
-            Not answered yet: {unanswered.join(', ')} — counted as free until
-            they do.
-          </p>
-        )}
-        {!ahead.length && (
-          <p className="mt-2 text-sm text-bad">
-            No day in the next two years has nobody out.
-          </p>
-        )}
-        <ul className="mt-2">
-          {ahead.map((d, i) => (
-            <li
-              key={d.date}
-              className="border-t border-line py-2 first:border-t-0"
-            >
-              {d.date.slice(0, 7) !== ahead[i - 1]?.date.slice(0, 7) &&
-                i > 0 && (
-                  <p className="mb-1 text-xs font-bold uppercase tracking-widest text-faint">
-                    {monthName(d.date)}
-                  </p>
-                )}
-              <div className="flex items-center gap-3">
-                <span className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
-                  <span className="shrink-0 font-mono font-bold text-amber sm:w-28">
-                    {formatDay(d.date)}
-                  </span>
-                  <span className="min-w-0 text-sm">
-                    {d.pmOut.length || d.preferNot.length ? (
-                      <>
-                        {d.pmOut.length > 0 && (
-                          <span className="text-warn-fg">
-                            Evening only (afternoon out: {d.pmOut.join(', ')})
-                          </span>
-                        )}
-                        {d.pmOut.length > 0 && d.preferNot.length > 0 && ' · '}
-                        {d.preferNot.length > 0 && (
-                          <span className="text-info-fg">
-                            Would rather not: {d.preferNot.join(', ')}
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      <strong className="text-good">Everyone free</strong>
-                    )}
-                  </span>
-                </span>
-                {booked.has(d.date) ? (
-                  <span className="shrink-0 px-3 text-sm font-semibold leading-[44px] text-good">
-                    Booked ✓
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setPlanning(planning === d.date ? null : d.date)
-                    }
-                    className="min-h-11 shrink-0 rounded-lg border border-line-2 px-3 text-sm font-semibold"
-                  >
-                    Set rehearsal
-                  </button>
-                )}
-              </div>
-              {planning === d.date && (
-                <PlanForm
-                  date={d.date}
-                  onDone={() => (setPlanning(null), router.refresh())}
-                />
-              )}
-            </li>
-          ))}
-        </ul>
-        {ahead.length === aheadLimit && (
-          <button
-            type="button"
-            onClick={() => setAheadLimit(aheadLimit + 5)}
-            className="mt-2 min-h-11 w-full rounded-lg border border-line-2 text-sm font-semibold"
+      {scheduling ? (
+        <>
+          <section
+            aria-labelledby="best-h"
+            className="mt-4 rounded-2xl bg-panel p-4"
           >
-            Show 5 more days
-          </button>
-        )}
-        {ahead.length > 0 && ahead.length < aheadLimit && (
-          <p className="mt-2 text-xs text-faint">
-            That’s every such day in the next two years.
-          </p>
-        )}
-        {lastMarked && ahead.some((d) => d.date > lastMarked) && (
-          <p className="mt-2 text-xs text-faint">
-            Nobody has marked any days after {formatDay(lastMarked)} yet, so
-            later dates are only free as far as we know.
-          </p>
-        )}
-      </section>
-
-      <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-        <section aria-labelledby="mine-h">
-          <div className="flex items-baseline justify-between">
-            <h2 id="mine-h" className="text-lg font-bold">
-              Your days
-            </h2>
-            <button
-              type="button"
-              onClick={() => setRanging(!ranging)}
-              aria-expanded={ranging}
-              className="min-h-11 rounded-lg px-2 text-sm font-semibold text-sky"
+            <h2
+              id="best-h"
+              className="text-xs font-bold uppercase tracking-widest text-muted"
             >
-              Mark a stretch…
-            </button>
-            <span className="text-[13px] text-muted">
-              {failed ? 'Couldn’t save — try again' : 'Saved as you tap'}
-            </span>
-          </div>
-          <p className="mt-1 text-[13px] text-muted">
-            Mark the days you can’t make, or would rather not. Everything else
-            counts as free.
-            {blocksOn && (
-              <>
-                {' '}
-                Rehearsals and gigs with your other bands count automatically (
-                <Link href="/account" className="text-sky">
-                  change
-                </Link>
-                ).
-              </>
+              Next days everyone can make
+            </h2>
+            {unanswered.length > 0 && (
+              <p className="mt-1 text-sm text-muted">
+                Not answered yet: {unanswered.join(', ')} — counted as free
+                until they do.
+              </p>
             )}
-          </p>
-          {ranging && (
-            <RangeForm
-              onApplied={(marked, kind) => {
-                const set = new Set(marked)
-                setEntries([
-                  ...entries.filter(
-                    (e) => !(e.userId === me && set.has(e.date)),
-                  ),
-                  ...(kind
-                    ? marked.map((date) => ({userId: me, date, kind}))
-                    : []),
-                ])
-                setAnswered(new Set([...answered, me]))
-                setRanging(false)
-              }}
-            />
-          )}
-          {weeks.map((w, wi) => (
-            <div key={wi} className="mt-3">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-faint">
-                {wi === 0 ? 'This week' : `Week of ${formatDay(w[0])}`}
-              </h3>
-              {w.map((d) => {
-                const current = mineOn(d)
-                const busy = blockAt.get(`${me}|${d}`)
-                return (
-                  <div
-                    key={d}
-                    className="flex flex-wrap items-center gap-x-2 border-t border-line py-1.5"
-                  >
-                    <span className="w-20 text-sm font-semibold">
-                      {weekday(d)} {Number(d.slice(8))}
-                    </span>
-                    <div
-                      role="radiogroup"
-                      aria-label={formatDay(d)}
-                      className="grid flex-1 grid-cols-4 overflow-hidden rounded-lg border border-line-2"
-                    >
-                      {STATES.map((s) => (
-                        <button
-                          key={s.label}
-                          type="button"
-                          role="radio"
-                          aria-checked={current === s.kind}
-                          onClick={() => mark(d, s.kind)}
-                          className={`min-h-10 text-[13px] font-semibold ${current === s.kind ? s.on : 'text-faint'}`}
-                        >
-                          {s.label}
-                        </button>
-                      ))}
-                    </div>
-                    {busy && (
-                      <p className="basis-full pl-[5.5rem] pt-1 text-xs text-warn-fg">
-                        {busy.label} — counts as{' '}
-                        {busy.kind === 'OUT' ? 'out' : 'out in the afternoon'}{' '}
-                        here
+            {!ahead.length && (
+              <p className="mt-2 text-sm text-bad">
+                No day in the next two years has nobody out.
+              </p>
+            )}
+            <ul className="mt-2">
+              {ahead.map((d, i) => (
+                <li
+                  key={d.date}
+                  className="border-t border-line py-2 first:border-t-0"
+                >
+                  {d.date.slice(0, 7) !== ahead[i - 1]?.date.slice(0, 7) &&
+                    i > 0 && (
+                      <p className="mb-1 text-xs font-bold uppercase tracking-widest text-faint">
+                        {monthName(d.date)}
                       </p>
                     )}
+                  <div className="flex items-center gap-3">
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
+                      <span className="shrink-0 font-mono font-bold text-amber sm:w-28">
+                        {formatDay(d.date)}
+                      </span>
+                      <span className="min-w-0 text-sm">
+                        {d.pmOut.length || d.preferNot.length ? (
+                          <>
+                            {d.pmOut.length > 0 && (
+                              <span className="text-warn-fg">
+                                Evening only (afternoon out:{' '}
+                                {d.pmOut.join(', ')})
+                              </span>
+                            )}
+                            {d.pmOut.length > 0 &&
+                              d.preferNot.length > 0 &&
+                              ' · '}
+                            {d.preferNot.length > 0 && (
+                              <span className="text-info-fg">
+                                Would rather not: {d.preferNot.join(', ')}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <strong className="text-good">Everyone free</strong>
+                        )}
+                      </span>
+                    </span>
+                    {booked.has(d.date) ? (
+                      <span className="shrink-0 px-3 text-sm font-semibold leading-[44px] text-good">
+                        Booked ✓
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPlanning(planning === d.date ? null : d.date)
+                        }
+                        className="min-h-11 shrink-0 rounded-lg border border-line-2 px-3 text-sm font-semibold"
+                      >
+                        Set rehearsal
+                      </button>
+                    )}
                   </div>
-                )
-              })}
-            </div>
-          ))}
-          {weekCount * 7 < horizon.length && (
-            <button
-              type="button"
-              onClick={() => setWeekCount(weekCount + 4)}
-              className="mt-3 min-h-11 w-full rounded-lg border border-line-2 text-sm font-semibold"
-            >
-              Show 4 more weeks
-            </button>
-          )}
-        </section>
+                  {planning === d.date && (
+                    <PlanForm
+                      date={d.date}
+                      onDone={() => (setPlanning(null), router.refresh())}
+                    />
+                  )}
+                </li>
+              ))}
+            </ul>
+            {ahead.length === aheadLimit && (
+              <button
+                type="button"
+                onClick={() => setAheadLimit(aheadLimit + 5)}
+                className="mt-2 min-h-11 w-full rounded-lg border border-line-2 text-sm font-semibold"
+              >
+                Show 5 more days
+              </button>
+            )}
+            {ahead.length > 0 && ahead.length < aheadLimit && (
+              <p className="mt-2 text-xs text-faint">
+                That’s every such day in the next two years.
+              </p>
+            )}
+            {lastMarked && ahead.some((d) => d.date > lastMarked) && (
+              <p className="mt-2 text-xs text-faint">
+                Nobody has marked any days after {formatDay(lastMarked)} yet, so
+                later dates are only free as far as we know.
+              </p>
+            )}
+          </section>
 
-        <section aria-labelledby="all-h" className="min-w-0">
-          <h2 id="all-h" className="text-lg font-bold">
-            Everyone
-          </h2>
-          <div className="mt-3 overflow-x-auto rounded-xl border border-line">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr>
-                  <th className="sticky left-0 bg-ink px-3 py-2 text-left font-semibold">
-                    Day
-                  </th>
-                  {liveMembers.map((m) => (
-                    <th
-                      key={m.id}
-                      className="px-2 py-2 text-center font-semibold"
-                    >
-                      <Avatar
-                        name={m.name}
-                        src={m.avatar}
-                        size={28}
-                        className="mx-auto mb-1"
-                      />
-                      {m.name}
-                      {!m.answered && (
-                        <span className="block text-[11px] font-normal text-faint">
-                          no answer
+          <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+            <section aria-labelledby="mine-h">
+              <div className="flex items-baseline justify-between">
+                <h2 id="mine-h" className="text-lg font-bold">
+                  Your days
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setRanging(!ranging)}
+                  aria-expanded={ranging}
+                  className="min-h-11 rounded-lg px-2 text-sm font-semibold text-sky"
+                >
+                  Mark a stretch…
+                </button>
+                <span className="text-[13px] text-muted">
+                  {failed ? 'Couldn’t save — try again' : 'Saved as you tap'}
+                </span>
+              </div>
+              <p className="mt-1 text-[13px] text-muted">
+                Mark the days you can’t make, or would rather not. Everything
+                else counts as free.
+                {blocksOn && (
+                  <>
+                    {' '}
+                    Rehearsals and gigs with your other bands count
+                    automatically (
+                    <Link href="/account" className="text-sky">
+                      change
+                    </Link>
+                    ).
+                  </>
+                )}
+              </p>
+              {ranging && (
+                <RangeForm
+                  onApplied={(marked, kind) => {
+                    const set = new Set(marked)
+                    setEntries([
+                      ...entries.filter(
+                        (e) => !(e.userId === me && set.has(e.date)),
+                      ),
+                      ...(kind
+                        ? marked.map((date) => ({userId: me, date, kind}))
+                        : []),
+                    ])
+                    setAnswered(new Set([...answered, me]))
+                    setRanging(false)
+                  }}
+                />
+              )}
+              {weeks.map((w, wi) => (
+                <div key={wi} className="mt-3">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-faint">
+                    {wi === 0 ? 'This week' : `Week of ${formatDay(w[0])}`}
+                  </h3>
+                  {w.map((d) => {
+                    const current = mineOn(d)
+                    const busy = blockAt.get(`${me}|${d}`)
+                    return (
+                      <div
+                        key={d}
+                        className="flex flex-wrap items-center gap-x-2 border-t border-line py-1.5"
+                      >
+                        <span className="w-20 text-sm font-semibold">
+                          {weekday(d)} {Number(d.slice(8))}
                         </span>
-                      )}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {scores.slice(0, 28).map((s) => (
-                  <tr key={s.date} className="border-t border-line">
-                    <th
-                      scope="row"
-                      className="sticky left-0 whitespace-nowrap bg-ink px-3 py-1.5 text-left font-medium"
-                    >
-                      {formatDay(s.date)}
-                    </th>
-                    {liveMembers.map((m) => {
-                      const k = effective.find(
-                        (e) => e.userId === m.id && e.date === s.date,
-                      )?.kind
-                      const busy = blockAt.get(`${m.id}|${s.date}`)
-                      return (
-                        <td key={m.id} className="px-1 py-1 text-center">
-                          <span
-                            title={busy?.label}
-                            className={`inline-flex h-7 min-w-12 items-center justify-center rounded font-mono text-xs font-bold ${busy ? 'ring-2 ring-inset ring-text/40 ' : ''}${
-                              k === 'OUT'
-                                ? 'bg-bad-bg text-bad-fg'
-                                : k === 'PM_OUT'
-                                  ? 'bg-warn-bg text-warn-fg'
-                                  : k === 'PREFER_NOT'
-                                    ? 'bg-info-bg text-info-fg'
-                                    : m.answered
-                                      ? 'bg-good-bg text-good-fg'
-                                      : 'border border-dashed border-line-2 text-faint'
-                            }`}
-                          >
-                            {k === 'OUT'
-                              ? 'OUT'
-                              : k === 'PM_OUT'
-                                ? 'PM'
-                                : k === 'PREFER_NOT'
-                                  ? 'PREF'
-                                  : m.answered
-                                    ? ''
-                                    : '?'}
-                          </span>
-                        </td>
-                      )
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                        <div
+                          role="radiogroup"
+                          aria-label={formatDay(d)}
+                          className="grid flex-1 grid-cols-4 overflow-hidden rounded-lg border border-line-2"
+                        >
+                          {STATES.map((s) => (
+                            <button
+                              key={s.label}
+                              type="button"
+                              role="radio"
+                              aria-checked={current === s.kind}
+                              onClick={() => mark(d, s.kind)}
+                              className={`min-h-10 text-[13px] font-semibold ${current === s.kind ? s.on : 'text-faint'}`}
+                            >
+                              {s.label}
+                            </button>
+                          ))}
+                        </div>
+                        {busy && (
+                          <p className="basis-full pl-[5.5rem] pt-1 text-xs text-warn-fg">
+                            {busy.label} — counts as{' '}
+                            {busy.kind === 'OUT'
+                              ? 'out'
+                              : 'out in the afternoon'}{' '}
+                            here
+                          </p>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ))}
+              {weekCount * 7 < horizon.length && (
+                <button
+                  type="button"
+                  onClick={() => setWeekCount(weekCount + 4)}
+                  className="mt-3 min-h-11 w-full rounded-lg border border-line-2 text-sm font-semibold"
+                >
+                  Show 4 more weeks
+                </button>
+              )}
+            </section>
+
+            <section aria-labelledby="all-h" className="min-w-0">
+              <h2 id="all-h" className="text-lg font-bold">
+                Everyone
+              </h2>
+              <div className="mt-3 overflow-x-auto rounded-xl border border-line">
+                <table className="w-full border-collapse text-sm">
+                  <thead>
+                    <tr>
+                      <th className="sticky left-0 bg-ink px-3 py-2 text-left font-semibold">
+                        Day
+                      </th>
+                      {liveMembers.map((m) => (
+                        <th
+                          key={m.id}
+                          className="px-2 py-2 text-center font-semibold"
+                        >
+                          <Avatar
+                            name={m.name}
+                            src={m.avatar}
+                            size={28}
+                            className="mx-auto mb-1"
+                          />
+                          {m.name}
+                          {!m.answered && (
+                            <span className="block text-[11px] font-normal text-faint">
+                              no answer
+                            </span>
+                          )}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scores.slice(0, 28).map((s) => (
+                      <tr key={s.date} className="border-t border-line">
+                        <th
+                          scope="row"
+                          className="sticky left-0 whitespace-nowrap bg-ink px-3 py-1.5 text-left font-medium"
+                        >
+                          {formatDay(s.date)}
+                        </th>
+                        {liveMembers.map((m) => {
+                          const k = effective.find(
+                            (e) => e.userId === m.id && e.date === s.date,
+                          )?.kind
+                          const busy = blockAt.get(`${m.id}|${s.date}`)
+                          return (
+                            <td key={m.id} className="px-1 py-1 text-center">
+                              <span
+                                title={busy?.label}
+                                className={`inline-flex h-7 min-w-12 items-center justify-center rounded font-mono text-xs font-bold ${busy ? 'ring-2 ring-inset ring-text/40 ' : ''}${
+                                  k === 'OUT'
+                                    ? 'bg-bad-bg text-bad-fg'
+                                    : k === 'PM_OUT'
+                                      ? 'bg-warn-bg text-warn-fg'
+                                      : k === 'PREFER_NOT'
+                                        ? 'bg-info-bg text-info-fg'
+                                        : m.answered
+                                          ? 'bg-good-bg text-good-fg'
+                                          : 'border border-dashed border-line-2 text-faint'
+                                }`}
+                              >
+                                {k === 'OUT'
+                                  ? 'OUT'
+                                  : k === 'PM_OUT'
+                                    ? 'PM'
+                                    : k === 'PREFER_NOT'
+                                      ? 'PREF'
+                                      : m.answered
+                                        ? ''
+                                        : '?'}
+                              </span>
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {gridDays < horizon.length && (
+                <button
+                  type="button"
+                  onClick={() => setGridDays(gridDays + 28)}
+                  className="mt-2 min-h-11 w-full rounded-lg border border-line-2 text-sm font-semibold"
+                >
+                  Show 4 more weeks
+                </button>
+              )}
+              <p className="mt-2 text-[13px] text-faint">
+                Blank = free · PREF = would rather not · PM = out in the
+                afternoon · OUT = out all day · ? = hasn’t answered
+                {blocks.length > 0 && ' · outlined = busy with another band'}
+              </p>
+            </section>
           </div>
-          {gridDays < horizon.length && (
-            <button
-              type="button"
-              onClick={() => setGridDays(gridDays + 28)}
-              className="mt-2 min-h-11 w-full rounded-lg border border-line-2 text-sm font-semibold"
-            >
-              Show 4 more weeks
-            </button>
+        </>
+      ) : (
+        <>
+          {!rehearsals.length && (
+            <p className="mt-4 text-muted">No rehearsals set yet.</p>
           )}
-          <p className="mt-2 text-[13px] text-faint">
-            Blank = free · PREF = would rather not · PM = out in the afternoon ·
-            OUT = out all day · ? = hasn’t answered
-            {blocks.length > 0 && ' · outlined = busy with another band'}
-          </p>
-        </section>
-      </div>
+          <AddRehearsal onDone={() => router.refresh()} />
+        </>
+      )}
     </main>
   )
 }
@@ -673,5 +693,54 @@ function PlanForm({date, onDone}: {date: string; onDone: () => void}) {
         />
       </label>
     </form>
+  )
+}
+
+/** No scheduling tool: pick the day yourself, then the same form. */
+function AddRehearsal({onDone}: {onDone: () => void}) {
+  const [open, setOpen] = useState(false)
+  const [date, setDate] = useState('')
+  if (!open)
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-4 min-h-12 w-full rounded-xl border border-dashed border-line-2 font-semibold"
+      >
+        + Add a rehearsal
+      </button>
+    )
+  return (
+    <section className="mt-4 rounded-2xl bg-panel p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-lg font-bold">Add a rehearsal</h2>
+        <button
+          type="button"
+          onClick={() => (setOpen(false), setDate(''))}
+          className="min-h-11 px-2 text-sm text-muted"
+        >
+          Cancel
+        </button>
+      </div>
+      <label className="flex flex-col gap-1 text-xs text-muted">
+        Day
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="min-h-11 rounded-lg border border-line-2 bg-ink px-3 text-base text-text"
+        />
+      </label>
+      {date && (
+        <PlanForm
+          date={date}
+          onDone={() => {
+            setOpen(false)
+            setDate('')
+            onDone()
+          }}
+        />
+      )}
+    </section>
   )
 }
