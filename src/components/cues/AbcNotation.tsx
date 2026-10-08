@@ -24,6 +24,8 @@ export default function AbcNotation({
   onError?: (warnings: string[]) => void
 }) {
   const box = useRef<HTMLDivElement>(null)
+  // Scrolls sideways when the music is wider than the column
+  const frame = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
   const [failed, setFailed] = useState(false)
   const part = abcPart(abc)
@@ -35,7 +37,7 @@ export default function AbcNotation({
   const tab = view === 'tab' && instrument !== 'keys'
 
   useEffect(() => {
-    const el = box.current
+    const el = frame.current
     if (!el) return
     const ro = new ResizeObserver(() => setWidth(el.clientWidth))
     ro.observe(el)
@@ -51,6 +53,7 @@ export default function AbcNotation({
     import('abcjs')
       .then((ABCJS) => {
         if (cancelled || !box.current) return
+        el.style.width = ''
         const fontPx = parseFloat(getComputedStyle(el).fontSize) || 16
         const scale = Math.min(1.6, Math.max(0.6, fontPx / 17))
         const tunes = ABCJS.renderAbc(el, withAbcHeader(abc, songKey ?? 'C'), {
@@ -85,6 +88,12 @@ export default function AbcNotation({
           String(w).replace(/<[^>]+>/g, ''),
         )
         if (tab) tabOnly(el, scale)
+        // abcjs squeezes music into the width it's given only so far; past
+        // that the drawing runs wider (and is scaled by a CSS transform,
+        // which takes no room), so size the box to it and let the frame
+        // scroll
+        const drawn = el.querySelector('svg')?.getBoundingClientRect().width
+        if (drawn && drawn > width + 1) el.style.width = `${Math.ceil(drawn)}px`
         setFailed(!tunes.length)
         onError?.(warnings)
         // Performance mode re-counts its pages around the new height
@@ -120,11 +129,18 @@ export default function AbcNotation({
         </div>
       )}
       <div
-        ref={box}
-        className="abc-notation w-full overflow-hidden"
-        role="img"
-        aria-label="Music notation"
-      />
+        ref={frame}
+        // A sideways drag here scrolls the music, not to another song
+        data-hscroll=""
+        className="w-full overflow-x-auto overscroll-x-contain"
+      >
+        <div
+          ref={box}
+          className="abc-notation min-w-full overflow-hidden"
+          role="img"
+          aria-label="Music notation"
+        />
+      </div>
       {failed && (
         <pre className="whitespace-pre-wrap font-mono text-[0.8em] text-muted">
           {abc}
