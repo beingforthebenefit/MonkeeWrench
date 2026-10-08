@@ -4,37 +4,45 @@ import {useEffect, useState} from 'react'
 
 /**
  * How licks (notation blocks) are shown on this device: as notation, or as
- * notation with tab under it. One setting for every lick on the page --
- * flipping it on one block flips them all -- remembered per device.
+ * tab. Guitar and bass parts start as tab, everything else (horn lines,
+ * melodies) as notation. Each kind has one setting for every lick of that
+ * kind on the page -- flipping one flips them all -- remembered per device.
  */
 export type LickView = 'notation' | 'tab'
+/** "part": written for guitar or bass; "line": anything else */
+export type LickKind = 'part' | 'line'
 
-const KEY = 'ms:lick-view'
+const KEYS: Record<LickKind, string> = {
+  part: 'ms:lick-view:part',
+  line: 'ms:lick-view',
+}
+const DEFAULT: Record<LickKind, LickView> = {part: 'tab', line: 'notation'}
 const EVENT = 'ms:lick-view'
 
-function read(): LickView {
+function read(kind: LickKind): LickView {
   try {
-    return window.localStorage.getItem(KEY) === 'tab' ? 'tab' : 'notation'
+    const v = window.localStorage.getItem(KEYS[kind])
+    return v === 'tab' || v === 'notation' ? v : DEFAULT[kind]
   } catch {
-    return 'notation'
+    return DEFAULT[kind]
   }
 }
 
-export function useLickView() {
-  const [view, setView] = useState<LickView>('notation')
+export function useLickView(kind: LickKind) {
+  const [view, setView] = useState<LickView>(DEFAULT[kind])
   useEffect(() => {
-    setView(read())
-    const sync = () => setView(read())
+    setView(read(kind))
+    const sync = () => setView(read(kind))
     window.addEventListener(EVENT, sync)
     window.addEventListener('storage', sync)
     return () => {
       window.removeEventListener(EVENT, sync)
       window.removeEventListener('storage', sync)
     }
-  }, [])
+  }, [kind])
   const set = (v: LickView) => {
     try {
-      window.localStorage.setItem(KEY, v)
+      window.localStorage.setItem(KEYS[kind], v)
     } catch {
       // private mode: still switches this page
     }

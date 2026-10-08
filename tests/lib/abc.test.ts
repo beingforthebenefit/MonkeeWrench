@@ -30,5 +30,8 @@ describe('abcTabInstrument', () => {
     expect(abcTabInstrument('% instrument: guitar\nK:E\nE2 |]')).toBe('guitar')
     expect(abcTabInstrument('% instrument: keys\nK:E\nE2 |]')).toBe('keys')
     expect(abcTabInstrument('K:E\nE2 |]')).toBe('guitar')
+    const {abcPart} = await import('@/lib/abc')
+    expect(abcPart('K:E\nE2 |]')).toBeNull()
+    expect(abcPart('% instrument: guitar\nK:E\nE2 |]')).toBe('guitar')
   })
 })

@@ -1,7 +1,7 @@
 'use client'
 
 import {useEffect, useRef, useState} from 'react'
-import {abcTabInstrument, withAbcHeader} from '@/lib/abc'
+import {abcPart, abcTabInstrument, withAbcHeader} from '@/lib/abc'
 import {useLickView} from '@/components/cues/useLickView'
 
 /**
@@ -26,8 +26,13 @@ export default function AbcNotation({
   const box = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
   const [failed, setFailed] = useState(false)
-  const [view, setView] = useLickView()
+  const part = abcPart(abc)
+  // Guitar and bass parts open as tab; horn lines and melodies as notation
+  const [view, setView] = useLickView(
+    part === 'guitar' || part === 'bass' ? 'part' : 'line',
+  )
   const instrument = abcTabInstrument(abc)
+  const tab = view === 'tab' && instrument !== 'keys'
 
   useEffect(() => {
     const el = box.current
@@ -57,13 +62,16 @@ export default function AbcNotation({
           paddingbottom: 0,
           paddingleft: 0,
           paddingright: 0,
-          // Tab under the staff: the staff keeps the rhythm, the tab the frets
-          ...(view === 'tab' && instrument !== 'keys'
+          // abcjs draws tab under the staff; tabOnly() then removes the staff
+          ...(tab
             ? {
+                add_classes: true,
                 tablature: [
                   instrument === 'bass'
                     ? {
-                        instrument: 'guitar' as const,
+                        // abcjs draws as many lines as the instrument's
+                        // own tuning has: violin is its four-string one
+                        instrument: 'violin' as const,
                         label: 'Bass',
                         // Written in bass clef, an octave above the sound
                         tuning: ['E,,', 'A,,', 'D,', 'G,'],
@@ -76,6 +84,7 @@ export default function AbcNotation({
         const warnings = (tunes[0]?.warnings ?? []).map((w) =>
           String(w).replace(/<[^>]+>/g, ''),
         )
+        if (tab) tabOnly(el, scale)
         setFailed(!tunes.length)
         onError?.(warnings)
       })
@@ -83,7 +92,7 @@ export default function AbcNotation({
     return () => {
       cancelled = true
     }
-  }, [abc, songKey, steps, width, onError, view, instrument])
+  }, [abc, songKey, steps, width, onError, tab, instrument])
 
   return (
     <>
@@ -121,4 +130,70 @@ export default function AbcNotation({
       )}
     </>
   )
+}
+
+/** What abcjs draws for tablature (everything else in a line is the staff). */
+function isTab(e: Element) {
+  const cls = (e.getAttribute('class') ?? '').split(' ')
+  return (
+    cls.includes('abcjs-tabNumber') ||
+    cls.includes('abcjs-symbol') || // the TAB "clef"
+    cls.includes('abcjs-instrument-name') ||
+    (cls.includes('abcjs-staff') && cls.includes('abcjs-v1')) ||
+    // A tab bar line carries the class twice
+    cls.filter((c) => c === 'abcjs-bar').length > 1
+  )
+}
+
+/**
+ * abcjs has no tab-only mode: hide the staff in each line, clip off the bar
+ * lines that still reach up to it, stack the lines' tabs without the gaps
+ * the staves left, and shrink the drawing to fit.
+ */
+function tabOnly(el: HTMLElement, scale: number) {
+  const svg = el.querySelector('svg')
+  if (!svg) return
+  const NS = 'http://www.w3.org/2000/svg'
+  const defs =
+    svg.querySelector('defs') ??
+    svg.appendChild(document.createElementNS(NS, 'defs'))
+  const lines = Array.from(
+    svg.querySelectorAll(':scope > g.abcjs-staff-wrapper'),
+  )
+  let y = 0
+  lines.forEach((line, i) => {
+    let top = Infinity
+    let bottom = -Infinity
+    for (const part of Array.from(line.children)) {
+      if (!isTab(part)) {
+        ;(part as SVGElement).style.display = 'none'
+        continue
+      }
+      // Bars run up into the staff: they don't decide the tab's height
+      if ((part.getAttribute('class') ?? '').includes('abcjs-bar')) continue
+      const b = (part as SVGGraphicsElement).getBBox()
+      if (!b.height) continue
+      top = Math.min(top, b.y)
+      bottom = Math.max(bottom, b.y + b.height)
+    }
+    if (top === Infinity) return
+    const clip = document.createElementNS(NS, 'clipPath')
+    clip.id = `tab-${Math.random().toString(36).slice(2)}-${i}`
+    const rect = document.createElementNS(NS, 'rect')
+    rect.setAttribute('x', '-10000')
+    rect.setAttribute('width', '20000')
+    rect.setAttribute('y', String(top))
+    rect.setAttribute('height', String(bottom - top))
+    clip.appendChild(rect)
+    defs.appendChild(clip)
+    line.setAttribute('clip-path', `url(#${clip.id})`)
+    line.setAttribute('transform', `translate(0 ${y - top})`)
+    y += bottom - top + 8
+  })
+  if (!y) return
+  // abcjs scales the drawing with a CSS transform and sizes its box to
+  // match, so both shrink
+  const height = y - 8
+  svg.setAttribute('height', String(height))
+  el.style.height = `${height * scale}px`
 }

@@ -62,6 +62,11 @@ export function abcPresets(key: string | null) {
  * guitar tab.
  */
 export function abcTabInstrument(abc: string): 'guitar' | 'bass' | 'keys' {
-  const m = abc.match(/^%\s*instrument:\s*(bass|keys)\b/im)
-  return (m?.[1] as 'bass' | 'keys' | undefined) ?? 'guitar'
+  return abcPart(abc) ?? 'guitar'
+}
+
+/** The instrument a lick is written for, if its ABC says. */
+export function abcPart(abc: string): 'guitar' | 'bass' | 'keys' | null {
+  const m = abc.match(/^%\s*instrument:\s*(guitar|bass|keys)\b/im)
+  return (m?.[1] as 'guitar' | 'bass' | 'keys' | undefined) ?? null
 }
