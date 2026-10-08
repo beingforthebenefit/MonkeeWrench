@@ -1,7 +1,9 @@
 import {
   TAB_LINE,
+  isChord,
   isChordLine,
   mergeChordLine,
+  placeInlineChords,
   parseHeader,
   sectionType,
 } from './chordpro'
@@ -42,6 +44,24 @@ const PART_NOTE =
 /** A line that says what follows: "intro- sax solo", "piano solo", "(softer)" */
 const INSTRUCTION =
   /\b(intro|outro|solo|break|verse|chorus|bridge|instrumental|interlude|ending|end|vamp|tag|turnaround|horns?|riff|bars?|repeat|x\d+)\b/i
+
+/**
+ * A line that tells the band what to do rather than what to sing: "guitar
+ * intro 2 bars", "x2", "main riff 6x", "BACK TO SLOWER TEMPO". It's a note,
+ * never the words a chord line above it sits on.
+ */
+const NOTE_WORDS =
+  /\b(intro|outro|solos?|riffs?|bars?|repeats?|modulates?|guitars?|piano|keys|keyboards?|organ|sax|horns?|drums?|bass|vamp|turnaround|instrumental|double time|tempo|fills?|percussion|chords|x ?\d+|\d+ ?x|\d+ times|(two|three|four) times)\b/i
+export function isNoteText(line: string) {
+  const t = line.trim()
+  if (!t || /[[{]/.test(t) || readNoteLine(t)) return false
+  if (t.split(/\s+/).length > 14) return false
+  // "/ BREAK" under a chord: beats for the chord row, not a note
+  if (/(^|\s)\/+(\.|\s|$)/.test(t)) return false
+  // All capitals and no lyric shape: "BACK TO SLOWER TEMPO"
+  if (/^[^a-z]*[A-Z]{3}[^a-z]*$/.test(t) && !/[?!]$/.test(t)) return true
+  return NOTE_WORDS.test(t)
+}
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '')
 
@@ -249,6 +269,37 @@ function convertParagraph(p: string[], ctx: Ctx): string[] {
   )
     rest = [`{comment: ${rest[0].trim().slice(1, -1)}}`, ...rest.slice(1)]
 
+  // "[A]ev[D-D]eryo[C]ne accents this then 4 bars guitar solo": chords
+  // typed into an instruction. The chords, then the instruction as a note
+  rest = rest.flatMap((l) => {
+    if (!/\[/.test(l) || /^\s*\{/.test(l)) return [l]
+    const text = l.replace(/\[[^\]]*\]/g, '')
+    if (!isNoteText(text)) return [l]
+    const chords = [...l.matchAll(/\[([^\]]*)\]/g)].map((m) => `[${m[1]}]`)
+    return [chords.join('   '), text.trim()]
+  })
+
+  // Chords typed inline: "[A[fine" for "[A]fine", "[G6-]" (a hold mark on
+  // the chord), and each chord onto its syllable (see placeChords)
+  rest = rest.map((l) =>
+    /^\s*\{/.test(l) || !/\[/.test(l)
+      ? l
+      : placeInlineChords(
+          l
+            .replace(/\[([A-G][^[\]\s]*)\[/g, '[$1]')
+            .replace(/\[([A-G][^\]]*?)-\]/g, (m, c) =>
+              isChord(c) ? `[${c}]` : m,
+            ),
+        ),
+  )
+
+  // "A / Cm7 / Bm7 /E7": a beat slash typed against its chord
+  rest = rest.map((l) => {
+    if (/\[/.test(l)) return l
+    const spaced = l.replace(/(^|\s)\/(?=[A-G])/g, '$1/ ')
+    return spaced !== l && isChordLine(spaced) ? spaced : l
+  })
+
   const lines: string[] = []
   for (let i = 0; i < rest.length; i++) {
     const line = rest[i]
@@ -278,6 +329,7 @@ function convertParagraph(p: string[], ctx: Ctx): string[] {
             .pop()!
             .trim()
             .replace(/[:>-]+$/, '')
+            .replace(/^[\s:>-]+/, '')
             .trim(),
         )
       }
@@ -321,6 +373,8 @@ function convertParagraph(p: string[], ctx: Ctx): string[] {
       if (
         !introducesNotes &&
         next !== undefined &&
+        // "guitar intro 2 bars" under a chord line is a note about it
+        !isNoteText(next) &&
         next.trim() &&
         !/\[/.test(next) &&
         !isChordLine(next) &&
@@ -332,6 +386,17 @@ function convertParagraph(p: string[], ctx: Ctx): string[] {
       continue
     }
     lines.push(line)
+  }
+
+  // What's left of the instructions are notes, not lyrics
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i] === '\u0000written') i++
+    else if (lines[i] === '\u0000tab') while (lines[i] !== '\u0000endtab') i++
+    else if (isNoteText(lines[i]))
+      lines[i] = `{comment: ${lines[i]
+        .trim()
+        .replace(/[\s:>-]+$/, '')
+        .replace(/^[\s:>-]+/, '')}}`
   }
 
   // Tab blocks split the paragraph into lyric parts and tab parts

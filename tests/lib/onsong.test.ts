@@ -30,6 +30,44 @@ describe('OnSong import', () => {
     expect(r.source).toContain('[G]Walking [C]the dog')
   })
 
+  it('moves a chord typed a letter off its word, or over a gap, onto the word', () => {
+    // G one letter into "Walking" (no syllable starts there), C over the gap
+    const r = song(' G                C\nWalking the dog, all day\n')
+    expect(r.source).toContain('[G]Walking the dog, [C]all day')
+  })
+
+  it('keeps chords on syllables, and moves ones that split no syllable', () => {
+    const r = song(
+      '[G]Walking the day[C]light, a[D]way, n[Em]ight, bou[A]rbon\n',
+    )
+    expect(r.source).toContain(
+      '[G]Walking the day[C]light, a[D]way, [Em]night, [A]bourbon',
+    )
+  })
+
+  it('keeps a chord row off an instruction under it, and makes it a note', () => {
+    const r = song(
+      [
+        'Em     C7     B7',
+        'short guitar solo',
+        '',
+        'Em - Am Em.',
+        'x2',
+        '',
+        'G       C',
+        'Walking the dog',
+      ].join('\n'),
+    )
+    expect(r.source).toMatch(
+      /\[Em\]\s+\[C7\]\s+\[B7\]\n\{comment: short guitar solo\}/,
+    )
+    // "Em." is Em with a full stop typed on it
+    expect(r.source).toMatch(
+      /\[Em\]\s+\[-\]\s+\[Am\]\s+\[Em\]\n\{comment: x2\}/,
+    )
+    expect(r.source).toContain('[G]Walking [C]the dog')
+  })
+
   it('names a section by its label or by an instruction above its chords', () => {
     const r = song(
       [

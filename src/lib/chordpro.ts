@@ -413,7 +413,7 @@ export function isChordLine(line: string): boolean {
   for (const t of tokens) {
     const bare = t.replace(/^\(|\)$/g, '')
     const glued = t.match(/^(.+?)(\(x\d+\))$/i)
-    if (isChord(bare) || (glued && isChord(glued[1]))) chords++
+    if (isChord(tidyChord(bare)) || (glued && isChord(glued[1]))) chords++
     else if (!NON_CHORD_TOKENS.has(t) && !REPEAT.test(t)) return false
   }
   return chords > 0
@@ -515,16 +515,117 @@ export function mergeChordLine(chordLine: string, lyricLine: string): string {
   while ((m = re.exec(chordLine)))
     marks.push({
       col: m.index,
-      chord: m[0].startsWith('[') ? `(${m[0].slice(1, -1)})` : m[0],
+      chord: m[0].startsWith('[') ? `(${m[0].slice(1, -1)})` : tidyChord(m[0]),
     })
+  return placeChords(lyricLine, marks)
+}
+
+/**
+ * A line with its chords typed in ("n[Cm7]ight", "Hi-de[Em]-hi"), with
+ * each chord moved onto a syllable the way placeChords does.
+ */
+export function placeInlineChords(line: string): string {
+  if (!/\[/.test(line) || !/[A-Za-z]/.test(line.replace(/\[[^\]]*\]/g, '')))
+    return line
+  const marks: {col: number; chord: string}[] = []
+  let lyric = ''
+  let at = 0
+  for (const m of line.matchAll(/\[([^\]]*)\]/g)) {
+    lyric += line.slice(at, m.index)
+    at = m.index! + m[0].length
+    marks.push({col: lyric.length, chord: m[1]})
+  }
+  return placeChords(lyric + line.slice(at), marks)
+}
+
+/**
+ * Chords onto words at the columns they were typed. A chord can sit mid-word
+ * on a syllable ("repu[Cm7]tation", "a[E]gain"); one that splits a word
+ * where no syllable starts ("n[Cm7]ight", "bou[D7]rbon": a syllable starts
+ * with a consonant and its vowel, after a vowel earlier in the word) was typed a letter or two off, and goes to the
+ * word's start. One over a gap goes to the word just after it. Several on one
+ * word ("G - E7" over "scotch,") are quick changes: the first starts it, the
+ * rest wait just after it.
+ */
+export function placeChords(
+  lyricLine: string,
+  marks: {col: number; chord: string}[],
+): string {
   let lyric = lyricLine
   const width = marks.length ? marks[marks.length - 1].col : 0
   if (lyric.length < width) lyric = lyric.padEnd(width)
-  for (let i = marks.length - 1; i >= 0; i--) {
-    const {col, chord} = marks[i]
+  let prev = -1
+  for (const mark of marks) {
+    if (!lyricLine.trim() || mark.col >= lyricLine.length) continue
+    // A hold mark or beat slash takes no word: at a word's start it stays,
+    // inside one it waits just after it
+    if (/^[-/|.]+$/.test(mark.chord)) {
+      const start = snapToSyllable(lyricLine, mark.col)
+      if (start !== mark.col && WORD_CHAR.test(lyricLine[mark.col] ?? ''))
+        mark.col = wordEnd(lyricLine, start)
+      continue
+    }
+    const at = snapToSyllable(lyricLine, mark.col)
+    if (at <= prev) mark.col = wordEnd(lyricLine, prev)
+    else mark.col = prev = at
+  }
+  const ordered = marks
+    .map((m, i) => ({...m, i}))
+    .sort((a, b) => a.col - b.col || a.i - b.i)
+  for (let i = ordered.length - 1; i >= 0; i--) {
+    const {col, chord} = ordered[i]
     lyric = lyric.slice(0, col) + `[${chord}]` + lyric.slice(col)
   }
   return lyric.replace(/\s+$/, '')
+}
+
+const WORD_CHAR = /[A-Za-z0-9'’/]/
+const VOWEL = /[aeiouy]/i
+
+/** Where a chord typed at `col` belongs: on its syllable, or the word's start. */
+export function snapToWord(lyric: string, col: number) {
+  return snapToSyllable(lyric, col)
+}
+
+function snapToSyllable(lyric: string, col: number) {
+  if (col >= lyric.length) return col
+  if (WORD_CHAR.test(lyric[col])) {
+    let s = col
+    while (s > 0 && WORD_CHAR.test(lyric[s - 1])) s--
+    let e = col
+    while (e < lyric.length && WORD_CHAR.test(lyric[e])) e++
+    // A syllable starts with a consonant and its vowel ("repu|tation",
+    // "a|gain"), after a vowel earlier in the word
+    const syllable =
+      VOWEL.test(lyric.slice(s, col)) &&
+      /^[b-df-hj-np-tv-z][aeiouy]/i.test(lyric.slice(col, e))
+    return syllable ? col : s
+  }
+  // Over a space or a hyphen ("Hi-de[Em]-hi"): the next word, if it's
+  // close. Before the line's first word a chord keeps its own beat
+  if (!lyric.slice(0, col).trim()) return col
+  let s = col
+  while (s < lyric.length && /[\s-]/.test(lyric[s])) s++
+  return s < lyric.length && s - col <= 3 && WORD_CHAR.test(lyric[s]) ? s : col
+}
+
+/**
+ * Just past the word at `start`, and past punctuation that ends it
+ * ("scotch,") but not into the next word ("baby.......do").
+ */
+function wordEnd(lyric: string, start: number) {
+  let e = start
+  while (e < lyric.length && WORD_CHAR.test(lyric[e])) e++
+  let p = e
+  while (p < lyric.length && /[^\sA-Za-z0-9'’]/.test(lyric[p])) p++
+  return p >= lyric.length || /\s/.test(lyric[p]) ? p : e
+}
+
+/** "Em." and "C7-" (a chord with a hold mark typed onto it) → "Em", "C7". */
+function tidyChord(token: string) {
+  if (token === '/.') return '/'
+  const bare = token.replace(/[.-]+$/, '')
+  return bare !== token && isChord(bare) ? bare : token
 }
 
 export type ImportResult = {source: string; key: string | null}
