@@ -5,7 +5,7 @@ import {
   parseHeader,
   sectionType,
 } from './chordpro'
-import {linesToAbc, lineToTab, readNoteLine, type WrittenLine} from './notes'
+import {linesToAbc, readNoteLine, type WrittenLine} from './notes'
 
 /**
  * OnSong → ChordPro. OnSong songs are plain text: the title, the artist and
@@ -360,20 +360,18 @@ function convertParagraph(p: string[], ctx: Ctx): string[] {
       }
       closeSection()
       const head = name ? `: ${name}` : ''
-      if (asTab) {
-        out.push(`{start_of_tab${head}}`)
-        for (const w of run) {
-          const tab = lineToTab(w)
-          if (w.repeats) tab[0] += `  ${w.repeats}`
-          out.push(...tab)
-        }
-        out.push('{end_of_tab}')
-      } else
-        out.push(
-          `{start_of_abc${head}}`,
-          linesToAbc(run, ctx.key),
-          '{end_of_abc}',
-        )
+      // Every lick is notation; guitar and bass parts carry their
+      // instrument, so the tab view shows the right strings
+      const instrument = asTab
+        ? /\bbass\b/i.test(`${name} ${label?.label ?? ''}`)
+          ? 'bass'
+          : 'guitar'
+        : null
+      out.push(
+        `{start_of_abc${head}}`,
+        linesToAbc(run, ctx.key, instrument),
+        '{end_of_abc}',
+      )
       continue
     }
     if (lines[i] === '\u0000tab') {

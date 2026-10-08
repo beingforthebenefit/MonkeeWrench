@@ -22,3 +22,12 @@ describe('abc', () => {
     expect(p.find((x) => x.name === 'A melody line')!.abc).toContain('"G"G2 AB')
   })
 })
+
+describe('abcTabInstrument', () => {
+  it('reads the instrument hint for the tab view', async () => {
+    const {abcTabInstrument} = await import('@/lib/abc')
+    expect(abcTabInstrument('% instrument: bass\nK:E\nE2 G2 |]')).toBe('bass')
+    expect(abcTabInstrument('% instrument: guitar\nK:E\nE2 |]')).toBe('guitar')
+    expect(abcTabInstrument('K:E\nE2 |]')).toBe('guitar')
+  })
+})

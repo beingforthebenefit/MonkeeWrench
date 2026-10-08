@@ -1,7 +1,8 @@
 'use client'
 
 import {useEffect, useRef, useState} from 'react'
-import {withAbcHeader} from '@/lib/abc'
+import {abcTabInstrument, withAbcHeader} from '@/lib/abc'
+import {useLickView} from '@/components/cues/useLickView'
 
 /**
  * ABC music notation drawn as a staff, in the text colour (so it follows the
@@ -25,6 +26,8 @@ export default function AbcNotation({
   const box = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
   const [failed, setFailed] = useState(false)
+  const [view, setView] = useLickView()
+  const instrument = abcTabInstrument(abc)
 
   useEffect(() => {
     const el = box.current
@@ -54,6 +57,20 @@ export default function AbcNotation({
           paddingbottom: 0,
           paddingleft: 0,
           paddingright: 0,
+          // Tab under the staff: the staff keeps the rhythm, the tab the frets
+          ...(view === 'tab'
+            ? {
+                tablature: [
+                  instrument === 'bass'
+                    ? {
+                        instrument: 'guitar' as const,
+                        label: 'Bass',
+                        tuning: ['E,', 'A,', 'D', 'G'],
+                      }
+                    : {instrument: 'guitar' as const, label: 'Guitar'},
+                ],
+              }
+            : {}),
         })
         const warnings = (tunes[0]?.warnings ?? []).map((w) =>
           String(w).replace(/<[^>]+>/g, ''),
@@ -65,10 +82,29 @@ export default function AbcNotation({
     return () => {
       cancelled = true
     }
-  }, [abc, songKey, steps, width, onError])
+  }, [abc, songKey, steps, width, onError, view, instrument])
 
   return (
     <>
+      <div className="flex justify-end">
+        <div
+          role="group"
+          aria-label="Show as"
+          className="flex overflow-hidden rounded-md border border-line-2 text-[11px] font-semibold"
+        >
+          {(['notation', 'tab'] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={view === v}
+              onClick={() => setView(v)}
+              className={`min-h-7 px-2 ${view === v ? 'bg-text text-ink' : 'text-muted'}`}
+            >
+              {v === 'notation' ? '♪ Notes' : 'Tab'}
+            </button>
+          ))}
+        </div>
+      </div>
       <div
         ref={box}
         className="abc-notation w-full overflow-hidden"

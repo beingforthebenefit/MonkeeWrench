@@ -128,10 +128,18 @@ function keyAccidentals(key: string | null) {
  * ABC for one or more written lines, in the song's key (so it transposes
  * with the chart). Accidentals are spelled exactly as written.
  */
-export function linesToAbc(lines: WrittenLine[], key: string | null) {
+export function linesToAbc(
+  lines: WrittenLine[],
+  key: string | null,
+  /** A guitar or bass part: written where guitarists read it, and the
+   * tab view uses that instrument's strings */
+  instrument: 'guitar' | 'bass' | null = null,
+) {
   const sig = keyAccidentals(key)
   const body = lines.map((line) => {
-    const midi = pitches(line.notes, 69) // around A4: where horns sit
+    // Horns and keys sit around A4; a riff around B3 (guitar is written an
+    // octave above where it sounds)
+    const midi = pitches(line.notes, instrument ? 59 : 69)
     let bar: Record<string, string> = {}
     let out = line.repeats ? `"^${line.repeats}"` : ''
     line.notes.forEach((n, i) => {
@@ -155,7 +163,13 @@ export function linesToAbc(lines: WrittenLine[], key: string | null) {
     })
     return out + ' |]'
   })
-  return [`M:none`, `L:1/8`, `K:${key ?? 'C'}`, ...body].join('\n')
+  return [
+    ...(instrument ? [`% instrument: ${instrument}`] : []),
+    `M:none`,
+    `L:1/8`,
+    `K:${key ?? 'C'}`,
+    ...body,
+  ].join('\n')
 }
 
 // Standard tuning, low to high (MIDI)

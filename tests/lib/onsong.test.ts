@@ -107,8 +107,9 @@ describe('OnSong import', () => {
     const c = parseChordPro(r.source)
     expect(c.sections[0]).toMatchObject({type: 'abc', label: 'Horn line is'})
     expect(c.sections[0].abc).toContain('B2 B2 ^d2 B2 ^c2 A2 |')
+    expect(c.sections[2].abc).toContain('% instrument: guitar')
     expect(c.sections[2]).toMatchObject({
-      type: 'tab',
+      type: 'abc',
       label: 'Guitar plays this 2x',
     })
     // Four bars of chords with no note-ish label stay chords
@@ -117,10 +118,9 @@ describe('OnSong import', () => {
 
   it('starts the music at a riff at the very top', () => {
     const r = song('Test Song\nmain riff\n(G G G FF F# G) x4\n\n[G]la\n')
-    expect(parseChordPro(r.source).sections[0]).toMatchObject({
-      type: 'tab',
-      label: 'Main riff',
-    })
+    const riff = parseChordPro(r.source).sections[0]
+    expect(riff).toMatchObject({type: 'abc', label: 'Main riff'})
+    expect(riff.abc).toContain('% instrument: guitar')
   })
 
   it('reads a rule of dashes as a divider, not tab', () => {
@@ -162,7 +162,11 @@ describe('OnSong import', () => {
         'guitar plays this 2x\n(B B B DD F# E)\n\nsax comes in, plays this 2x\n(B B B DD F# E)\n\nguitar again x2\n(B B B DD F# E)\n',
       ).source,
     )
-    expect(c.sections.map((s) => s.type)).toEqual(['tab', 'abc', 'tab'])
+    // All notation; the guitar passes carry the guitar for the tab view
+    expect(c.sections.map((s) => s.type)).toEqual(['abc', 'abc', 'abc'])
+    expect(
+      c.sections.map((s) => /instrument: guitar/.test(s.abc ?? '')),
+    ).toEqual([true, false, true])
   })
 
   it('reads a bracketed instruction heading a verse as a remark', () => {
