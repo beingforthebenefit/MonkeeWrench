@@ -28,9 +28,10 @@ const {saveChart, ConflictError} = vi.hoisted(() => {
   )
   return {saveChart, ConflictError}
 })
-vi.mock('@/lib/guard', () => ({
-  requireSession: vi.fn(async () => ({user: {id: 'u1'}})),
-}))
+vi.mock('@/lib/guard', async () => {
+  const {ctx} = await import('../band')
+  return {requireSession: vi.fn(async () => ctx({id: 'u1'}))}
+})
 vi.mock('@/lib/songs', () => ({saveChart, ConflictError}))
 
 const post = (body: unknown) =>
@@ -51,6 +52,7 @@ describe('POST /api/songs/:id/chart', () => {
     expect(res.status).toBe(201)
     expect(await res.json()).toEqual({number: 3})
     expect(saveChart.calls[0]).toEqual({
+      bandId: 'b1',
       songId: 's1',
       userId: 'u1',
       source: '[G]x',
@@ -75,5 +77,14 @@ describe('POST /api/songs/:id/chart', () => {
     const {POST} = await import('@/app/api/songs/[id]/chart/route')
     const res = await POST(post({source: 'x'}), {params: {id: 's1'}})
     expect(res.status).toBe(400)
+  })
+
+  it("404s for a song that isn't in this band", async () => {
+    saveChart.use(() => null)
+    const {POST} = await import('@/app/api/songs/[id]/chart/route')
+    const res = await POST(post({source: '[G]x', baseNumber: 0}), {
+      params: {id: 's9'},
+    })
+    expect(res.status).toBe(404)
   })
 })

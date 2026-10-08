@@ -1,7 +1,9 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest'
 
 let prisma: any
+// isAdmin here = an admin of a band the other person is in
 let me: {id: string; isAdmin: boolean}
+let shareBand = true
 
 vi.mock('@/lib/db', () => ({
   get prisma() {
@@ -9,7 +11,11 @@ vi.mock('@/lib/db', () => ({
   },
 }))
 vi.mock('@/lib/guard', () => ({
-  requireSession: vi.fn(async () => ({user: me})),
+  requireUser: vi.fn(async () => ({user: me})),
+}))
+vi.mock('@/lib/band', () => ({
+  adminOver: async () => me.isAdmin,
+  shareABand: async () => shareBand,
 }))
 
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3])
@@ -20,6 +26,7 @@ const put = (body: BodyInit) =>
 describe('/api/avatars/[id]', () => {
   beforeEach(() => {
     me = {id: 'u1', isAdmin: false}
+    shareBand = true
     const tx = {
       avatar: {
         upsert: vi.fn().mockResolvedValue({}),
@@ -53,6 +60,16 @@ describe('/api/avatars/[id]', () => {
     expect(res.headers.get('Content-Type')).toBe('image/jpeg')
     expect(res.headers.get('Cache-Control')).toContain('immutable')
     expect(new Uint8Array(await res.arrayBuffer())).toEqual(JPEG)
+  })
+
+  it("doesn't show photos of people in none of your bands", async () => {
+    prisma.avatar.findUnique.mockResolvedValue({
+      mime: 'image/jpeg',
+      data: Buffer.from(JPEG),
+    })
+    shareBand = false
+    const {GET} = await import('@/app/api/avatars/[id]/route')
+    expect((await GET(new Request('http://x'), ctx('u2'))).status).toBe(404)
   })
 
   it('404s when someone has no photo', async () => {

@@ -7,9 +7,10 @@ vi.mock('@/lib/db', () => ({
     return prisma
   },
 }))
-vi.mock('@/lib/guard', () => ({
-  requireSession: vi.fn(async () => ({user: {id: 'u1'}})),
-}))
+vi.mock('@/lib/guard', async () => {
+  const {ctx} = await import('../band')
+  return {requireSession: vi.fn(async () => ctx({id: 'u1'}))}
+})
 vi.mock('@/lib/events', () => ({
   bus: {emit: vi.fn()},
   EVENTS: {
@@ -42,6 +43,7 @@ describe('/api/proposals route', () => {
     expect(res.status).toBe(200)
     const json = await res.json()
     expect(json).toEqual({id: 'p1'})
+    expect(prisma.proposal.create.mock.calls[0][0].data.bandId).toBe('b1')
   })
 
   it('POST enforces per-user rate limit', async () => {
@@ -62,5 +64,8 @@ describe('/api/proposals route', () => {
     expect(res.status).toBe(200)
     const json = await res.json()
     expect(json).toEqual([{id: 'p1'}])
+    expect(prisma.proposal.findMany.mock.calls[0][0].where).toEqual({
+      bandId: 'b1',
+    })
   })
 })

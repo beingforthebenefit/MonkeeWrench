@@ -15,13 +15,14 @@ const Body = z.object({
 })
 
 export const POST = route(async (req: Request) => {
-  const {user} = await requireSession()
+  const {user, band} = await requireSession()
   const parsed = Body.safeParse(await req.json())
   if (!parsed.success) return new Response('Bad Request', {status: 400})
   const {date, time, place, note} = parsed.data
   const r = await prisma.$transaction(async (tx) => {
     const r = await tx.rehearsal.create({
       data: {
+        bandId: band.id,
         date: new Date(date + 'T00:00:00Z'),
         time: time || null,
         place: place || null,
@@ -30,6 +31,7 @@ export const POST = route(async (req: Request) => {
       },
     })
     await logActivity(tx, {
+      bandId: band.id,
       userId: user.id,
       action: 'rehearsal.create',
       targetType: 'rehearsal',

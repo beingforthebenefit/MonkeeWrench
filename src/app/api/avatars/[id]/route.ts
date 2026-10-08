@@ -1,16 +1,19 @@
 export const dynamic = 'force-dynamic'
 
 import {prisma} from '@/lib/db'
-import {requireSession} from '@/lib/guard'
+import {requireUser} from '@/lib/guard'
+import {adminOver, shareABand} from '@/lib/band'
 import {logActivity} from '@/lib/songs'
 import {route} from '@/lib/route'
 import {AVATAR_MAX_BYTES, sniffImage} from '@/lib/avatars'
 
 type Ctx = {params: {id: string}}
 
-/** Members only (the middleware refuses requests without a session). */
+/** Only to people who share a band with them. */
 export const GET = route(async (_req: Request, {params}: Ctx) => {
-  await requireSession()
+  const {user} = await requireUser()
+  if (!(await shareABand(user.id, params.id)))
+    return new Response('Not Found', {status: 404})
   const a = await prisma.avatar.findUnique({where: {userId: params.id}})
   if (!a) return new Response('Not Found', {status: 404})
   return new Response(new Uint8Array(a.data), {
@@ -23,10 +26,10 @@ export const GET = route(async (_req: Request, {params}: Ctx) => {
   })
 })
 
-/** Your own photo; admins can set anyone's. Body: the image bytes. */
+/** Your own photo; a band's admins can set its members'. Body: the bytes. */
 export const PUT = route(async (req: Request, {params}: Ctx) => {
-  const {user} = await requireSession()
-  if (params.id !== user.id && !user.isAdmin)
+  const {user} = await requireUser()
+  if (params.id !== user.id && !(await adminOver(user.id, params.id)))
     return new Response('Forbidden', {status: 403})
   const data = Buffer.from(await req.arrayBuffer())
   if (!data.length || data.length > AVATAR_MAX_BYTES)
@@ -44,6 +47,7 @@ export const PUT = route(async (req: Request, {params}: Ctx) => {
     })
     await tx.user.update({where: {id: target.id}, data: {avatarAt: at}})
     await logActivity(tx, {
+      bandId: null,
       userId: user.id,
       action: 'user.avatar',
       targetType: 'user',
@@ -58,14 +62,15 @@ export const PUT = route(async (req: Request, {params}: Ctx) => {
 })
 
 export const DELETE = route(async (_req: Request, {params}: Ctx) => {
-  const {user} = await requireSession()
-  if (params.id !== user.id && !user.isAdmin)
+  const {user} = await requireUser()
+  if (params.id !== user.id && !(await adminOver(user.id, params.id)))
     return new Response('Forbidden', {status: 403})
   await prisma.$transaction(async (tx) => {
     const {count} = await tx.avatar.deleteMany({where: {userId: params.id}})
     if (!count) return
     await tx.user.update({where: {id: params.id}, data: {avatarAt: null}})
     await logActivity(tx, {
+      bandId: null,
       userId: user.id,
       action: 'user.avatar',
       targetType: 'user',

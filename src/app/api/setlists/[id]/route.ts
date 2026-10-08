@@ -9,29 +9,32 @@ import {route} from '@/lib/route'
 type Ctx = {params: {id: string}}
 
 export const GET = route(async (_req: Request, {params}: Ctx) => {
-  await requireSession()
-  const set = await getSetlist(params.id)
+  const {band} = await requireSession()
+  const set = await getSetlist(params.id, band.id)
   if (!set) return new Response('Not Found', {status: 404})
   return Response.json(set)
 })
 
 export const PUT = route(async (req: Request, {params}: Ctx) => {
-  const {user} = await requireSession()
+  const {user, band} = await requireSession()
   const parsed = SetlistBody.safeParse(await req.json())
   if (!parsed.success) return new Response('Bad Request', {status: 400})
-  const ok = await saveSetlist(params.id, user.id, parsed.data)
+  const ok = await saveSetlist(band.id, params.id, user.id, parsed.data)
   if (!ok) return new Response('Not Found', {status: 404})
   return new Response(null, {status: 204})
 })
 
 export const DELETE = route(async (_req: Request, {params}: Ctx) => {
-  const admin = await requireAdmin()
-  const set = await prisma.setlist.findUnique({where: {id: params.id}})
+  const {user, band} = await requireAdmin()
+  const set = await prisma.setlist.findFirst({
+    where: {id: params.id, bandId: band.id},
+  })
   if (!set) return new Response('Not Found', {status: 404})
   await prisma.$transaction(async (tx) => {
     await tx.setlist.delete({where: {id: params.id}})
     await logActivity(tx, {
-      userId: admin.id,
+      bandId: band.id,
+      userId: user.id,
       action: 'setlist.delete',
       targetType: 'setlist',
       targetId: params.id,

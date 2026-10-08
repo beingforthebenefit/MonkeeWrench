@@ -13,15 +13,17 @@ const Body = z.object({
 
 export const POST = route(
   async (req: Request, {params}: {params: {id: string}}) => {
-    const {user} = await requireSession()
+    const {user, band} = await requireSession()
     const parsed = Body.safeParse(await req.json())
     if (!parsed.success) return new Response('Bad Request', {status: 400})
     try {
       const v = await saveChart({
+        bandId: band.id,
         songId: params.id,
         userId: user.id,
         ...parsed.data,
       })
+      if (!v) return new Response('Not Found', {status: 404})
       return Response.json({number: v.number}, {status: 201})
     } catch (e) {
       if (e instanceof ConflictError)

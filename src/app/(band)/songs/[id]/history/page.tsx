@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import {notFound} from 'next/navigation'
 import {prisma} from '@/lib/db'
-import {requireSession} from '@/lib/guard'
+import {pageSession} from '@/lib/guard'
 import {displayName, listVersions} from '@/lib/songs'
 import {chartDiff} from '@/lib/chart-diff'
 import {parseChordPro} from '@/lib/chordpro'
@@ -13,7 +13,7 @@ import RestoreButton from '@/components/RestoreButton'
 import Avatar from '@/components/Avatar'
 import {avatarUrl} from '@/lib/avatars'
 
-export const metadata = {title: 'History · Monkee Wrench'}
+export const metadata = {title: 'History'}
 
 export default async function HistoryPage({
   params,
@@ -22,10 +22,12 @@ export default async function HistoryPage({
   params: {id: string}
   searchParams: {v?: string; view?: string}
 }) {
-  const {user} = await requireSession()
-  const song = await prisma.song.findUnique({where: {id: params.id}})
+  const {band, isAdmin} = await pageSession()
+  const song = await prisma.song.findFirst({
+    where: {id: params.id, bandId: band.id},
+  })
   if (!song) notFound()
-  const versions = await listVersions(song.id)
+  const versions = await listVersions(song.id, band.id)
   if (!versions.length) notFound()
 
   const latest = versions[0]
@@ -143,7 +145,7 @@ export default async function HistoryPage({
               >
                 PDF of version {selected.number}
               </a>
-              {user.isAdmin && selected.number !== latest.number && (
+              {isAdmin && selected.number !== latest.number && (
                 <RestoreButton songId={song.id} number={selected.number} />
               )}
             </div>

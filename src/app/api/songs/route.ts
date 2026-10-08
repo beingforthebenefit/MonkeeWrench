@@ -8,8 +8,8 @@ import {SongFields} from '@/lib/song-fields'
 import {route} from '@/lib/route'
 
 export const GET = route(async () => {
-  await requireSession()
-  return Response.json(await listSongs())
+  const {band} = await requireSession()
+  return Response.json(await listSongs(band.id))
 })
 
 const CreateBody = SongFields.extend({
@@ -18,13 +18,18 @@ const CreateBody = SongFields.extend({
 })
 
 export const POST = route(async (req: Request) => {
-  const {user} = await requireSession()
+  const {user, band} = await requireSession()
   const parsed = CreateBody.safeParse(await req.json())
   if (!parsed.success) return new Response('Bad Request', {status: 400})
   const {source, ...fields} = parsed.data
   const song = await prisma.$transaction(async (tx) => {
     const song = await tx.song.create({
-      data: {...fields, title: fields.title, updatedById: user.id},
+      data: {
+        ...fields,
+        title: fields.title,
+        bandId: band.id,
+        updatedById: user.id,
+      },
     })
     await tx.chartVersion.create({
       data: {
@@ -36,6 +41,7 @@ export const POST = route(async (req: Request) => {
       },
     })
     await logActivity(tx, {
+      bandId: band.id,
       userId: user.id,
       action: 'song.create',
       targetType: 'song',

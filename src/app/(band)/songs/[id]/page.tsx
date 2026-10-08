@@ -4,18 +4,25 @@ import {notFound} from 'next/navigation'
 import {prisma} from '@/lib/db'
 import {displayName, getSong, isImportNote} from '@/lib/songs'
 import ChartScreen from '@/components/ChartScreen'
+import {pageSession} from '@/lib/guard'
+import {followToBand} from '@/lib/band'
 
 export async function generateMetadata({params}: {params: {id: string}}) {
-  const song = await prisma.song.findUnique({
-    where: {id: params.id},
+  const {band} = await pageSession()
+  const song = await prisma.song.findFirst({
+    where: {id: params.id, bandId: band.id},
     select: {title: true},
   })
-  return {title: song ? `${song.title} · Monkee Wrench` : 'Monkee Wrench'}
+  return {title: song?.title ?? 'Song'}
 }
 
 export default async function SongPage({params}: {params: {id: string}}) {
-  const song = await getSong(params.id)
-  if (!song) notFound()
+  const {user, band} = await pageSession()
+  const song = await getSong(params.id, band.id)
+  if (!song) {
+    await followToBand('song', params.id, user.id, `/songs/${params.id}`)
+    notFound()
+  }
   const versions = await prisma.chartVersion.count({where: {songId: song.id}})
   return (
     <ChartScreen

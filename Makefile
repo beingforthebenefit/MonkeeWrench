@@ -137,8 +137,8 @@ prisma-dev:
 # Usage: make import FILE=data/import.json AS=you@example.com
 .PHONY: import
 import:
-	@if [ -z "$(FILE)" ] || [ -z "$(AS)" ]; then echo "Usage: make import FILE=data/import.json AS=you@example.com"; exit 1; fi
-	$(COMPOSE_DEV) exec $(APP_SVC) npx tsx scripts/import-songs.ts "$(FILE)" "$(AS)"
+	@if [ -z "$(BAND)" ] || [ -z "$(FILE)" ] || [ -z "$(AS)" ]; then echo "Usage: make import BAND=<band-slug> FILE=data/import.json AS=you@example.com"; exit 1; fi
+	$(COMPOSE_DEV) exec $(APP_SVC) npx tsx scripts/import-songs.ts "$(BAND)" "$(FILE)" "$(AS)"
 
 .PHONY: seed
 seed:

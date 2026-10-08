@@ -8,14 +8,17 @@ import {route} from '@/lib/route'
 
 export const DELETE = route(
   async (_req: Request, {params}: {params: {id: string}}) => {
-    const {user} = await requireSession()
-    const r = await prisma.rehearsal.findUnique({where: {id: params.id}})
+    const {user, band, isAdmin} = await requireSession()
+    const r = await prisma.rehearsal.findFirst({
+      where: {id: params.id, bandId: band.id},
+    })
     if (!r) return new Response('Not Found', {status: 404})
-    if (r.createdById !== user.id && !user.isAdmin)
+    if (r.createdById !== user.id && !isAdmin)
       return new Response('Forbidden', {status: 403})
     await prisma.$transaction(async (tx) => {
       await tx.rehearsal.delete({where: {id: r.id}})
       await logActivity(tx, {
+        bandId: band.id,
         userId: user.id,
         action: 'rehearsal.delete',
         targetType: 'rehearsal',

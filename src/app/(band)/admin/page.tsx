@@ -1,22 +1,23 @@
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
-import {redirect} from 'next/navigation'
 import {prisma} from '@/lib/db'
-import {requireSession} from '@/lib/guard'
+import {pageAdmin} from '@/lib/guard'
+import {iconUrl} from '@/lib/band'
 import VoteThreshold from '@/components/VoteThreshold'
+import BandSettings from '@/components/BandSettings'
 
-export const metadata = {title: 'Admin · Monkee Wrench'}
+export const metadata = {title: 'Admin'}
 
 export default async function AdminPage() {
-  const {user} = await requireSession()
-  if (!user.isAdmin) redirect('/songs')
-  const [settings, members, noPassword, songs, versions] = await Promise.all([
-    prisma.settings.findUnique({where: {id: 1}}),
-    prisma.user.count(),
-    prisma.user.count({where: {passwordHash: null}}),
-    prisma.song.count(),
-    prisma.chartVersion.count(),
+  const {band, user} = await pageAdmin()
+  const [members, noPassword, songs, versions] = await Promise.all([
+    prisma.membership.count({where: {bandId: band.id}}),
+    prisma.membership.count({
+      where: {bandId: band.id, user: {passwordHash: null}},
+    }),
+    prisma.song.count({where: {bandId: band.id}}),
+    prisma.chartVersion.count({where: {song: {bandId: band.id}}}),
   ])
   const cards = [
     {
@@ -38,6 +39,7 @@ export default async function AdminPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 pb-12 pt-5">
       <h1 className="text-3xl font-extrabold">Admin</h1>
+      <p className="mt-1 text-muted">{band.name}</p>
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         {cards.map((c) => (
           <Link
@@ -50,6 +52,25 @@ export default async function AdminPage() {
           </Link>
         ))}
       </div>
+      <section aria-labelledby="band-h" className="mt-8">
+        <h2
+          id="band-h"
+          className="text-xs font-bold uppercase tracking-widest text-muted"
+        >
+          The band
+        </h2>
+        <BandSettings
+          initial={{
+            name: band.name,
+            appName: band.appName,
+            timezone: band.timezone,
+            chatUrl: band.chatUrl ?? '',
+            tributeTo: band.tributeTo ?? '',
+          }}
+          iconSrc={iconUrl(band)}
+          hasIcon={Boolean(band.iconAt)}
+        />
+      </section>
       <section aria-labelledby="vote-h" className="mt-8">
         <h2
           id="vote-h"
@@ -57,11 +78,15 @@ export default async function AdminPage() {
         >
           Proposals
         </h2>
-        <VoteThreshold
-          initial={settings?.voteThreshold ?? 2}
-          max={members || 6}
-        />
+        <VoteThreshold initial={band.voteThreshold} max={members || 6} />
       </section>
+      {user.isOwner && (
+        <p className="mt-8 text-sm">
+          <Link href="/bands/manage" className="text-sky">
+            All bands on this site and their web addresses ›
+          </Link>
+        </p>
+      )}
     </main>
   )
 }

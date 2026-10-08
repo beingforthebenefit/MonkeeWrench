@@ -1,30 +1,45 @@
 export const dynamic = 'force-dynamic'
 
-import {redirect} from 'next/navigation'
 import {prisma} from '@/lib/db'
-import {requireSession} from '@/lib/guard'
+import {pageAdmin} from '@/lib/guard'
+import {requestOrigin} from '@/lib/band'
 import Members from '@/components/Members'
 import {avatarUrl} from '@/lib/avatars'
 
-export const metadata = {title: 'Band members · Monkee Wrench'}
+export const metadata = {title: 'Band members'}
 
 export default async function MembersPage() {
-  const {user} = await requireSession()
-  if (!user.isAdmin) redirect('/songs')
-  const users = await prisma.user.findMany({
-    orderBy: [{displayName: 'asc'}, {name: 'asc'}],
-  })
+  const {user, band} = await pageAdmin()
+  const [rows, myAdminBands] = await Promise.all([
+    prisma.membership.findMany({
+      where: {bandId: band.id},
+      include: {user: {include: {memberships: {select: {bandId: true}}}}},
+      orderBy: [{user: {displayName: 'asc'}}, {user: {name: 'asc'}}],
+    }),
+    prisma.membership.findMany({
+      where: {userId: user.id, isAdmin: true},
+      select: {bandId: true},
+    }),
+  ])
+  const mine = new Set(myAdminBands.map((m) => m.bandId))
   return (
     <Members
       me={user.id}
-      initial={users.map((u) => ({
+      bandName={band.name}
+      site={requestOrigin()}
+      initial={rows.map(({isAdmin, user: u}) => ({
         id: u.id,
         name: u.name ?? '',
         displayName: u.displayName ?? '',
         email: u.email ?? '',
-        isAdmin: u.isAdmin,
+        isAdmin,
         hasPassword: Boolean(u.passwordHash),
         avatar: avatarUrl(u),
+        // Same rule as canManageAccount(), for every row at once
+        managed:
+          user.isOwner ||
+          u.id === user.id ||
+          u.memberships.every((m) => mine.has(m.bandId)),
       }))}
     />
   )

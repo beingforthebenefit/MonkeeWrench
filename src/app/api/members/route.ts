@@ -7,22 +7,28 @@ import {logActivity} from '@/lib/songs'
 import {route} from '@/lib/route'
 
 export const GET = route(async () => {
-  await requireAdmin()
-  const users = await prisma.user.findMany({
-    orderBy: [{displayName: 'asc'}, {name: 'asc'}],
+  const {band} = await requireAdmin()
+  const rows = await prisma.membership.findMany({
+    where: {bandId: band.id},
     select: {
-      id: true,
-      name: true,
-      displayName: true,
-      email: true,
       isAdmin: true,
-      passwordSetAt: true,
-      availabilityUpdatedAt: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          displayName: true,
+          email: true,
+          passwordSetAt: true,
+          availabilityUpdatedAt: true,
+        },
+      },
     },
+    orderBy: [{user: {displayName: 'asc'}}, {user: {name: 'asc'}}],
   })
   return Response.json(
-    users.map(({passwordSetAt, ...u}) => ({
+    rows.map(({isAdmin, user: {passwordSetAt, ...u}}) => ({
       ...u,
+      isAdmin,
       hasPassword: Boolean(passwordSetAt),
     })),
   )
@@ -35,33 +41,50 @@ const Body = z.object({
   isAdmin: z.boolean().optional(),
 })
 
+/**
+ * Add someone to this band. If they already have an account (they play in
+ * another band here), they join with it: same sign-in, same photo.
+ */
 export const POST = route(async (req: Request) => {
-  const admin = await requireAdmin()
+  const {user: admin, band} = await requireAdmin()
   const parsed = Body.safeParse(await req.json())
   if (!parsed.success)
     return Response.json({error: 'Check the name and email.'}, {status: 400})
   const {name, email, isAdmin} = parsed.data
-  const displayName = parsed.data.displayName || name.split(' ')[0]
   const exists = await prisma.user.findFirst({
     where: {email: {equals: email, mode: 'insensitive'}},
+    include: {memberships: {where: {bandId: band.id}}},
   })
-  if (exists)
+  if (exists?.memberships.length)
     return Response.json(
-      {error: 'Someone with that email is already a member.'},
+      {error: 'Someone with that email is already in the band.'},
       {status: 409},
     )
-  const user = await prisma.$transaction(async (tx) => {
-    const u = await tx.user.create({
-      data: {name, displayName, email, isAdmin: Boolean(isAdmin)},
+  const result = await prisma.$transaction(async (tx) => {
+    const u =
+      exists ??
+      (await tx.user.create({
+        data: {
+          name,
+          displayName: parsed.data.displayName || name.split(' ')[0],
+          email,
+        },
+      }))
+    await tx.membership.create({
+      data: {userId: u.id, bandId: band.id, isAdmin: Boolean(isAdmin)},
     })
     await logActivity(tx, {
+      bandId: band.id,
       userId: admin.id,
       action: 'member.add',
       targetType: 'user',
       targetId: u.id,
-      summary: `added ${displayName} to the band`,
+      summary: `added ${u.displayName ?? name} to the band`,
     })
     return u
   })
-  return Response.json({id: user.id}, {status: 201})
+  return Response.json(
+    {id: result.id, existing: Boolean(exists)},
+    {status: 201},
+  )
 })

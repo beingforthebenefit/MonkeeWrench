@@ -40,3 +40,46 @@ export async function squareJpeg(file: Blob, size = AVATAR_SIZE) {
     URL.revokeObjectURL(url)
   }
 }
+
+/**
+ * Browser only. A home-screen icon: the whole image (never cropped), scaled
+ * to `scale` of a `size` square and centred on `background`. Phones put
+ * transparent icons on black, so a logo with no background gets one here.
+ */
+export async function squareIcon(
+  file: Blob,
+  {
+    size = 512,
+    background = '#f2b134',
+    scale = 0.74,
+  }: {size?: number; background?: string | null; scale?: number} = {},
+) {
+  const url = URL.createObjectURL(file)
+  try {
+    const img = new Image()
+    img.src = url
+    await img.decode()
+    const canvas = document.createElement('canvas')
+    canvas.width = canvas.height = size
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('No canvas')
+    if (background) {
+      ctx.fillStyle = background
+      ctx.fillRect(0, 0, size, size)
+    }
+    ctx.imageSmoothingQuality = 'high'
+    const box = size * scale
+    const k = Math.min(box / img.naturalWidth, box / img.naturalHeight)
+    const w = img.naturalWidth * k
+    const h = img.naturalHeight * k
+    ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h)
+    return await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error('Could not encode'))),
+        'image/png',
+      ),
+    )
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}

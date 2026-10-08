@@ -8,9 +8,10 @@ vi.mock('@/lib/db', () => ({
     return prisma
   },
 }))
-vi.mock('@/lib/guard', () => ({
-  requireAdmin: vi.fn(async () => ({id: 'admin1'})),
-}))
+vi.mock('@/lib/guard', async () => {
+  const {ctx} = await import('../band')
+  return {requireAdmin: vi.fn(async () => ctx({id: 'admin1'}, {isAdmin: true}))}
+})
 
 describe('/api/proposals/[id] routes', () => {
   beforeEach(() => {
@@ -18,7 +19,7 @@ describe('/api/proposals/[id] routes', () => {
       proposal: {
         update: vi.fn(),
         delete: vi.fn(),
-        findUnique: vi.fn().mockResolvedValue({id: 'p1', status: 'PENDING'}),
+        findFirst: vi.fn().mockResolvedValue({id: 'p1', status: 'PENDING'}),
       },
       auditLog: {create: vi.fn()},
       $transaction: vi.fn(async (fn: any) => {
@@ -108,9 +109,26 @@ describe('/api/proposals/[id] routes', () => {
     expect(prisma.$transaction).toHaveBeenCalled()
   })
 
+  it("another band's proposal is not found", async () => {
+    const {PATCH, DELETE} = await import('@/app/api/proposals/[id]/route')
+    prisma.proposal.findFirst.mockResolvedValue(null)
+    const req = new Request('http://x', {
+      method: 'PATCH',
+      body: JSON.stringify({title: 'New'}),
+    })
+    expect((await PATCH(req, {params: {id: 'p9'}})).status).toBe(404)
+    expect(
+      (await DELETE(new Request('http://x'), {params: {id: 'p9'}})).status,
+    ).toBe(404)
+    expect(prisma.proposal.findFirst.mock.calls[0][0].where).toMatchObject({
+      bandId: 'b1',
+    })
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+  })
+
   it('GET returns a single proposal', async () => {
     const {GET} = await import('@/app/api/proposals/[id]/route')
-    prisma.proposal.findUnique.mockResolvedValueOnce({
+    prisma.proposal.findFirst.mockResolvedValueOnce({
       id: 'p1',
       title: 'T',
       artist: 'A',

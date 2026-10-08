@@ -4,6 +4,7 @@ import {z} from 'zod'
 import {prisma} from '@/lib/db'
 import {requireSession} from '@/lib/guard'
 import {formatDay} from '@/lib/availability'
+import {scopeFor} from '@/lib/availability-server'
 import {route} from '@/lib/route'
 
 const Body = z.object({
@@ -14,31 +15,42 @@ const Body = z.object({
 })
 
 export const PUT = route(async (req: Request) => {
-  const {user} = await requireSession()
+  const {user, band, isAdmin} = await requireSession()
   const parsed = Body.safeParse(await req.json())
   if (!parsed.success) return new Response('Bad Request', {status: 400})
   const {date, kind} = parsed.data
   const userId = parsed.data.userId ?? user.id
-  if (userId !== user.id && !user.isAdmin)
+  if (userId !== user.id && !isAdmin)
     return new Response('Forbidden', {status: 403})
+  const target =
+    userId === user.id
+      ? user
+      : await prisma.user.findFirst({
+          where: {id: userId, memberships: {some: {bandId: band.id}}},
+        })
+  if (!target) return new Response('Not Found', {status: 404})
+  const scope = scopeFor(target, band.id)
   const day = new Date(date + 'T00:00:00Z')
 
   await prisma.$transaction(async (tx) => {
     if (kind)
       await tx.unavailability.upsert({
-        where: {userId_date: {userId, date: day}},
-        create: {userId, date: day, kind},
+        where: {userId_scope_date: {userId, scope, date: day}},
+        create: {userId, scope, date: day, kind},
         update: {kind},
       })
-    else await tx.unavailability.deleteMany({where: {userId, date: day}})
+    else await tx.unavailability.deleteMany({where: {userId, scope, date: day}})
     await tx.user.update({
       where: {id: userId},
       data: {availabilityUpdatedAt: new Date()},
     })
 
+    // Shared days show in every band they're in; per-band days in this one
+    const bandId = scope ? band.id : null
     // One "updated availability" line per person per hour, not one per tap
     const recent = await tx.activity.findFirst({
       where: {
+        bandId,
         userId: user.id,
         action: 'availability.update',
         targetId: userId,
@@ -54,6 +66,7 @@ export const PUT = route(async (req: Request) => {
     else
       await tx.activity.create({
         data: {
+          bandId,
           userId: user.id,
           action: 'availability.update',
           targetType: 'availability',

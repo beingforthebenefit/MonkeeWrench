@@ -15,12 +15,19 @@ type R = {
 const SITE = typeof window === 'undefined' ? '' : window.location.origin
 
 /** "Add to calendar" for one rehearsal: an .ics file or a Google link. */
-export function AddToCalendar({r}: {r: R}) {
+export function AddToCalendar({
+  r,
+  band,
+}: {
+  r: R
+  band: {name: string; timezone: string}
+}) {
   const google = googleCalendarUrl({
     uid: r.id,
     date: r.date,
     time: r.time,
-    title: 'Monkee Business rehearsal',
+    title: `${band.name} rehearsal`,
+    tz: band.timezone,
     location: r.place,
     description: [r.note, `Charts and setlists: ${SITE}/setlists`]
       .filter(Boolean)

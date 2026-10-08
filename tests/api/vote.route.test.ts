@@ -7,9 +7,10 @@ vi.mock('@/lib/db', () => ({
     return prisma
   },
 }))
-vi.mock('@/lib/guard', () => ({
-  requireSession: vi.fn(async () => ({user: {id: 'u1'}})),
-}))
+vi.mock('@/lib/guard', async () => {
+  const {ctx} = await import('../band')
+  return {requireSession: vi.fn(async () => ctx({id: 'u1'}))}
+})
 vi.mock('@/lib/events', () => ({
   bus: {emit: vi.fn()},
   EVENTS: {PROPOSAL_UPDATED: 'proposal.updated'},
@@ -18,6 +19,7 @@ vi.mock('@/lib/events', () => ({
 describe('/api/proposals/[id]/vote routes', () => {
   beforeEach(() => {
     prisma = {
+      proposal: {findFirst: vi.fn().mockResolvedValue({id: 'p1'})},
       $transaction: vi.fn(async (fn: any) => {
         const tx: any = {
           vote: {
@@ -26,7 +28,6 @@ describe('/api/proposals/[id]/vote routes', () => {
             count: vi.fn().mockResolvedValue(1),
           },
           auditLog: {create: vi.fn()},
-          settings: {findUnique: vi.fn().mockResolvedValue({voteThreshold: 2})},
           proposal: {
             findUnique: vi
               .fn()
@@ -48,6 +49,7 @@ describe('/api/proposals/[id]/vote routes', () => {
 
   it('POST returns 409 on duplicate', async () => {
     prisma = {
+      proposal: {findFirst: vi.fn().mockResolvedValue({id: 'p1'})},
       $transaction: vi.fn(async (_fn: any) => {
         throw new Error('unique violation')
       }),
@@ -60,11 +62,11 @@ describe('/api/proposals/[id]/vote routes', () => {
   it('POST that reaches the threshold approves and adds the song to learn', async () => {
     let tx: any
     prisma = {
+      proposal: {findFirst: vi.fn().mockResolvedValue({id: 'p1'})},
       $transaction: vi.fn(async (fn: any) => {
         tx = {
           vote: {create: vi.fn(), count: vi.fn().mockResolvedValue(2)},
           auditLog: {create: vi.fn()},
-          settings: {findUnique: vi.fn().mockResolvedValue({voteThreshold: 2})},
           proposal: {
             findUnique: vi.fn().mockResolvedValue({
               id: 'p1',
@@ -99,6 +101,14 @@ describe('/api/proposals/[id]/vote routes', () => {
       notes: 'Originally by Stones',
     })
     expect(tx.chartVersion.create).toHaveBeenCalled()
+  })
+
+  it("can't vote on another band's proposal", async () => {
+    prisma.proposal.findFirst.mockResolvedValue(null)
+    const {POST} = await import('@/app/api/proposals/[id]/vote/route')
+    const res = await POST(new Request('http://x'), {params: {id: 'p9'}})
+    expect(res.status).toBe(404)
+    expect(prisma.$transaction).not.toHaveBeenCalled()
   })
 
   it('DELETE removes a vote', async () => {

@@ -3,10 +3,12 @@ export const dynamic = 'force-dynamic'
 import {getServerSession} from 'next-auth'
 import {notFound, redirect} from 'next/navigation'
 import {authOptions} from '@/lib/auth'
+import {pageSession} from '@/lib/guard'
+import {followToBand} from '@/lib/band'
 import {getSetlist} from '@/lib/setlists'
 import Perform, {type PerformSong} from '@/components/Perform'
 
-export const metadata = {title: 'Perform · Monkee Wrench'}
+export const metadata = {title: 'Perform'}
 
 export default async function PerformPage({params}: {params: {id: string}}) {
   const session = await getServerSession(authOptions)
@@ -14,8 +16,12 @@ export default async function PerformPage({params}: {params: {id: string}}) {
     redirect(
       '/login?callbackUrl=' + encodeURIComponent(`/perform/${params.id}`),
     )
-  const set = await getSetlist(params.id)
-  if (!set) notFound()
+  const {user, band} = await pageSession()
+  const set = await getSetlist(params.id, band.id)
+  if (!set) {
+    await followToBand('setlist', params.id, user.id, `/perform/${params.id}`)
+    notFound()
+  }
   // Every chart in the set is sent with the page, so once it has loaded the
   // whole set works without a connection.
   const songs: PerformSong[] = set.items.map((i) => ({

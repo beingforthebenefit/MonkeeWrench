@@ -5,8 +5,9 @@ import {prisma} from '@/lib/db'
 import {displayName} from '@/lib/songs'
 import {shortDate} from '@/lib/dates'
 import NewSetlistButton from '@/components/NewSetlistButton'
+import {pageSession} from '@/lib/guard'
 
-export const metadata = {title: 'Setlists · Monkee Wrench'}
+export const metadata = {title: 'Setlists'}
 
 const gigFmt = new Intl.DateTimeFormat('en-US', {
   weekday: 'short',
@@ -16,7 +17,9 @@ const gigFmt = new Intl.DateTimeFormat('en-US', {
 })
 
 export default async function SetlistsPage() {
+  const {band} = await pageSession()
   const sets = await prisma.setlist.findMany({
+    where: {bandId: band.id},
     orderBy: [{gigDate: {sort: 'asc', nulls: 'last'}}, {updatedAt: 'desc'}],
     include: {
       items: {

@@ -3,12 +3,14 @@ export const dynamic = 'force-dynamic'
 import {prisma} from '@/lib/db'
 import {buildIcs} from '@/lib/ics'
 import {rehearsalEvent} from '@/lib/rehearsal-events'
+import {bandSite} from '@/lib/band'
 
 /**
- * Subscribable feed of every rehearsal: /api/calendar/<token>.ics. Calendar
- * apps can't sign in, so the URL carries a per-person secret instead; it can
- * be reset from the Rehearsals page, which kills the old link. Only rehearsal
- * dates, times and places are in it -- no charts.
+ * Subscribable feed of every rehearsal in every band this person is in:
+ * /api/calendar/<token>.ics. Calendar apps can't sign in, so the URL carries
+ * a per-person secret instead; it can be reset from the Rehearsals page,
+ * which kills the old link. Only rehearsal dates, times and places are in
+ * it -- no charts.
  */
 export const GET = async (
   _req: Request,
@@ -19,18 +21,36 @@ export const GET = async (
     return new Response('Not Found', {status: 404})
   const user = await prisma.user.findUnique({
     where: {calendarToken: token},
-    select: {id: true},
+    select: {
+      id: true,
+      memberships: {
+        select: {band: {select: {id: true, name: true, timezone: true}}},
+      },
+    },
   })
   if (!user) return new Response('Not Found', {status: 404})
+  const bands = new Map(user.memberships.map((m) => [m.band.id, m.band]))
+  const sites = new Map(
+    await Promise.all(
+      [...bands.keys()].map(async (id) => [id, await bandSite(id)] as const),
+    ),
+  )
   const since = new Date(Date.now() - 90 * 86_400_000)
   const rehearsals = await prisma.rehearsal.findMany({
-    where: {date: {gte: since}},
+    where: {date: {gte: since}, bandId: {in: [...bands.keys()]}},
     orderBy: {date: 'asc'},
   })
+  const name =
+    bands.size === 1
+      ? `${[...bands.values()][0].name} rehearsals`
+      : 'Band rehearsals'
   return new Response(
-    buildIcs(rehearsals.map(rehearsalEvent), {
-      name: 'Monkee Business rehearsals',
-    }),
+    buildIcs(
+      rehearsals.map((r) =>
+        rehearsalEvent(r, bands.get(r.bandId)!, sites.get(r.bandId)),
+      ),
+      {name},
+    ),
     {
       headers: {
         'Content-Type': 'text/calendar; charset=utf-8',

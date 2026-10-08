@@ -53,6 +53,9 @@ services:
       APP_ENV: production
       NODE_ENV: production
       NEXTAUTH_URL: https://members.monkeebusinessband.com
+      # One install serves several bands' web addresses: build sign-in URLs
+      # from the address used (Traefik's X-Forwarded-Host), not NEXTAUTH_URL
+      AUTH_TRUST_HOST: 'true'
       DATABASE_URL: postgresql://monkee:${POSTGRES_PASSWORD}@db:5432/monkee?schema=public
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?}
       # Optional: enables "Sign in with Google" for existing members

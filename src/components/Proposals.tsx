@@ -11,9 +11,12 @@ import Avatar from '@/components/Avatar'
 export default function Proposals({
   board,
   isAdmin,
+  tributeTo,
 }: {
   board: Board
   isAdmin: boolean
+  /** The act a tribute band covers: a proposal with no artist is theirs */
+  tributeTo: string | null
 }) {
   const router = useRouter()
   const [proposing, setProposing] = useState(false)
@@ -73,6 +76,7 @@ export default function Proposals({
 
       {proposing && (
         <ProposeForm
+          tributeTo={tributeTo}
           onDone={() => {
             setProposing(false)
             router.refresh()
@@ -89,7 +93,7 @@ export default function Proposals({
         </h2>
         {!board.pending.length && (
           <p className="py-8 text-center text-muted">
-            Nothing open. Got a Monkees-adjacent idea?
+            Nothing open. Got an idea?
           </p>
         )}
         <ul>
@@ -369,7 +373,13 @@ function Field({
   )
 }
 
-function ProposeForm({onDone}: {onDone: () => void}) {
+function ProposeForm({
+  onDone,
+  tributeTo,
+}: {
+  onDone: () => void
+  tributeTo: string | null
+}) {
   const [title, setTitle] = useState('')
   const [artist, setArtist] = useState('')
   const [youtubeUrl, setYoutubeUrl] = useState('')
@@ -383,7 +393,7 @@ function ProposeForm({onDone}: {onDone: () => void}) {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         title,
-        artist: artist || 'The Monkees',
+        artist: artist || tributeTo || '',
         youtubeUrl,
         lyricsUrl,
       }),
@@ -402,9 +412,12 @@ function ProposeForm({onDone}: {onDone: () => void}) {
     >
       <Field label="Song" value={title} onChange={setTitle} required />
       <Field
-        label="Originally by (blank = The Monkees)"
+        label={
+          tributeTo ? `Originally by (blank = ${tributeTo})` : 'Originally by'
+        }
         value={artist}
         onChange={setArtist}
+        required={!tributeTo}
       />
       <Field
         label="Recording link (optional)"

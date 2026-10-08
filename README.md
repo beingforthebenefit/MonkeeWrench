@@ -4,7 +4,7 @@
 [![Tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/MonkeeWrench/badges/badges/tests.json)](https://github.com/beingforthebenefit/MonkeeWrench/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/MonkeeWrench/badges/badges/coverage.json)](https://beingforthebenefit.github.io/MonkeeWrench/)
 
-The band hub for **Monkee Business**: chord charts with full version history, setlists, a stage performance mode, rehearsal availability, and song proposals. Built with Next.js, NextAuth, Prisma/Postgres and Vitest; live at <https://members.monkeebusinessband.com>.
+**Bandstand**: a self-hosted hub for bands — chord charts with full version history, setlists, a stage performance mode, rehearsal availability, and song proposals. One install serves several bands; each can have its own name, icon and web address. Built with Next.js, NextAuth, Prisma/Postgres and Vitest. It started as Monkee Wrench, the hub for **Monkee Business** (still its name there), live at <https://members.monkeebusinessband.com>.
 
 ## Table of Contents
 
@@ -37,6 +37,8 @@ The band hub for **Monkee Business**: chord charts with full version history, se
 - **Rehearsals**: everyone marks the days they can't make (Free / PM out / Out); best dates for the next two weeks; schedule a rehearsal. People who haven't answered are named and never counted as free.
 - **Recent changes** (`/activity`): who changed what, everywhere.
 - **Proposals and voting**: a proposal that reaches the vote threshold joins the book as a song to learn.
+- **Bands**: one install, several bands. People only see the bands they're in; someone in one band never notices the others, someone in several picks one (remembered per device) and switches from the menu. Being an admin is per band. Each band sets its name, app name (header and home-screen title), icon, group-chat link, time zone and, for a tribute band, who it covers (Admin page). A web address can belong to a band: its sign-in page, title, favicon and home-screen icon are that band's. The install owner starts bands and assigns addresses (menu → All bands). A link to a chart in another of your bands switches band on the way.
+- **Across bands**: days off are shared by all your bands by default, or kept per band (Account → Across your bands; switching back merges them, strongest mark wins). A rehearsal or gig with one band marks you busy in your others ("busy with another band" — they don't learn which), unless you turn that off. Your calendar feed has every band's rehearsals.
 - **Auth**: email + password (not everyone in the band has Google). An admin adds members and generates each password on **Band members** (`/members`); it is shown once, with a ready-to-send message. Resetting or changing a password signs that person out everywhere. Repeated failures are throttled. Everything except sign-in requires an account (charts are copyrighted).
 - Phone and iPad layouts throughout ("Music Stand" design: chords in amber). Light, dark or auto (match device) appearance from the sun/moon icon at the top right; one tap cycles them, remembered per device.
 - **Profile photos**: add one under the account menu → Photo & password (tap the picture). Admins can set anyone's by tapping their picture on Band members. The phone crops and shrinks it to a 256px square before upload; it is stored in the database (`Avatar` table), so it is backed up with everything else. Shown in the header, Band members, the rehearsal grid, proposals (proposer and voters) and Recent changes; people without one get their initial.
@@ -75,7 +77,7 @@ The band hub for **Monkee Business**: chord charts with full version history, se
 
 3. Give yourself an account
 
-- `make app-sh`, then `npx tsx scripts/import-members.ts data/members.json` (or create a user row with `isAdmin = true`)
+- `make app-sh`, then `npx tsx scripts/create-band.ts "Band" you@example.com "Your Name"` (or `npx tsx scripts/import-members.ts <band-slug> data/members.json`)
 - `npx tsx scripts/set-password.ts you@example.com` prints a password once; sign in at `/login`
 
 Useful: `make logs`, `make app-sh`, `make db-sh`, `make psql`.
@@ -94,7 +96,7 @@ Production runs on the `popos` server from `docker-compose.server.yml`, a standa
 
    The live stack (project `monkeewrench`, port 7120) and the dev stack (project `monkeewrench-dev`, port 3002) share no containers, volumes, networks or ports, so both can run at once. The dev server polls for file changes and uses about a core and 1 GB of RAM: start it when working on the app and `make down` afterwards.
 
-The entrypoint applies migrations on start. The first admin: add the band with `scripts/import-members.ts` (or any user row with `isAdmin`), then `npx tsx scripts/set-password.ts you@example.com` inside the app container prints a password once; everyone else's comes from `/members`. Demo seed data is created only when `APP_ENV=development`. `GET /api/health` is public and queries the database (`{"ok":true,"songs":N}`); the container healthcheck and the server's monitoring use it.
+The entrypoint applies migrations on start. The first band and admin: `npx tsx scripts/create-band.ts "Band Name" you@example.com "Your Name"` inside the app container (the first admin also becomes the install owner), then `npx tsx scripts/set-password.ts you@example.com` prints a password once; everyone else's comes from `/members`, and further bands are started from the app. Serving several web addresses needs `AUTH_TRUST_HOST=true` (sign-in URLs follow the address used) and, for Google sign-in, each address's `/api/auth/callback/google` in the OAuth client. Demo seed data is created only when `APP_ENV=development`. `GET /api/health` is public and queries the database (`{"ok":true,"songs":N}`); the container healthcheck and the server's monitoring use it.
 
 ## Importing charts from Google Drive
 
@@ -102,7 +104,7 @@ The band's old charts were Google Docs in chords-over-lyrics format (`[Verse 1]`
 
 1. In Drive, download the `Original Documents` folder (a zip of `.docx`) and the song spreadsheet as `.xlsx`. Unzip into `data/` — **gitignored**, because the charts are copyrighted.
 2. `python3 -I scripts/drive-export-to-json.py "data/docs/Original Documents" "data/Monkee Business.xlsx" data/import.json`
-3. `make import FILE=data/import.json AS=you@example.com` (dev). For production, `docker cp` the JSON into `monkeewrench-app` and run `npx tsx scripts/import-songs.ts /tmp/import.json you@example.com` there, then delete it.
+3. `make import BAND=<band-slug> FILE=data/import.json AS=you@example.com` (dev). For production, `docker cp` the JSON into `monkeewrench-app` and run `npx tsx scripts/import-songs.ts <band-slug> /tmp/import.json you@example.com` there, then delete it.
 
 Re-running is safe: unchanged charts are skipped, changed Docs become a new version, and a chart edited in the app since the last import is never overwritten (it's reported instead).
 

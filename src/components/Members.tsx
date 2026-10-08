@@ -12,16 +12,22 @@ type Member = {
   isAdmin: boolean
   hasPassword: boolean
   avatar: string | null
+  /** Can I change their name, email and password? Not if they're also in
+   * a band I don't run (that would reach into the other band). */
+  managed: boolean
 }
-
-const SITE = 'https://members.monkeebusinessband.com'
 
 export default function Members({
   me,
   initial,
+  bandName,
+  site,
 }: {
   me: string
   initial: Member[]
+  bandName: string
+  /** This band's web address, for the sign-in message */
+  site: string
 }) {
   const router = useRouter()
   const [members, setMembers] = useState(initial)
@@ -35,7 +41,10 @@ export default function Members({
   async function newPassword(m: Member) {
     setError(null)
     const r = await fetch(`/api/members/${m.id}/password`, {method: 'POST'})
-    if (!r.ok) return setError('Could not set a password.')
+    if (!r.ok)
+      return setError(
+        (await r.json().catch(() => ({}))).error ?? 'Could not set a password.',
+      )
     const {password} = await r.json()
     setShown({id: m.id, password})
     setMembers(
@@ -71,7 +80,7 @@ export default function Members({
   async function remove(m: Member) {
     if (
       !window.confirm(
-        `Remove ${m.displayName || m.name}? Their chart edits stay, credited to “someone”; their availability and proposals are deleted.`,
+        `Remove ${m.displayName || m.name} from ${bandName}? Their chart edits stay. If they’re not in another band here, their account and proposals are deleted too.`,
       )
     )
       return
@@ -98,8 +107,13 @@ export default function Members({
 
       {adding && (
         <AddMember
-          onAdded={() => {
+          onAdded={(existing) => {
             setAdding(false)
+            setError(
+              existing
+                ? 'They already had an account from another band here, so they’re in with the same email and password.'
+                : null,
+            )
             router.refresh()
           }}
         />
@@ -128,6 +142,7 @@ export default function Members({
                   </span>
                   <input
                     defaultValue={m.displayName}
+                    readOnly={!m.managed}
                     onBlur={(e) => rename(m, e.target.value)}
                     className="min-h-10 w-28 rounded-lg border border-transparent bg-transparent px-2 text-lg font-bold hover:border-line-2 focus:border-line-2"
                   />
@@ -145,13 +160,19 @@ export default function Members({
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-x-2 pl-2 sm:pl-0">
-                <button
-                  type="button"
-                  onClick={() => newPassword(m)}
-                  className={`min-h-11 rounded-lg px-3 text-sm font-semibold ${m.hasPassword ? 'border border-line-2' : 'bg-accent text-on-accent'}`}
-                >
-                  {m.hasPassword ? 'Reset password' : 'Create password'}
-                </button>
+                {m.managed ? (
+                  <button
+                    type="button"
+                    onClick={() => newPassword(m)}
+                    className={`min-h-11 rounded-lg px-3 text-sm font-semibold ${m.hasPassword ? 'border border-line-2' : 'bg-accent text-on-accent'}`}
+                  >
+                    {m.hasPassword ? 'Reset password' : 'Create password'}
+                  </button>
+                ) : (
+                  <span className="px-2 text-xs text-faint">
+                    Also in another band: their own admins manage their sign-in
+                  </span>
+                )}
                 {m.id !== me && (
                   <>
                     <button
@@ -179,6 +200,8 @@ export default function Members({
             )}
             {shown?.id === m.id && (
               <PasswordNotice
+                bandName={bandName}
+                site={site}
                 member={m}
                 password={shown.password}
                 onDone={() => setShown(null)}
@@ -192,16 +215,20 @@ export default function Members({
 }
 
 function PasswordNotice({
+  bandName,
+  site,
   member,
   password,
   onDone,
 }: {
+  bandName: string
+  site: string
   member: Member
   password: string
   onDone: () => void
 }) {
   const [copied, setCopied] = useState<string | null>(null)
-  const message = `Hi ${member.displayName || member.name}! Here's your login for the Monkee Business charts and setlists:\n\n${SITE}\nEmail: ${member.email}\nPassword: ${password}\n\nYou can change the password after signing in (menu → Change password).`
+  const message = `Hi ${member.displayName || member.name}! Here's your login for the ${bandName} charts and setlists:\n\n${site}\nEmail: ${member.email}\nPassword: ${password}\n\nYou can change the password after signing in (menu → Account & settings).`
   const copy = async (what: string, text: string) => {
     try {
       await navigator.clipboard.writeText(text)
@@ -246,7 +273,7 @@ function PasswordNotice({
   )
 }
 
-function AddMember({onAdded}: {onAdded: () => void}) {
+function AddMember({onAdded}: {onAdded: (existing: boolean) => void}) {
   const [name, setName] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
@@ -258,7 +285,7 @@ function AddMember({onAdded}: {onAdded: () => void}) {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({name, displayName, email}),
     })
-    if (r.ok) onAdded()
+    if (r.ok) onAdded(Boolean((await r.json().catch(() => ({}))).existing))
     else setError((await r.json().catch(() => ({}))).error ?? 'Could not add.')
   }
   return (

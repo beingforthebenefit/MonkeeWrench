@@ -116,7 +116,6 @@ export const authOptions: NextAuthOptions = {
               email: true,
               name: true,
               displayName: true,
-              isAdmin: true,
               sessionVersion: true,
               id: true,
               avatarAt: true,
@@ -129,7 +128,6 @@ export const authOptions: NextAuthOptions = {
         email: u.email,
         name: u.displayName ?? u.name,
         image: avatarUrl(u),
-        isAdmin: u.isAdmin,
       }
       return session
     },

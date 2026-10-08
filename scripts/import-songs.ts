@@ -1,8 +1,8 @@
 /**
- * Import songs, charts and proposals from the JSON written by
+ * Import a band's songs, charts and proposals from the JSON written by
  * scripts/drive-export-to-json.py.
  *
- *   make import FILE=data/import.json AS=you@example.com
+ *   make import BAND=<band-slug> FILE=data/import.json AS=you@example.com
  *
  * Safe to re-run while the band is still editing the old Google Docs:
  * - a new song is created with its details and chart (version 1);
@@ -41,19 +41,20 @@ type ImportFile = {
 const prisma = new PrismaClient()
 
 async function main() {
-  const [file, email] = process.argv.slice(2)
-  if (!file || !email) {
-    console.error('Usage: import-songs <import.json> <author email>')
+  const [slug, file, email] = process.argv.slice(2)
+  if (!slug || !file || !email) {
+    console.error(
+      'Usage: import-songs <band-slug> <import.json> <author email>',
+    )
     process.exit(2)
   }
   const data: ImportFile = JSON.parse(fs.readFileSync(file, 'utf8'))
+  const band = await prisma.band.findUniqueOrThrow({where: {slug}})
 
-  // Imports are attributed to a real person so history reads naturally
-  const author = await prisma.user.upsert({
-    where: {email},
-    update: {},
-    // No name: Google sign-in fills in the real one
-    create: {email, isAdmin: true},
+  // Imports are attributed to a real person (a member) so history reads
+  // naturally
+  const author = await prisma.user.findFirstOrThrow({
+    where: {email, memberships: {some: {bandId: band.id}}},
   })
 
   const counts = {created: 0, updated: 0, unchanged: 0, skipped: 0}
@@ -64,14 +65,14 @@ async function main() {
       ? importChordsOverWords(chartText, s.title).source
       : `{title: ${s.title}}\n`
     const existing = await prisma.song.findFirst({
-      where: {title: {equals: s.title, mode: 'insensitive'}},
+      where: {bandId: band.id, title: {equals: s.title, mode: 'insensitive'}},
       include: {chartVersions: {orderBy: {number: 'desc'}, take: 1}},
     })
 
     if (!existing) {
       await prisma.$transaction(async (tx) => {
         const song = await tx.song.create({
-          data: {...fields, updatedById: author.id},
+          data: {...fields, bandId: band.id, updatedById: author.id},
         })
         await tx.chartVersion.create({
           data: {
@@ -84,6 +85,7 @@ async function main() {
         })
         await tx.activity.create({
           data: {
+            bandId: band.id,
             userId: author.id,
             action: 'song.import',
             targetType: 'song',
@@ -128,6 +130,7 @@ async function main() {
       })
       await tx.activity.create({
         data: {
+          bandId: band.id,
           userId: author.id,
           action: 'song.import',
           targetType: 'song',
@@ -142,11 +145,12 @@ async function main() {
   let proposals = 0
   for (const p of data.proposals) {
     const exists = await prisma.proposal.findFirst({
-      where: {title: {equals: p.title, mode: 'insensitive'}},
+      where: {bandId: band.id, title: {equals: p.title, mode: 'insensitive'}},
     })
     if (exists) continue
     await prisma.proposal.create({
       data: {
+        bandId: band.id,
         title: p.title,
         artist: p.artist || 'Unknown',
         proposerId: author.id,

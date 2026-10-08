@@ -10,14 +10,14 @@ import {route} from '@/lib/route'
 // The whole set in order, one song per page, each in its set key with its note.
 export const GET = route(
   async (req: Request, {params}: {params: {id: string}}) => {
-    await requireSession()
+    const {band} = await requireSession()
     const url = new URL(req.url)
-    const set = await getSetlist(params.id)
+    const set = await getSetlist(params.id, band.id)
     if (!set) return new Response('Not Found', {status: 404})
     const items = set.items
       .filter((i) => i.song.chartVersions[0])
       .map((i, n) => {
-        const item = buildPdfItem(i.song, i.song.chartVersions[0], {
+        const item = buildPdfItem(band, i.song, i.song.chartVersions[0], {
           key: i.key,
           note: i.note,
         })

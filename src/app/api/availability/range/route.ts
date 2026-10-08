@@ -5,6 +5,7 @@ import {prisma} from '@/lib/db'
 import {requireSession} from '@/lib/guard'
 import {route} from '@/lib/route'
 import {dayRange, formatDay} from '@/lib/availability'
+import {scopeFor} from '@/lib/availability-server'
 
 const Day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 const Body = z.object({
@@ -19,7 +20,8 @@ const MAX_DAYS = 400
 
 /** Mark a whole stretch at once: "away Dec 18 – Jan 4", "out every Tuesday". */
 export const PUT = route(async (req: Request) => {
-  const {user} = await requireSession()
+  const {user, band} = await requireSession()
+  const scope = scopeFor(user, band.id)
   const parsed = Body.safeParse(await req.json())
   if (!parsed.success) return new Response('Bad Request', {status: 400})
   const {from, to, kind, weekdays} = parsed.data
@@ -35,11 +37,11 @@ export const PUT = route(async (req: Request) => {
   const dates = days.map((d) => new Date(d + 'T00:00:00Z'))
   await prisma.$transaction(async (tx) => {
     await tx.unavailability.deleteMany({
-      where: {userId: user.id, date: {in: dates}},
+      where: {userId: user.id, scope, date: {in: dates}},
     })
     if (kind)
       await tx.unavailability.createMany({
-        data: dates.map((date) => ({userId: user.id, date, kind})),
+        data: dates.map((date) => ({userId: user.id, scope, date, kind})),
       })
     await tx.user.update({
       where: {id: user.id},
@@ -55,6 +57,7 @@ export const PUT = route(async (req: Request) => {
             : 'free'
     await tx.activity.create({
       data: {
+        bandId: scope ? band.id : null,
         userId: user.id,
         action: 'availability.range',
         targetType: 'availability',

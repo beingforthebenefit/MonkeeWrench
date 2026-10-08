@@ -23,15 +23,17 @@ type VersionLike = {
   } | null
 }
 
-const dateFmt = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-  timeZone: 'America/Los_Angeles',
-})
+const dateFmt = (timeZone: string) =>
+  new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone,
+  })
 
 /** Build one PDF page's content; `key` transposes to that key when given. */
 export function buildPdfItem(
+  band: {name: string; timezone: string},
   song: SongLike,
   version: VersionLike,
   opts: {key?: string | null; note?: string | null} = {},
@@ -53,7 +55,7 @@ export function buildPdfItem(
     subtitle,
     chart,
     note: opts.note,
-    footer: `Monkee Business  ·  ${song.title}  ·  version ${version.number}, edited by ${displayName(version.author)} on ${dateFmt.format(version.createdAt)}`,
+    footer: `${band.name}  ·  ${song.title}  ·  version ${version.number}, edited by ${displayName(version.author)} on ${dateFmt(band.timezone).format(version.createdAt)}`,
   }
 }
 

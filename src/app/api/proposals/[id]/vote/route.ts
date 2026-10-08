@@ -11,9 +11,9 @@ async function withPromotion(
   tx: Prisma.TransactionClient,
   proposalId: string,
   userId: string,
+  band: {id: string; voteThreshold: number; tributeTo: string | null},
 ) {
-  const settings = await tx.settings.findUnique({where: {id: 1}})
-  const threshold = settings?.voteThreshold ?? 2
+  const threshold = band.voteThreshold
   const voteCount = await tx.vote.count({where: {proposalId}})
   const p = await tx.proposal.findUnique({where: {id: proposalId}})
   if (!p) return
@@ -22,14 +22,24 @@ async function withPromotion(
       where: {id: proposalId},
       data: {status: 'APPROVED'},
     })
-    await addSongFromProposal(tx, p, userId)
+    await addSongFromProposal(tx, p, userId, band)
   }
+}
+
+async function inBand(proposalId: string, bandId: string) {
+  const p = await prisma.proposal.findFirst({
+    where: {id: proposalId, bandId},
+    select: {id: true},
+  })
+  return Boolean(p)
 }
 
 export const POST = route(
   async (_req: Request, {params}: {params: {id: string}}) => {
-    const {user} = await requireSession()
+    const {user, band} = await requireSession()
     const pid = params.id
+    if (!(await inBand(pid, band.id)))
+      return new Response('Not Found', {status: 404})
 
     try {
       await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -37,22 +47,24 @@ export const POST = route(
         await tx.auditLog.create({
           data: {userId: user.id, action: 'VOTE', targetId: pid},
         })
-        await withPromotion(tx, pid, user.id)
+        await withPromotion(tx, pid, user.id, band)
       })
     } catch {
       // unique(userId, proposalId) constraint trip -> conflict
       return new Response('Conflict', {status: 409})
     }
 
-    bus.emit(EVENTS.PROPOSAL_UPDATED, {id: pid})
+    bus.emit(EVENTS.PROPOSAL_UPDATED, {id: pid, bandId: band.id})
     return new Response(null, {status: 204})
   },
 )
 
 export const DELETE = route(
   async (_req: Request, {params}: {params: {id: string}}) => {
-    const {user} = await requireSession()
+    const {user, band} = await requireSession()
     const pid = params.id
+    if (!(await inBand(pid, band.id)))
+      return new Response('Not Found', {status: 404})
 
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.vote.delete({
@@ -64,7 +76,7 @@ export const DELETE = route(
       // No auto-demote in v1
     })
 
-    bus.emit(EVENTS.PROPOSAL_UPDATED, {id: pid})
+    bus.emit(EVENTS.PROPOSAL_UPDATED, {id: pid, bandId: band.id})
     return new Response(null, {status: 204})
   },
 )

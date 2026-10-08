@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import {z} from 'zod'
 import {prisma} from '@/lib/db'
-import {requireSession} from '@/lib/guard'
+import {requireUser} from '@/lib/guard'
 import {MIN_PASSWORD_LENGTH, hashPassword, verifyPassword} from '@/lib/password'
 import {logActivity} from '@/lib/songs'
 import {route} from '@/lib/route'
@@ -15,7 +15,7 @@ const Body = z.object({
 
 // Change your own password. Signs out your other devices.
 export const POST = route(async (req: Request) => {
-  const {user} = await requireSession()
+  const {user} = await requireUser()
   const parsed = Body.safeParse(await req.json())
   if (!parsed.success)
     return Response.json(
@@ -40,6 +40,7 @@ export const POST = route(async (req: Request) => {
       },
     })
     await logActivity(tx, {
+      bandId: null,
       userId: user.id,
       action: 'account.password',
       targetType: 'user',

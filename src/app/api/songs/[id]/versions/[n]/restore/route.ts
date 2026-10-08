@@ -8,15 +8,16 @@ import {route} from '@/lib/route'
 // it is still admin-only because it undoes someone else's work.
 export const POST = route(
   async (_req: Request, {params}: {params: {id: string; n: string}}) => {
-    const admin = await requireAdmin()
+    const {user, band} = await requireAdmin()
     const number = Number(params.n)
     if (!Number.isInteger(number) || number < 1)
       return new Response('Bad Request', {status: 400})
     try {
       const v = await restoreVersion({
+        bandId: band.id,
         songId: params.id,
         number,
-        userId: admin.id,
+        userId: user.id,
       })
       if (!v) return new Response('Not Found', {status: 404})
       return Response.json({number: v.number}, {status: 201})

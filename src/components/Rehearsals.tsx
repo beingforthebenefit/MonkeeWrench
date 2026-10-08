@@ -5,11 +5,14 @@ import {AddToCalendar, SubscribeCalendar} from '@/components/CalendarLinks'
 import MapLink from '@/components/MapLink'
 import Avatar from '@/components/Avatar'
 import {useMemo, useState} from 'react'
+import Link from 'next/link'
 import {
   nextAllFree,
   formatDay,
   scoreDays,
   weekday,
+  withBlocks,
+  type Block,
   type Entry,
   type Kind,
   type Member,
@@ -38,7 +41,11 @@ export default function Rehearsals({
   horizon,
   members,
   entries: initialEntries,
+  blocks,
   rehearsals,
+  bandName,
+  timezone,
+  blocksOn,
 }: {
   me: string
   isAdmin: boolean
@@ -46,7 +53,13 @@ export default function Rehearsals({
   horizon: string[]
   members: Member[]
   entries: Entry[]
+  /** Members' rehearsals and gigs with their other bands */
+  blocks: Block[]
   rehearsals: RehearsalRow[]
+  bandName: string
+  timezone: string
+  /** I'm in other bands and their dates count here */
+  blocksOn: boolean
 }) {
   const router = useRouter()
   const [entries, setEntries] = useState(initialEntries)
@@ -66,13 +79,22 @@ export default function Rehearsals({
   const [gridDays, setGridDays] = useState(28)
   const [ranging, setRanging] = useState(false)
   const days = horizon.slice(0, weekCount * 7)
+  // What counts: people's own marks plus their other bands' dates
+  const effective = useMemo(
+    () => withBlocks(entries, blocks),
+    [entries, blocks],
+  )
+  const blockAt = useMemo(
+    () => new Map(blocks.map((b) => [`${b.userId}|${b.date}`, b])),
+    [blocks],
+  )
   const scores = useMemo(
-    () => scoreDays(horizon.slice(0, gridDays), liveMembers, entries),
-    [horizon, gridDays, liveMembers, entries],
+    () => scoreDays(horizon.slice(0, gridDays), liveMembers, effective),
+    [horizon, gridDays, liveMembers, effective],
   )
   const ahead = useMemo(
-    () => nextAllFree(scoreDays(horizon, liveMembers, entries), aheadLimit),
-    [horizon, liveMembers, entries, aheadLimit],
+    () => nextAllFree(scoreDays(horizon, liveMembers, effective), aheadLimit),
+    [horizon, liveMembers, effective, aheadLimit],
   )
   const lastMarked = entries.reduce((m, e) => (e.date > m ? e.date : m), '')
   const booked = new Set(rehearsals.map((r) => r.date))
@@ -144,7 +166,7 @@ export default function Rehearsals({
                   </span>
                 )}
                 <span className="text-xs text-faint">set by {r.by}</span>
-                <AddToCalendar r={r} />
+                <AddToCalendar r={r} band={{name: bandName, timezone}} />
                 {(r.mine || isAdmin) && (
                   <button
                     type="button"
@@ -287,6 +309,16 @@ export default function Rehearsals({
           <p className="mt-1 text-[13px] text-muted">
             Mark the days you can’t make, or would rather not. Everything else
             counts as free.
+            {blocksOn && (
+              <>
+                {' '}
+                Rehearsals and gigs with your other bands count automatically (
+                <Link href="/account" className="text-sky">
+                  change
+                </Link>
+                ).
+              </>
+            )}
           </p>
           {ranging && (
             <RangeForm
@@ -312,10 +344,11 @@ export default function Rehearsals({
               </h3>
               {w.map((d) => {
                 const current = mineOn(d)
+                const busy = blockAt.get(`${me}|${d}`)
                 return (
                   <div
                     key={d}
-                    className="flex items-center gap-2 border-t border-line py-1.5"
+                    className="flex flex-wrap items-center gap-x-2 border-t border-line py-1.5"
                   >
                     <span className="w-20 text-sm font-semibold">
                       {weekday(d)} {Number(d.slice(8))}
@@ -338,6 +371,13 @@ export default function Rehearsals({
                         </button>
                       ))}
                     </div>
+                    {busy && (
+                      <p className="basis-full pl-[5.5rem] pt-1 text-xs text-warn-fg">
+                        {busy.label} — counts as{' '}
+                        {busy.kind === 'OUT' ? 'out' : 'out in the afternoon'}{' '}
+                        here
+                      </p>
+                    )}
                   </div>
                 )
               })}
@@ -396,13 +436,15 @@ export default function Rehearsals({
                       {formatDay(s.date)}
                     </th>
                     {liveMembers.map((m) => {
-                      const k = entries.find(
+                      const k = effective.find(
                         (e) => e.userId === m.id && e.date === s.date,
                       )?.kind
+                      const busy = blockAt.get(`${m.id}|${s.date}`)
                       return (
                         <td key={m.id} className="px-1 py-1 text-center">
                           <span
-                            className={`inline-flex h-7 min-w-12 items-center justify-center rounded font-mono text-xs font-bold ${
+                            title={busy?.label}
+                            className={`inline-flex h-7 min-w-12 items-center justify-center rounded font-mono text-xs font-bold ${busy ? 'ring-2 ring-inset ring-text/40 ' : ''}${
                               k === 'OUT'
                                 ? 'bg-bad-bg text-bad-fg'
                                 : k === 'PM_OUT'
@@ -444,6 +486,7 @@ export default function Rehearsals({
           <p className="mt-2 text-[13px] text-faint">
             Blank = free · PREF = would rather not · PM = out in the afternoon ·
             OUT = out all day · ? = hasn’t answered
+            {blocks.length > 0 && ' · outlined = busy with another band'}
           </p>
         </section>
       </div>

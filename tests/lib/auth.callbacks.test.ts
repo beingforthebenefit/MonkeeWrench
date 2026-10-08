@@ -78,7 +78,6 @@ describe('session callbacks', () => {
           email: 'ken@example.com',
           name: 'Kenneth Johnson',
           displayName: 'Ken',
-          isAdmin: false,
           sessionVersion: 3,
         })),
       },
@@ -104,7 +103,6 @@ describe('session callbacks', () => {
       email: 'ken@example.com',
       name: 'Ken',
       image: null,
-      isAdmin: false,
     })
   })
 

@@ -1,7 +1,7 @@
 /**
- * Create band members and import availability from the old sheet.
+ * Add members to a band and import availability from its old sheet.
  *
- *   npx tsx scripts/import-members.ts data/members.json data/import.json
+ *   npx tsx scripts/import-members.ts <band-slug> data/members.json data/import.json
  *
  * members.json: {members: [{name, displayName, email, isAdmin?}]} -- kept in
  * gitignored data/ (personal emails; the repo is public).
@@ -31,11 +31,14 @@ type Avail = {
 const prisma = new PrismaClient()
 
 async function main() {
-  const [membersFile, importFile] = process.argv.slice(2)
-  if (!membersFile) {
-    console.error('Usage: import-members <members.json> [import.json]')
+  const [slug, membersFile, importFile] = process.argv.slice(2)
+  if (!slug || !membersFile) {
+    console.error(
+      'Usage: import-members <band-slug> <members.json> [import.json]',
+    )
     process.exit(2)
   }
+  const band = await prisma.band.findUniqueOrThrow({where: {slug}})
   const {members}: {members: MemberIn[]} = JSON.parse(
     fs.readFileSync(membersFile, 'utf8'),
   )
@@ -49,21 +52,16 @@ async function main() {
     const user = existing
       ? await prisma.user.update({
           where: {id: existing.id},
-          data: {
-            email,
-            name: m.name,
-            displayName: m.displayName,
-            ...(m.isAdmin ? {isAdmin: true} : {}),
-          },
+          data: {email, name: m.name, displayName: m.displayName},
         })
       : await prisma.user.create({
-          data: {
-            email,
-            name: m.name,
-            displayName: m.displayName,
-            isAdmin: Boolean(m.isAdmin),
-          },
+          data: {email, name: m.name, displayName: m.displayName},
         })
+    await prisma.membership.upsert({
+      where: {userId_bandId: {userId: user.id, bandId: band.id}},
+      create: {userId: user.id, bandId: band.id, isAdmin: Boolean(m.isAdmin)},
+      update: m.isAdmin ? {isAdmin: true} : {},
+    })
     byName.set(m.displayName.toLowerCase(), user.id)
     console.log(
       `${existing ? 'updated' : 'added  '} ${m.displayName.padEnd(10)} ${email}${user.passwordHash ? '' : '  (no password yet)'}`,
@@ -95,9 +93,10 @@ async function main() {
     await prisma.$transaction(async (tx) => {
       for (const e of rows) {
         const date = new Date(e.date + 'T00:00:00Z')
+        // Into their shared days (scope ""), which every band sees
         await tx.unavailability.upsert({
-          where: {userId_date: {userId, date}},
-          create: {userId, date, kind: e.kind},
+          where: {userId_scope_date: {userId, scope: '', date}},
+          create: {userId, scope: '', date, kind: e.kind},
           update: {kind: e.kind},
         })
       }

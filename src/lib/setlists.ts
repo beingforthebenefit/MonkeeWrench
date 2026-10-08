@@ -27,9 +27,9 @@ export const SetlistBody = z.object({
 
 export type SetlistInput = z.infer<typeof SetlistBody>
 
-export async function getSetlist(id: string) {
-  return prisma.setlist.findUnique({
-    where: {id},
+export async function getSetlist(id: string, bandId: string) {
+  return prisma.setlist.findFirst({
+    where: {id, bandId},
     include: {
       items: {
         orderBy: {position: 'asc'},
@@ -78,13 +78,14 @@ export function describeSetChanges(
 }
 
 export async function saveSetlist(
+  bandId: string,
   id: string,
   userId: string,
   input: SetlistInput,
 ) {
   return prisma.$transaction(async (tx) => {
-    const before = await tx.setlist.findUnique({
-      where: {id},
+    const before = await tx.setlist.findFirst({
+      where: {id, bandId},
       include: {
         items: {
           orderBy: {position: 'asc'},
@@ -107,7 +108,7 @@ export async function saveSetlist(
     let changes: string[] = []
     if (items) {
       const songs = await tx.song.findMany({
-        where: {id: {in: items.map((i) => i.songId)}},
+        where: {bandId, id: {in: items.map((i) => i.songId)}},
         select: {id: true, title: true},
       })
       const title = new Map(songs.map((s) => [s.id, s.title]))
@@ -139,6 +140,7 @@ export async function saveSetlist(
       changes.unshift(`renamed it from ${before.name}`)
     if (changes.length || gigDate !== undefined || fields.venue !== undefined)
       await logActivity(tx, {
+        bandId,
         userId,
         action: 'setlist.update',
         targetType: 'setlist',

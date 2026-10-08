@@ -8,6 +8,7 @@ services:
       APP_ENV: development
       NODE_ENV: development
       NEXTAUTH_URL: http://localhost:3002
+      AUTH_TRUST_HOST: 'true'
       DATABASE_URL: postgresql://monkee:monkee@db:5432/monkee?schema=public
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}

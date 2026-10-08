@@ -1,7 +1,8 @@
 /**
  * Calendar events for rehearsals: .ics (Apple Calendar, Outlook, and the
  * subscribable feed) and Google Calendar links. Times are local to the band
- * (America/Los_Angeles); a rehearsal's time is free text, so it is read here.
+ * (its time zone, America/Los_Angeles unless set); a rehearsal's time is free
+ * text, so it is read here.
  */
 
 export const TZ = 'America/Los_Angeles'
@@ -15,6 +16,47 @@ export type CalEvent = {
   location: string | null
   description: string | null
   url?: string | null
+  /** The band's IANA time zone; default TZ */
+  tz?: string
+}
+
+/** Minutes east of UTC that `tz` is at the instant `ms`. */
+function offsetMinutes(tz: string, ms: number) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hourCycle: 'h23',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+      .formatToParts(new Date(ms))
+      .map((p) => [p.type, p.value]),
+  )
+  const asUtc = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour),
+    Number(parts.minute),
+  )
+  return Math.round((asUtc - ms) / 60_000)
+}
+
+/** A wall-clock date + time in `tz` as a UTC timestamp: 20261024T220000Z. */
+export function utcStamp(date: string, time: string, tz: string) {
+  const [y, mo, d] = date.split('-').map(Number)
+  const [h, mi] = time.split(':').map(Number)
+  const wall = Date.UTC(y, mo - 1, d, h, mi)
+  // Twice: the first guess can land on the other side of a DST change
+  let ms = wall - offsetMinutes(tz, wall) * 60_000
+  ms = wall - offsetMinutes(tz, ms) * 60_000
+  return new Date(ms)
+    .toISOString()
+    .replace(/[-:]/g, '')
+    .replace(/\.\d{3}/, '')
 }
 
 /**
@@ -125,7 +167,7 @@ export function buildIcs(
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Monkee Business//Monkee Wrench//EN',
+    'PRODID:-//Bandstand//Bandstand//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     ...(opts.name
@@ -135,19 +177,26 @@ export function buildIcs(
   ]
   for (const e of events) {
     const t = parseTimes(e.time)
+    const tz = e.tz ?? TZ
     lines.push(
       'BEGIN:VEVENT',
       `UID:${e.uid}`,
       `DTSTAMP:${now}`,
-      ...(t
+      ...(t && tz === TZ
         ? [
             `DTSTART;TZID=${TZ}:${compactDate(e.date)}T${compactTime(t.start)}`,
             `DTEND;TZID=${TZ}:${compactDate(e.date)}T${compactTime(t.end)}`,
           ]
-        : [
-            `DTSTART;VALUE=DATE:${compactDate(e.date)}`,
-            `DTEND;VALUE=DATE:${compactDate(nextDay(e.date))}`,
-          ]),
+        : t
+          ? [
+              // Other zones in UTC, which needs no VTIMEZONE block
+              `DTSTART:${utcStamp(e.date, t.start, tz)}`,
+              `DTEND:${utcStamp(e.date, t.end, tz)}`,
+            ]
+          : [
+              `DTSTART;VALUE=DATE:${compactDate(e.date)}`,
+              `DTEND;VALUE=DATE:${compactDate(nextDay(e.date))}`,
+            ]),
       `SUMMARY:${escapeText(e.title)}`,
       ...(e.location ? [`LOCATION:${escapeText(e.location)}`] : []),
       ...(e.description ? [`DESCRIPTION:${escapeText(e.description)}`] : []),
@@ -169,7 +218,7 @@ export function googleCalendarUrl(e: CalEvent) {
     action: 'TEMPLATE',
     text: e.title,
     dates,
-    ctz: TZ,
+    ctz: e.tz ?? TZ,
     ...(e.location ? {location: e.location} : {}),
     ...(e.description || e.url
       ? {details: [e.description, e.url].filter(Boolean).join('\n\n')}

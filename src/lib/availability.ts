@@ -14,11 +14,41 @@ export type Member = {
 }
 export type Entry = {userId: string; date: string; kind: Kind}
 
-const TZ = 'America/Los_Angeles'
+/**
+ * Busy with another band: a rehearsal or gig there, which counts here
+ * without anyone marking it. `label` is what this viewer may see ("Rehearsal
+ * with The Hollies", or "Busy with another band" when they aren't in it).
+ */
+export type Block = {
+  userId: string
+  date: string
+  kind: 'OUT' | 'PM_OUT'
+  label: string
+}
+
+const RANK: Record<Kind, number> = {PREFER_NOT: 1, PM_OUT: 2, OUT: 3}
+
+/** Marks with other-band blocks folded in: the stronger one wins. */
+export function withBlocks(entries: Entry[], blocks: Block[]): Entry[] {
+  if (!blocks.length) return entries
+  const at = new Map(entries.map((e) => [`${e.userId}|${e.date}`, e]))
+  for (const b of blocks) {
+    const k = `${b.userId}|${b.date}`
+    const e = at.get(k)
+    if (!e || RANK[b.kind] > RANK[e.kind])
+      at.set(k, {userId: b.userId, date: b.date, kind: b.kind})
+  }
+  return [...at.values()]
+}
+
+/** The stronger of two marks (for merging per-band marks into shared). */
+export function stronger(a: Kind, b: Kind): Kind {
+  return RANK[a] >= RANK[b] ? a : b
+}
 
 /** Today's date in the band's time zone, as YYYY-MM-DD. */
-export function todayKey(now = new Date()) {
-  return new Intl.DateTimeFormat('en-CA', {timeZone: TZ}).format(now)
+export function todayKey(now = new Date(), tz = 'America/Los_Angeles') {
+  return new Intl.DateTimeFormat('en-CA', {timeZone: tz}).format(now)
 }
 
 export function addDays(key: string, n: number) {

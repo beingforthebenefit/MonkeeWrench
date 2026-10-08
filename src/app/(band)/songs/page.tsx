@@ -2,12 +2,14 @@ export const dynamic = 'force-dynamic'
 
 import {detectKey, parseChordPro} from '@/lib/chordpro'
 import {displayName, isImportNote, listSongs} from '@/lib/songs'
+import {pageSession} from '@/lib/guard'
 import SongLibrary, {type LibrarySong} from '@/components/SongLibrary'
 
-export const metadata = {title: 'Songs · Monkee Wrench'}
+export const metadata = {title: 'Songs'}
 
 export default async function SongsPage() {
-  const songs = await listSongs()
+  const {band} = await pageSession()
+  const songs = await listSongs(band.id)
   const rows: LibrarySong[] = songs.map((s) => {
     const chart = s.latest ? parseChordPro(s.latest.source) : null
     return {

@@ -24,7 +24,7 @@ const Body = z.object({
 })
 
 export const POST = route(async (req: Request) => {
-  const {user} = await requireSession()
+  const {user, band} = await requireSession()
   const json = await req.json().catch(() => null)
   const parsed = Body.safeParse(json)
   if (!parsed.success) return new Response('Bad Request', {status: 400})
@@ -38,6 +38,7 @@ export const POST = route(async (req: Request) => {
 
   const p = await prisma.proposal.create({
     data: {
+      bandId: band.id,
       title: parsed.data.title,
       artist: parsed.data.artist,
       chartUrl: parsed.data.chartUrl ?? null,
@@ -51,17 +52,22 @@ export const POST = route(async (req: Request) => {
     data: {userId: user.id, action: 'PROPOSE', targetId: p.id},
   })
   await logActivity(prisma, {
+    bandId: band.id,
     userId: user.id,
     action: 'proposal.create',
     targetType: 'proposal',
     targetId: p.id,
     summary: `proposed ${p.title}${p.artist ? ` (${p.artist})` : ''}`,
   })
-  bus.emit(EVENTS.PROPOSAL_CREATED, {id: p.id})
+  bus.emit(EVENTS.PROPOSAL_CREATED, {id: p.id, bandId: band.id})
   return Response.json({id: p.id})
 })
 
 export const GET = route(async () => {
-  const all = await prisma.proposal.findMany({orderBy: {createdAt: 'desc'}})
+  const {band} = await requireSession()
+  const all = await prisma.proposal.findMany({
+    where: {bandId: band.id},
+    orderBy: {createdAt: 'desc'},
+  })
   return Response.json(all)
 })

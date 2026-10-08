@@ -4,8 +4,11 @@ import type {Metadata, Viewport} from 'next'
 import {Archivo, JetBrains_Mono} from 'next/font/google'
 import {getServerSession} from 'next-auth'
 import {authOptions} from '@/lib/auth'
+import {prisma} from '@/lib/db'
+import {brandForRequest, currentBand, iconUrl, PRODUCT} from '@/lib/band'
+import {chatLabel} from '@/lib/band-fields'
 import Providers from '@/components/Providers'
-import AppShell from '@/components/AppShell'
+import AppShell, {type ShellBand} from '@/components/AppShell'
 import {THEME_COLORS, themeScript} from '@/lib/theme'
 
 const archivo = Archivo({subsets: ['latin'], variable: '--font-archivo'})
@@ -15,10 +18,34 @@ const jetbrains = JetBrains_Mono({
   variable: '--font-jetbrains',
 })
 
-export const metadata: Metadata = {
-  title: 'Monkee Wrench',
-  description: 'Charts, setlists and rehearsals for Monkee Business',
-  appleWebApp: {capable: true, title: 'Monkee Wrench', statusBarStyle: 'black'},
+/** The band this page is shown as: the chosen band, else this address's. */
+async function shellContext() {
+  const session = await getServerSession(authOptions)
+  const user = session?.user?.email
+    ? await prisma.user.findUnique({where: {email: session.user.email}})
+    : null
+  const {band, bands} = user
+    ? await currentBand(user.id)
+    : {band: null, bands: []}
+  const brand = band ? null : await brandForRequest()
+  return {session, user, band, bands, brand}
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const {band, brand} = await shellContext()
+  const appName = band?.appName ?? brand?.appName ?? PRODUCT
+  const icon = band ? iconUrl(band) : (brand?.iconUrl ?? iconUrl(null))
+  const forWhom = band?.name ?? brand?.band?.name
+  return {
+    title: {default: appName, template: `%s · ${appName}`},
+    description: forWhom
+      ? `Charts, setlists and rehearsals for ${forWhom}`
+      : 'Charts, setlists and rehearsals for bands',
+    applicationName: appName,
+    appleWebApp: {capable: true, title: appName, statusBarStyle: 'black'},
+    manifest: '/manifest.webmanifest',
+    icons: {icon, apple: icon},
+  }
 }
 
 export const viewport: Viewport = {
@@ -29,7 +56,22 @@ export const viewport: Viewport = {
 }
 
 export default async function RootLayout({children}: {children: ReactNode}) {
-  const session = await getServerSession(authOptions)
+  const {session, user, band, bands, brand} = await shellContext()
+  const shell: ShellBand = {
+    appName: band?.appName ?? brand?.appName ?? PRODUCT,
+    band: band
+      ? {
+          id: band.id,
+          name: band.name,
+          chat: band.chatUrl
+            ? {url: band.chatUrl, label: chatLabel(band.chatUrl)}
+            : null,
+          isAdmin: band.isAdmin || Boolean(user?.isOwner),
+        }
+      : null,
+    bands: bands.map((b) => ({id: b.id, name: b.name})),
+    isOwner: Boolean(user?.isOwner),
+  }
   return (
     // data-theme is set by themeScript before React hydrates
     <html
@@ -42,7 +84,7 @@ export default async function RootLayout({children}: {children: ReactNode}) {
       </head>
       <body>
         <Providers session={session}>
-          <AppShell>{children}</AppShell>
+          <AppShell ctx={shell}>{children}</AppShell>
         </Providers>
       </body>
     </html>

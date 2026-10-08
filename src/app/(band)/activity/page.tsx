@@ -5,21 +5,24 @@ import {prisma} from '@/lib/db'
 import {displayName} from '@/lib/songs'
 import {avatarUrl} from '@/lib/avatars'
 import Avatar from '@/components/Avatar'
+import {pageSession} from '@/lib/guard'
 
-export const metadata = {title: 'Recent changes · Monkee Wrench'}
+export const metadata = {title: 'Recent changes'}
 
-const dayFmt = new Intl.DateTimeFormat('en-US', {
-  weekday: 'long',
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-  timeZone: 'America/Los_Angeles',
-})
-const timeFmt = new Intl.DateTimeFormat('en-US', {
-  hour: 'numeric',
-  minute: '2-digit',
-  timeZone: 'America/Los_Angeles',
-})
+const dayFmt = (timeZone: string) =>
+  new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone,
+  })
+const timeFmt = (timeZone: string) =>
+  new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone,
+  })
 
 function hrefFor(a: {
   targetType: string
@@ -40,7 +43,21 @@ function hrefFor(a: {
 
 /** Who changed what, newest first — every save in the app lands here. */
 export default async function ActivityPage() {
+  const {band} = await pageSession()
+  const day = dayFmt(band.timezone)
+  const time = timeFmt(band.timezone)
   const rows = await prisma.activity.findMany({
+    // This band's changes, and personal ones (photo, password, shared
+    // availability) by people in it
+    where: {
+      OR: [
+        {bandId: band.id},
+        {
+          bandId: null,
+          user: {memberships: {some: {bandId: band.id}}},
+        },
+      ],
+    },
     orderBy: {createdAt: 'desc'},
     take: 200,
     include: {
@@ -57,8 +74,8 @@ export default async function ActivityPage() {
   })
   const groups: {day: string; rows: typeof rows}[] = []
   for (const r of rows) {
-    const day = dayFmt.format(r.createdAt)
-    if (groups[groups.length - 1]?.day !== day) groups.push({day, rows: []})
+    const d = day.format(r.createdAt)
+    if (groups[groups.length - 1]?.day !== d) groups.push({day: d, rows: []})
     groups[groups.length - 1].rows.push(r)
   }
   return (
@@ -79,7 +96,7 @@ export default async function ActivityPage() {
               const body = (
                 <>
                   <span className="w-16 shrink-0 font-mono text-xs text-faint">
-                    {timeFmt.format(r.createdAt)}
+                    {time.format(r.createdAt)}
                   </span>
                   <Avatar
                     name={displayName(r.user)}

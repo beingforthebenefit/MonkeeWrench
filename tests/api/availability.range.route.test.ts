@@ -7,9 +7,15 @@ vi.mock('@/lib/db', () => ({
     return prisma
   },
 }))
-vi.mock('@/lib/guard', () => ({
-  requireSession: vi.fn(async () => ({user: {id: 'u1'}})),
-}))
+let share = true
+vi.mock('@/lib/guard', async () => {
+  const {ctx} = await import('../band')
+  return {
+    requireSession: vi.fn(async () =>
+      ctx({id: 'u1', shareAvailability: share}),
+    ),
+  }
+})
 
 const put = (body: unknown) =>
   new Request('http://x/api/availability/range', {
@@ -38,7 +44,23 @@ describe('PUT /api/availability/range', () => {
       '2027-01-01',
       '2027-01-02',
     ])
-    expect(tx.unavailability.createMany.mock.calls[0][0].data).toHaveLength(4)
+    const rows = tx.unavailability.createMany.mock.calls[0][0].data
+    expect(rows).toHaveLength(4)
+    // Shared days: every band sees them, and the log line is personal
+    expect(rows[0].scope).toBe('')
+    expect(tx.activity.create.mock.calls[0][0].data.bandId).toBeNull()
+  })
+
+  it("someone who keeps each band's days separate marks this band's", async () => {
+    share = false
+    const {PUT} = await import('@/app/api/availability/range/route')
+    await PUT(put({from: '2026-12-30', to: '2026-12-31', kind: 'OUT'}))
+    share = true
+    expect(tx.unavailability.deleteMany.mock.calls[0][0].where.scope).toBe('b1')
+    expect(tx.unavailability.createMany.mock.calls[0][0].data[0].scope).toBe(
+      'b1',
+    )
+    expect(tx.activity.create.mock.calls[0][0].data.bandId).toBe('b1')
   })
 
   it('can limit to weekdays (every Tuesday)', async () => {

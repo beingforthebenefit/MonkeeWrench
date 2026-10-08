@@ -3,7 +3,9 @@ import {requireSession} from '@/lib/guard'
 import {route} from '@/lib/route'
 
 export const GET = route(async () => {
-  await requireSession()
+  const {band} = await requireSession()
+  // Only this band's proposals: other bands' changes are none of its business
+  const mine = (p: unknown) => (p as {bandId?: string})?.bandId === band.id
 
   // Use a cancellable underlying source so we can unsubscribe cleanly
   const source: UnderlyingDefaultSource<Uint8Array> & {
@@ -17,8 +19,10 @@ export const GET = route(async () => {
           ),
         )
       }
-      const onUpdate = (p: unknown) => send(EVENTS.PROPOSAL_UPDATED, p)
-      const onCreate = (p: unknown) => send(EVENTS.PROPOSAL_CREATED, p)
+      const onUpdate = (p: unknown) =>
+        mine(p) && send(EVENTS.PROPOSAL_UPDATED, p)
+      const onCreate = (p: unknown) =>
+        mine(p) && send(EVENTS.PROPOSAL_CREATED, p)
       bus.on(EVENTS.PROPOSAL_UPDATED, onUpdate)
       bus.on(EVENTS.PROPOSAL_CREATED, onCreate)
       // Initial tick

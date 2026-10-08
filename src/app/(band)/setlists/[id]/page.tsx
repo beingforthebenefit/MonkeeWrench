@@ -7,8 +7,10 @@ import {detectKey, parseChordPro} from '@/lib/chordpro'
 import {displayName} from '@/lib/songs'
 import {shortDate} from '@/lib/dates'
 import SetlistPdfButton from '@/components/SetlistPdfButton'
+import {pageSession} from '@/lib/guard'
+import {followToBand} from '@/lib/band'
 
-export const metadata = {title: 'Setlist · Monkee Wrench'}
+export const metadata = {title: 'Setlist'}
 
 const gigFmt = new Intl.DateTimeFormat('en-US', {
   weekday: 'long',
@@ -19,8 +21,12 @@ const gigFmt = new Intl.DateTimeFormat('en-US', {
 
 /** Read-only: the set in order, with keys and notes. Edit and Perform are buttons. */
 export default async function SetlistView({params}: {params: {id: string}}) {
-  const set = await getSetlist(params.id)
-  if (!set) notFound()
+  const {user, band} = await pageSession()
+  const set = await getSetlist(params.id, band.id)
+  if (!set) {
+    await followToBand('setlist', params.id, user.id, `/setlists/${params.id}`)
+    notFound()
+  }
   const rows = set.items.map((i) => {
     const v = i.song.chartVersions[0]
     const chart = v ? parseChordPro(v.source) : null

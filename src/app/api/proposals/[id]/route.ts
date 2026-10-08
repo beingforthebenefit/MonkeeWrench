@@ -33,9 +33,9 @@ const PatchBody = z.object({
 
 export const GET = route(
   async (_req: Request, {params}: {params: {id: string}}) => {
-    await requireAdmin()
-    const p = await prisma.proposal.findUnique({
-      where: {id: params.id},
+    const {band} = await requireAdmin()
+    const p = await prisma.proposal.findFirst({
+      where: {id: params.id, bandId: band.id},
       select: {
         id: true,
         title: true,
@@ -53,11 +53,13 @@ export const GET = route(
 
 export const PATCH = route(
   async (req: Request, {params}: {params: {id: string}}) => {
-    const admin = await requireAdmin()
+    const {user: admin, band} = await requireAdmin()
     const json = await req.json()
     const parsed = PatchBody.safeParse(json)
     if (!parsed.success) return new Response('Bad Request', {status: 400})
-    const before = await prisma.proposal.findUnique({where: {id: params.id}})
+    const before = await prisma.proposal.findFirst({
+      where: {id: params.id, bandId: band.id},
+    })
     if (!before) return new Response('Not Found', {status: 404})
     await prisma.$transaction(async (tx) => {
       const p = await tx.proposal.update({
@@ -70,9 +72,10 @@ export const PATCH = route(
       // An admin approving directly does what reaching the vote threshold
       // does: the song joins the book to learn
       if (p.status === 'APPROVED' && before.status !== 'APPROVED')
-        await addSongFromProposal(tx, p, admin.id)
+        await addSongFromProposal(tx, p, admin.id, band)
       else if (p.status === 'ARCHIVED' && before.status !== 'ARCHIVED')
         await logActivity(tx, {
+          bandId: band.id,
           userId: admin.id,
           action: 'proposal.archive',
           targetType: 'proposal',
@@ -86,7 +89,12 @@ export const PATCH = route(
 
 export const DELETE = route(
   async (_req: Request, {params}: {params: {id: string}}) => {
-    const admin = await requireAdmin()
+    const {user: admin, band} = await requireAdmin()
+    const p = await prisma.proposal.findFirst({
+      where: {id: params.id, bandId: band.id},
+      select: {id: true},
+    })
+    if (!p) return new Response('Not Found', {status: 404})
 
     await prisma.$transaction(async (tx) => {
       // record audit

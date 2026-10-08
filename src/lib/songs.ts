@@ -12,6 +12,8 @@ export class ConflictError extends Error {
 export async function logActivity(
   tx: Tx,
   data: {
+    // null = a personal change, shown in every band the person is in
+    bandId: string | null
     userId: string | null
     action: string
     targetType: string
@@ -37,6 +39,7 @@ async function latestNumber(tx: Tx, songId: string) {
  * silently overwriting their change.
  */
 export async function saveChart(args: {
+  bandId: string
   songId: string
   userId: string
   source: string
@@ -45,6 +48,11 @@ export async function saveChart(args: {
   restoredFrom?: number | null
 }) {
   return prisma.$transaction(async (tx) => {
+    const owned = await tx.song.findFirst({
+      where: {id: args.songId, bandId: args.bandId},
+      select: {id: true},
+    })
+    if (!owned) return null
     const latest = await latestNumber(tx, args.songId)
     if (args.baseNumber !== latest) throw new ConflictError(latest)
     const number = latest + 1
@@ -64,6 +72,7 @@ export async function saveChart(args: {
       select: {title: true},
     })
     await logActivity(tx, {
+      bandId: args.bandId,
       userId: args.userId,
       action: args.restoredFrom ? 'chart.restore' : 'chart.save',
       targetType: 'song',
@@ -77,16 +86,22 @@ export async function saveChart(args: {
 }
 
 export async function restoreVersion(args: {
+  bandId: string
   songId: string
   number: number
   userId: string
 }) {
-  const old = await prisma.chartVersion.findUnique({
-    where: {songId_number: {songId: args.songId, number: args.number}},
+  const old = await prisma.chartVersion.findFirst({
+    where: {
+      songId: args.songId,
+      number: args.number,
+      song: {bandId: args.bandId},
+    },
   })
   if (!old) return null
   const latest = await latestNumber(prisma, args.songId)
   return saveChart({
+    bandId: args.bandId,
     songId: args.songId,
     userId: args.userId,
     source: old.source,
@@ -107,8 +122,9 @@ const authorSelect = {
 } as const
 
 /** Songs with their latest chart version's number, author and date. */
-export async function listSongs() {
+export async function listSongs(bandId: string) {
   const songs = await prisma.song.findMany({
+    where: {bandId},
     orderBy: [{status: 'asc'}, {title: 'asc'}],
     include: {
       chartVersions: {
@@ -130,9 +146,9 @@ export async function listSongs() {
   }))
 }
 
-export async function getSong(id: string) {
-  const song = await prisma.song.findUnique({
-    where: {id},
+export async function getSong(id: string, bandId: string) {
+  const song = await prisma.song.findFirst({
+    where: {id, bandId},
     include: {
       chartVersions: {
         orderBy: {number: 'desc'},
@@ -146,9 +162,9 @@ export async function getSong(id: string) {
   return {...rest, latest: chartVersions[0] ?? null}
 }
 
-export async function listVersions(songId: string) {
+export async function listVersions(songId: string, bandId: string) {
   return prisma.chartVersion.findMany({
-    where: {songId},
+    where: {songId, song: {bandId}},
     orderBy: {number: 'desc'},
     include: {author: authorSelect},
   })
@@ -182,17 +198,20 @@ export async function addSongFromProposal(
     lyricsUrl: string | null
   },
   userId: string,
+  band: {id: string; tributeTo: string | null},
 ) {
+  const bandId = band.id
   const exists = await tx.song.findFirst({
-    where: {title: {equals: p.title, mode: 'insensitive'}},
+    where: {bandId, title: {equals: p.title, mode: 'insensitive'}},
     select: {id: true},
   })
   if (exists) return null
   const song = await tx.song.create({
     data: {
+      bandId,
       title: p.title,
       notes:
-        p.artist && p.artist !== 'The Monkees'
+        p.artist && p.artist !== band.tributeTo
           ? `Originally by ${p.artist}`
           : null,
       youtubeUrl: p.youtubeUrl,
@@ -211,6 +230,7 @@ export async function addSongFromProposal(
     },
   })
   await logActivity(tx, {
+    bandId,
     userId,
     action: 'song.create',
     targetType: 'song',

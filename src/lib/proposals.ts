@@ -16,10 +16,11 @@ export type BoardProposal = {
 }
 
 /** Everything the Proposals page shows, in one query per list. */
-export async function getBoard(userId: string) {
-  const settings = await prisma.settings.findUnique({where: {id: 1}})
-  const threshold =
-    settings?.voteThreshold ?? Number(process.env.VOTE_THRESHOLD ?? 2)
+export async function getBoard(
+  userId: string,
+  band: {id: string; voteThreshold: number},
+) {
+  const threshold = band.voteThreshold
   const who = {
     select: {
       id: true,
@@ -31,7 +32,7 @@ export async function getBoard(userId: string) {
   } as const
   const [pending, approved, archived] = await Promise.all([
     prisma.proposal.findMany({
-      where: {status: 'PENDING'},
+      where: {bandId: band.id, status: 'PENDING'},
       orderBy: {createdAt: 'desc'},
       include: {
         proposer: who,
@@ -39,12 +40,12 @@ export async function getBoard(userId: string) {
       },
     }),
     prisma.proposal.findMany({
-      where: {status: 'APPROVED'},
+      where: {bandId: band.id, status: 'APPROVED'},
       orderBy: {updatedAt: 'desc'},
       take: 8,
     }),
     prisma.proposal.findMany({
-      where: {status: 'ARCHIVED'},
+      where: {bandId: band.id, status: 'ARCHIVED'},
       orderBy: {updatedAt: 'desc'},
       take: 30,
       include: {proposer: who},
@@ -52,7 +53,10 @@ export async function getBoard(userId: string) {
   ])
   // Link approved proposals to the song they became
   const songs = await prisma.song.findMany({
-    where: {title: {in: approved.map((a) => a.title), mode: 'insensitive'}},
+    where: {
+      bandId: band.id,
+      title: {in: approved.map((a) => a.title), mode: 'insensitive'},
+    },
     select: {id: true, title: true},
   })
   const songByTitle = new Map(songs.map((s) => [s.title.toLowerCase(), s.id]))

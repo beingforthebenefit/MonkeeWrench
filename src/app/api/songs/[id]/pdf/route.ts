@@ -10,9 +10,11 @@ import {route} from '@/lib/route'
 // GET /api/songs/:id/pdf?key=A&version=3&paper=A4&download=1
 export const GET = route(
   async (req: Request, {params}: {params: {id: string}}) => {
-    await requireSession()
+    const {band} = await requireSession()
     const url = new URL(req.url)
-    const song = await prisma.song.findUnique({where: {id: params.id}})
+    const song = await prisma.song.findFirst({
+      where: {id: params.id, bandId: band.id},
+    })
     if (!song) return new Response('Not Found', {status: 404})
     const n = Number(url.searchParams.get('version'))
     const version = await prisma.chartVersion.findFirst({
@@ -24,7 +26,9 @@ export const GET = route(
       include: {author: {select: {name: true, displayName: true, email: true}}},
     })
     if (!version) return new Response('Not Found', {status: 404})
-    const item = buildPdfItem(song, version, {key: url.searchParams.get('key')})
+    const item = buildPdfItem(band, song, version, {
+      key: url.searchParams.get('key'),
+    })
     const buf = await renderChartsPdf([item], {paper: paperFrom(url)})
     const suffix = n > 0 ? ` (v${version.number})` : ''
     return pdfResponse(

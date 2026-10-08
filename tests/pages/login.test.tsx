@@ -18,8 +18,14 @@ describe('LoginPage', () => {
   it('signs in with email and password and returns to the page asked for', async () => {
     const mod: any = await import('next-auth/react')
     mod.signIn.mockResolvedValue({ok: true, error: null})
-    const Page = (await import('@/app/login/page')).default
-    render(<Page />)
+    const Page = (await import('@/components/LoginForm')).default
+    render(
+      <Page
+        appName="Bandstand"
+        bandName={null}
+        iconUrl="/icons/default-192.png"
+      />,
+    )
     await userEvent.type(screen.getByLabelText('Email'), 'ken@example.com')
     await userEvent.type(
       screen.getByLabelText('Password'),
@@ -37,8 +43,14 @@ describe('LoginPage', () => {
   it('says so when the password is wrong', async () => {
     const mod: any = await import('next-auth/react')
     mod.signIn.mockResolvedValue({ok: false, error: 'CredentialsSignin'})
-    const Page = (await import('@/app/login/page')).default
-    render(<Page />)
+    const Page = (await import('@/components/LoginForm')).default
+    render(
+      <Page
+        appName="Bandstand"
+        bandName={null}
+        iconUrl="/icons/default-192.png"
+      />,
+    )
     await userEvent.type(screen.getByLabelText('Email'), 'ken@example.com')
     await userEvent.type(screen.getByLabelText('Password'), 'wrong')
     await userEvent.click(screen.getByRole('button', {name: 'Sign in'}))
@@ -47,8 +59,14 @@ describe('LoginPage', () => {
   })
 
   it('offers Google only when it is configured', async () => {
-    const Page = (await import('@/app/login/page')).default
-    const {unmount} = render(<Page />)
+    const Page = (await import('@/components/LoginForm')).default
+    const {unmount} = render(
+      <Page
+        appName="Bandstand"
+        bandName={null}
+        iconUrl="/icons/default-192.png"
+      />,
+    )
     expect(
       screen.queryByRole('button', {name: /Google/}),
     ).not.toBeInTheDocument()
@@ -57,7 +75,13 @@ describe('LoginPage', () => {
       credentials: {id: 'credentials'},
       google: {id: 'google'},
     }
-    render(<Page />)
+    render(
+      <Page
+        appName="Bandstand"
+        bandName={null}
+        iconUrl="/icons/default-192.png"
+      />,
+    )
     expect(
       await screen.findByRole('button', {name: /Sign in with Google/}),
     ).toBeInTheDocument()

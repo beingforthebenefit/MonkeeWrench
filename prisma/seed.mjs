@@ -2,72 +2,54 @@ import {PrismaClient, ProposalStatus} from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-const DEFAULT_ARTIST = 'The Monkees'
-
-function parseAllowlist() {
-  const raw = process.env.ADMIN_ALLOWLIST || ''
-  return raw
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-}
-
+/**
+ * Local development only: a demo band with a few proposals, so a fresh dev
+ * database has something on screen. Production never gets demo data (a fake
+ * member would show up on Rehearsals).
+ */
 async function main() {
-  // Idempotent settings seed
-  const threshold = Number(process.env.VOTE_THRESHOLD || 2)
-  const allowlist = parseAllowlist()
+  if (process.env.APP_ENV !== 'development') return
+  if (await prisma.band.count()) return
 
-  await prisma.settings.upsert({
-    where: {id: 1},
-    update: {voteThreshold: threshold, adminAllowlist: allowlist},
-    create: {id: 1, voteThreshold: threshold, adminAllowlist: allowlist},
+  const band = await prisma.band.create({
+    data: {slug: 'demo', name: 'Demo Band', tributeTo: 'The Monkees'},
+  })
+  const seedUser = await prisma.user.upsert({
+    where: {email: 'seed@example.com'},
+    update: {},
+    create: {email: 'seed@example.com', name: 'Seeder'},
+  })
+  await prisma.membership.create({
+    data: {userId: seedUser.id, bandId: band.id, isAdmin: true},
   })
 
-  // Demo data is for local development only: in production the fake
-  // "Seeder" user would show up as a band member (e.g. on Rehearsals).
-  if (process.env.APP_ENV !== 'development') return
-
-  const existing = await prisma.proposal.count()
-  if (existing > 0) return
-
-  // Seed a few proposals
   const demo = [
     {
       title: "I'm a Believer",
-      artist: DEFAULT_ARTIST,
       youtubeUrl: 'https://www.youtube.com/watch?v=XfuBREMXxts',
     },
     {
       title: 'Daydream Believer',
-      artist: DEFAULT_ARTIST,
       youtubeUrl: 'https://www.youtube.com/watch?v=sUzs5dlLrm0',
     },
-    {title: 'Pleasant Valley Sunday', artist: DEFAULT_ARTIST},
-    {title: 'Last Train to Clarksville', artist: DEFAULT_ARTIST},
+    {title: 'Pleasant Valley Sunday'},
+    {title: 'Last Train to Clarksville'},
   ]
-
-  // Create a synthetic user as proposer of seed items
-  const seedUser = await prisma.user.upsert({
-    where: {email: 'seed@monkee.wrench'},
-    update: {},
-    create: {email: 'seed@monkee.wrench', name: 'Seeder'},
-  })
-
   const created = await Promise.all(
     demo.map((d) =>
-      prisma.proposal.create({data: {...d, proposerId: seedUser.id}}),
+      prisma.proposal.create({
+        data: {
+          ...d,
+          artist: 'The Monkees',
+          bandId: band.id,
+          proposerId: seedUser.id,
+        },
+      }),
     ),
   )
-
-  // Mark a couple as approved to demo Setlist
-  if (created[0])
+  for (const p of created.slice(0, 2))
     await prisma.proposal.update({
-      where: {id: created[0].id},
-      data: {status: ProposalStatus.APPROVED},
-    })
-  if (created[1])
-    await prisma.proposal.update({
-      where: {id: created[1].id},
+      where: {id: p.id},
       data: {status: ProposalStatus.APPROVED},
     })
 }

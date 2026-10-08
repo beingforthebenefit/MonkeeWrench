@@ -48,7 +48,7 @@ describe('Proposals', () => {
   })
 
   it('shows who voted and how many more are needed', () => {
-    render(<Proposals board={board} isAdmin={false} />)
+    render(<Proposals board={board} isAdmin={false} tributeTo={null} />)
     expect(screen.getByText(/Ed, Ken · 1 more to add it/)).toBeInTheDocument()
     expect(screen.getByRole('link', {name: 'Chart ›'})).toHaveAttribute(
       'href',
@@ -57,7 +57,7 @@ describe('Proposals', () => {
   })
 
   it('votes with one tap and refreshes', async () => {
-    render(<Proposals board={board} isAdmin={false} />)
+    render(<Proposals board={board} isAdmin={false} tributeTo={null} />)
     await userEvent.click(screen.getByRole('button', {name: 'Vote'}))
     expect(globalThis.fetch).toHaveBeenCalledWith('/api/proposals/p1/vote', {
       method: 'POST',
@@ -66,9 +66,11 @@ describe('Proposals', () => {
   })
 
   it('gives admins "add to the book now"', async () => {
-    const {rerender} = render(<Proposals board={board} isAdmin={false} />)
+    const {rerender} = render(
+      <Proposals board={board} isAdmin={false} tributeTo={null} />,
+    )
     expect(screen.queryByText('Add to the book now')).not.toBeInTheDocument()
-    rerender(<Proposals board={board} isAdmin />)
+    rerender(<Proposals board={board} isAdmin tributeTo={null} />)
     const item = screen.getAllByRole('listitem')[0]
     await userEvent.click(
       within(item).getByRole('button', {name: 'More for Monkey Man'}),
@@ -87,7 +89,7 @@ describe('Proposals', () => {
         {...board.pending[0], mine: true, voters: [{name: 'Me', avatar: null}]},
       ],
     }
-    render(<Proposals board={voted} isAdmin />)
+    render(<Proposals board={voted} isAdmin tributeTo={null} />)
     const vote = screen.getByRole('button', {name: 'Voted ✓'})
     // The actions never wrap under the title: the row does not wrap at all
     expect(vote.parentElement?.className).toContain('shrink-0')

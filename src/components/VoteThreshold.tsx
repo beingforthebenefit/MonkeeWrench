@@ -14,7 +14,7 @@ export default function VoteThreshold({
   const [error, setError] = useState(false)
   async function save(n: number) {
     setValue(n)
-    const r = await fetch('/api/settings', {
+    const r = await fetch('/api/band', {
       method: 'PATCH',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({voteThreshold: n}),

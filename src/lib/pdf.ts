@@ -298,7 +298,7 @@ export function renderChartsPdf(
     margin: MARGIN,
     autoFirstPage: false,
     info: {
-      Title: items.length === 1 ? items[0].title : 'Monkee Business charts',
+      Title: items.length === 1 ? items[0].title : 'Charts',
     },
   })
   const chunks: Buffer[] = []
