@@ -115,6 +115,9 @@
   padding-right: 0.5em;
   min-height: 1.15em;
 }
+.chart-chord.chart-gap {
+  padding-right: 1.5em;
+}
 /* Repeat counts, N.C., bar lines and remarks in the chord row: not chords */
 .chart-note {
   font-family: var(--font-sans);

@@ -87,6 +87,8 @@ export default function AbcNotation({
         if (tab) tabOnly(el, scale)
         setFailed(!tunes.length)
         onError?.(warnings)
+        // Performance mode re-counts its pages around the new height
+        window.dispatchEvent(new Event('ms:chart-size'))
       })
       .catch(() => setFailed(true))
     return () => {

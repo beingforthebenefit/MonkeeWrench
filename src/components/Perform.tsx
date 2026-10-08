@@ -447,6 +447,28 @@ const FittedChart = forwardRef<
     window.addEventListener('resize', fit)
     return () => window.removeEventListener('resize', fit)
   }, [fit])
+
+  // Notation opened or closed: same text size, but the pages are counted
+  // again, staying on this page (or the last, if it is now shorter)
+  useEffect(() => {
+    const repage = () => {
+      const el = box.current
+      if (!el) return
+      const gap = size * GAP_EM
+      const n = Math.max(
+        1,
+        Math.ceil((el.scrollWidth + gap - 1) / (el.clientWidth + gap)),
+      )
+      setPages(n)
+      setPageState((p) => {
+        const keep = Math.min(p, n - 1)
+        el.scrollTo({left: keep * (el.clientWidth + gap), behavior: 'instant'})
+        return keep
+      })
+    }
+    window.addEventListener('ms:chart-size', repage)
+    return () => window.removeEventListener('ms:chart-size', repage)
+  }, [size])
   useEffect(() => onPage({page, pages}), [page, pages, onPage])
 
   const turn = useCallback(

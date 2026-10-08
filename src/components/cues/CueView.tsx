@@ -1,7 +1,7 @@
 'use client'
 
 import type {Cue} from '@/lib/cues'
-import AbcNotation from '@/components/cues/AbcNotation'
+import NotationBlock from '@/components/chart/NotationBlock'
 
 /**
  * One personal cue as it reads on the chart. Sized in em, so it follows the
@@ -50,7 +50,12 @@ export default function CueView({
         </figure>
       )}
       {cue.kind === 'ABC' && cue.text && (
-        <AbcNotation abc={cue.text} songKey={songKey} steps={steps} />
+        <NotationBlock
+          label="Your notation"
+          abc={cue.text}
+          songKey={songKey ?? null}
+          steps={steps}
+        />
       )}
     </div>
   )

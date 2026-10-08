@@ -298,7 +298,7 @@ export default function ChartEditor({
           <div
             className={`rounded-lg border border-line p-4 text-[17px] ${tab === 'preview' ? '' : 'hidden lg:block'}`}
           >
-            <ChartBody chart={chart} columns={false} />
+            <ChartBody chart={chart} columns={false} notationOpen />
           </div>
         </div>
       </section>

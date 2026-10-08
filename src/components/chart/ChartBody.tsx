@@ -1,6 +1,6 @@
 import type {ReactNode} from 'react'
 import {detectKey, isChord, transposeKey} from '@/lib/chordpro'
-import AbcNotation from '@/components/cues/AbcNotation'
+import NotationBlock from '@/components/chart/NotationBlock'
 import type {Chart, ChartLine, Section, Segment} from '@/lib/chordpro'
 
 /**
@@ -14,6 +14,7 @@ export default function ChartBody({
   className = '',
   top,
   extra,
+  notationOpen = false,
 }: {
   chart: Chart
   columns?: boolean
@@ -22,6 +23,8 @@ export default function ChartBody({
   top?: ReactNode
   /** Shown under a section's heading, by section index (personal cues) */
   extra?: (index: number) => ReactNode
+  /** Notation starts unfolded (the editor's preview); otherwise folded */
+  notationOpen?: boolean
 }) {
   if (!chart.sections.length)
     return (
@@ -39,6 +42,7 @@ export default function ChartBody({
           section={s}
           extra={extra?.(i)}
           songKey={s.abc ? originalKey(chart, s.abcSteps ?? 0) : null}
+          notationOpen={notationOpen}
         />
       ))}
     </div>
@@ -55,25 +59,33 @@ function ChartSection({
   section,
   extra,
   songKey,
+  notationOpen,
 }: {
   section: Section
   extra?: ReactNode
   /** The chart's original key, for notation without a K: line */
   songKey: string | null
+  notationOpen: boolean
 }) {
   const label =
     section.label ||
     // Unlabelled paragraphs, tab and notation need no heading
     (['tab', 'abc', 'part'].includes(section.type) ? '' : section.type)
-  const notation = section.abc ? (
-    <div className="chart-abc">
-      <AbcNotation
-        abc={section.abc}
-        songKey={songKey}
-        steps={section.abcSteps ?? 0}
-      />
-    </div>
-  ) : null
+  // Notation folds down to its heading, which is what opens it
+  if (section.abc)
+    return (
+      <section className="mb-[1.1em]">
+        {extra}
+        <NotationBlock
+          label={label || 'Notation'}
+          note={section.note}
+          abc={section.abc}
+          songKey={songKey}
+          steps={section.abcSteps ?? 0}
+          open={notationOpen}
+        />
+      </section>
+    )
   const allRuns = runs(section.lines)
   const units = allRuns.map((run, i) =>
     run[0].kind === 'tab' ? (
@@ -126,11 +138,10 @@ function ChartSection({
         <div className="chart-keep">
           {heading}
           {extra}
-          {notation ?? blocks[0]}
+          {blocks[0]}
         </div>
       )}
       {!heading && extra}
-      {!heading && notation}
       {blocks.length > (heading ? 1 : 0) && (
         <div
           className={`flex flex-col gap-[0.35em] ${heading ? 'mt-[0.35em]' : ''}`}
@@ -200,7 +211,13 @@ function Line({line}: {line: ChartLine}) {
             <span key={i} className="chart-seg">
               {hasChords && (
                 <span
-                  className={`chart-chord${seg.chord && !isChord(seg.chord) ? ' chart-note' : ''}`}
+                  className={`chart-chord${seg.chord && !isChord(seg.chord) ? ' chart-note' : ''}${
+                    // A chord over nothing (a bar before the vocal comes in):
+                    // spaces are narrow, so give it a bar's worth of room
+                    hasWords && seg.chord && !seg.lyric.trim()
+                      ? ' chart-gap'
+                      : ''
+                  }`}
                 >
                   {seg.chord ?? ''}
                   {!hasWords && seg.chord ? ' ' : ''}
