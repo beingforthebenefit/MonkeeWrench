@@ -1,8 +1,8 @@
-# Monkee Wrench
+# Bandstand
 
-[![CI](https://github.com/beingforthebenefit/MonkeeWrench/actions/workflows/ci.yml/badge.svg)](https://github.com/beingforthebenefit/MonkeeWrench/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/MonkeeWrench/badges/badges/tests.json)](https://github.com/beingforthebenefit/MonkeeWrench/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/MonkeeWrench/badges/badges/coverage.json)](https://beingforthebenefit.github.io/MonkeeWrench/)
+[![CI](https://github.com/beingforthebenefit/Bandstand/actions/workflows/ci.yml/badge.svg)](https://github.com/beingforthebenefit/Bandstand/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/Bandstand/badges/badges/tests.json)](https://github.com/beingforthebenefit/Bandstand/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/Bandstand/badges/badges/coverage.json)](https://beingforthebenefit.github.io/Bandstand/)
 
 **Bandstand**: a self-hosted hub for bands — chord charts with full version history, setlists, a stage performance mode, rehearsal availability, and song proposals. One install serves several bands; each can have its own name, icon and web address. Built with Next.js, NextAuth, Prisma/Postgres and Vitest. It started as Monkee Wrench, the hub for **Monkee Business** (still its name there), live at <https://members.monkeebusinessband.com>.
 
@@ -219,7 +219,7 @@ Workflow: `.github/workflows/ci.yml`.
 
 ## Coverage Report
 
-- Latest HTML report: https://beingforthebenefit.github.io/MonkeeWrench/
+- Latest HTML report: https://beingforthebenefit.github.io/Bandstand/
 - Coverage badge source is generated in CI and pushed to the `badges` branch as `badges/coverage.json`.
 
 ## File Map
