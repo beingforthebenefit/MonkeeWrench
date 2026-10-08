@@ -129,8 +129,11 @@ export function parseChordPro(source: string): Chart {
       const value = d[2] ?? ''
       const start = name.match(/^start_of_(\w+)$/)
       if (start) {
-        // Notation has no heading unless it is given one ("Horn riff")
-        open(start[1], value || (start[1] === 'abc' ? '' : cap(start[1])))
+        // Notation and tab have no heading unless given one ("Horn riff")
+        open(
+          start[1],
+          value || (['abc', 'tab'].includes(start[1]) ? '' : cap(start[1])),
+        )
         continue
       }
       if (/^end_of_\w+$/.test(name)) {
