@@ -38,7 +38,7 @@ The band hub for **Monkee Business**: chord charts with full version history, se
 - **Recent changes** (`/activity`): who changed what, everywhere.
 - **Proposals and voting**: a proposal that reaches the vote threshold joins the book as a song to learn.
 - **Auth**: email + password (not everyone in the band has Google). An admin adds members and generates each password on **Band members** (`/members`); it is shown once, with a ready-to-send message. Resetting or changing a password signs that person out everywhere. Repeated failures are throttled. Everything except sign-in requires an account (charts are copyrighted).
-- Phone and iPad layouts throughout ("Music Stand" design: chords in amber). Light, dark or match-device appearance under Account (per device).
+- Phone and iPad layouts throughout ("Music Stand" design: chords in amber). Light, dark or auto (match device) appearance from the sun/moon icon at the top right; one tap cycles them, remembered per device.
 - Installable: "Add to Home Screen" uses the band's monkey icon (`src/app/apple-icon.png`, `public/icons/*`, `src/app/manifest.ts`).
 
 ## Stack
@@ -86,8 +86,11 @@ Production runs on the `popos` server from `docker-compose.server.yml`, a standa
 2. Build and start (also the update command):
 
    ```bash
-   docker compose -f docker-compose.server.yml --env-file .env.production up -d --build
+   make deploy
+   # = docker compose -f docker-compose.server.yml --env-file .env.production up -d --build
    ```
+
+   Don't use `make prod` on the server: it shares the `monkeewrench` project name and replaces the production containers.
 
 The entrypoint applies migrations on start. The first admin: add the band with `scripts/import-members.ts` (or any user row with `isAdmin`), then `npx tsx scripts/set-password.ts you@example.com` inside the app container prints a password once; everyone else's comes from `/members`. Demo seed data is created only when `APP_ENV=development`. `GET /api/health` is public and queries the database (`{"ok":true,"songs":N}`); the container healthcheck and the server's monitoring use it.
 

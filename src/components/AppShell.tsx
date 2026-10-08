@@ -5,6 +5,7 @@ import {usePathname} from 'next/navigation'
 import {signOut, useSession} from 'next-auth/react'
 import {ReactNode} from 'react'
 import Dropdown from '@/components/Dropdown'
+import ThemeToggle from '@/components/ThemeToggle'
 
 const TABS = [
   {href: '/songs', label: 'Songs'},
@@ -56,6 +57,7 @@ export default function AppShell({children}: {children: ReactNode}) {
             })}
           </nav>
           <span className="flex-1 md:hidden" />
+          <ThemeToggle />
           {session?.user && (
             <Dropdown
               label="Account menu"
@@ -83,7 +85,7 @@ export default function AppShell({children}: {children: ReactNode}) {
               >
                 Band Discord ↗
               </a>
-              <MenuLink href="/account">Account &amp; display</MenuLink>
+              <MenuLink href="/account">Change password</MenuLink>
               {session.user.isAdmin && (
                 <MenuLink href="/members">Band members</MenuLink>
               )}

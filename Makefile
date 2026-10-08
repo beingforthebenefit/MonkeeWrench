@@ -26,6 +26,7 @@ help:
 	@echo "  dev-restart    Restart dev containers"
 	@echo "  prod           Build & run in prod (optimized)"
 	@echo "  prod-up        Run in prod without rebuild"
+	@echo "  deploy         Build & (re)start the live server stack (popos)"
 	@echo "  build          Next.js build inside app container"
 	@echo "  logs           Tail app+db logs"
 	@echo "  app-sh         Shell into app container"
@@ -77,6 +78,20 @@ prod: ## Build & run production image (prod override)
 .PHONY: prod-up
 prod-up: ## Run production stack without rebuild (prod override)
 	$(COMPOSE_PROD) up
+
+# The live site (members.monkeebusinessband.com) on popos. Not `prod`: that
+# stack shares the `monkeewrench` project name and would replace these containers.
+COMPOSE_SERVER ?= $(COMPOSE) -f docker-compose.server.yml --env-file .env.production
+
+.PHONY: deploy
+deploy: ## Build & (re)start production, then wait for it to report healthy
+	@test -f .env.production || { echo ".env.production is missing"; exit 1; }
+	$(COMPOSE_SERVER) up -d --build
+	@echo "Waiting for /api/health..."
+	@for i in $$(seq 1 45); do \
+	  curl -fsS http://localhost:7120/api/health 2>/dev/null | grep -q '"ok":true' && { curl -fsS http://localhost:7120/api/health; echo; exit 0; }; \
+	  sleep 2; \
+	done; echo "Not healthy after 90s: docker logs monkeewrench-app"; exit 1
 
 # ------------------------------------------------------------------------------
 # Build
