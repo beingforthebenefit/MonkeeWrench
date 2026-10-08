@@ -58,12 +58,15 @@ export default function SetlistEditor({
   initial,
   editedBy,
   editedAt,
+  canDelete = false,
 }: {
   id: string
   library: PickSong[]
   initial: Values
   editedBy: string
   editedAt: string
+  /** Admins only: the API refuses everyone else */
+  canDelete?: boolean
 }) {
   const router = useRouter()
   const [v, setV] = useState<Values>(initial)
@@ -121,6 +124,22 @@ export default function SetlistEditor({
     router.refresh()
   }
 
+  async function remove() {
+    if (
+      !window.confirm(
+        `Delete the setlist “${saved.name}”? This can't be undone.`,
+      )
+    )
+      return
+    setBusy(true)
+    setError(null)
+    const r = await fetch(`/api/setlists/${id}`, {method: 'DELETE'})
+    setBusy(false)
+    if (!r.ok) return setError('Could not delete the setlist.')
+    router.push('/setlists')
+    router.refresh()
+  }
+
   const results = library.filter((s) =>
     s.title.toLowerCase().includes(q.trim().toLowerCase()),
   )
@@ -171,7 +190,7 @@ export default function SetlistEditor({
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
           href={`/perform/${id}`}
-          className="inline-flex min-h-11 items-center rounded-lg bg-amber px-4 font-extrabold text-ink no-underline"
+          className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 font-extrabold text-on-accent no-underline"
         >
           ▶ Perform
         </Link>
@@ -284,6 +303,17 @@ export default function SetlistEditor({
         />
       </label>
 
+      {canDelete && (
+        <button
+          type="button"
+          onClick={remove}
+          disabled={busy}
+          className="mt-8 min-h-11 text-sm text-bad underline disabled:opacity-50"
+        >
+          Delete this setlist
+        </button>
+      )}
+
       {(dirty || error) && (
         <div className="fixed inset-x-0 bottom-[max(env(safe-area-inset-bottom),16px)] z-20 mx-auto flex max-w-3xl items-center gap-3 px-4">
           <div className="flex flex-1 items-center gap-3 rounded-xl border border-line-2 bg-panel p-3 shadow-xl">
@@ -301,7 +331,7 @@ export default function SetlistEditor({
               type="button"
               onClick={save}
               disabled={busy}
-              className="min-h-11 rounded-lg bg-amber px-5 font-bold text-ink disabled:opacity-50"
+              className="min-h-11 rounded-lg bg-accent px-5 font-bold text-on-accent disabled:opacity-50"
             >
               {busy ? 'Saving…' : 'Save'}
             </button>

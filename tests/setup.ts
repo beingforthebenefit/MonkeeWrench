@@ -1,9 +1,8 @@
 // Vitest + Testing Library setup
 import '@testing-library/jest-dom/vitest'
 
-// Some UI libs (MUI) expect matchMedia in JSDOM
-if (typeof window !== 'undefined' && !('matchMedia' in window)) {
-  // @ts-expect-error - define for tests
+// JSDOM has no matchMedia (theme and perform mode read it); nothing matches
+if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
     matches: false,
     media: query,

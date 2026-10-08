@@ -62,7 +62,7 @@ export default async function SetlistView({params}: {params: {id: string}}) {
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
           href={`/perform/${set.id}`}
-          className="inline-flex min-h-11 items-center rounded-lg bg-amber px-4 font-extrabold text-ink no-underline"
+          className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 font-extrabold text-on-accent no-underline"
         >
           ▶ Perform
         </Link>
@@ -113,7 +113,7 @@ export default async function SetlistView({params}: {params: {id: string}}) {
               )}
             </div>
             {r.note && (
-              <p className="mt-1 pl-9 text-[15px] text-[#f2d18a]">{r.note}</p>
+              <p className="mt-1 pl-9 text-[15px] text-warn-fg">{r.note}</p>
             )}
           </li>
         ))}

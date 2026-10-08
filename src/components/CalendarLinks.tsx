@@ -2,6 +2,7 @@
 
 import {useState} from 'react'
 import {googleCalendarUrl} from '@/lib/ics'
+import Dropdown from '@/components/Dropdown'
 
 type R = {
   id: string
@@ -26,30 +27,28 @@ export function AddToCalendar({r}: {r: R}) {
       .join('\n'),
   })
   return (
-    <details className="relative">
-      <summary className="flex min-h-9 cursor-pointer list-none items-center text-sm font-semibold text-sky">
-        Add to calendar ▾
-      </summary>
-      <div className="absolute left-0 z-10 mt-1 w-60 rounded-xl border border-line-2 bg-panel p-1.5 shadow-xl">
-        <a
-          href={`/api/rehearsals/${r.id}/ics`}
-          className="block rounded-lg px-3 py-2.5 no-underline hover:bg-line"
-        >
-          Apple Calendar / Outlook
-          <span className="block text-xs text-faint">
-            Downloads an .ics file
-          </span>
-        </a>
-        <a
-          href={google}
-          target="_blank"
-          rel="noreferrer"
-          className="block rounded-lg px-3 py-2.5 no-underline hover:bg-line"
-        >
-          Google Calendar ↗
-        </a>
-      </div>
-    </details>
+    <Dropdown
+      trigger="Add to calendar ▾"
+      align="left"
+      triggerClassName="flex min-h-9 items-center text-sm font-semibold text-sky"
+      panelClassName="w-60"
+    >
+      <a
+        href={`/api/rehearsals/${r.id}/ics`}
+        className="block rounded-lg px-3 py-2.5 no-underline hover:bg-line"
+      >
+        Apple Calendar / Outlook
+        <span className="block text-xs text-faint">Downloads an .ics file</span>
+      </a>
+      <a
+        href={google}
+        target="_blank"
+        rel="noreferrer"
+        className="block rounded-lg px-3 py-2.5 no-underline hover:bg-line"
+      >
+        Google Calendar ↗
+      </a>
+    </Dropdown>
   )
 }
 
@@ -101,7 +100,7 @@ export function SubscribeCalendar() {
               <div className="flex flex-wrap gap-2">
                 <a
                   href={webcal}
-                  className="inline-flex min-h-11 items-center rounded-lg bg-amber px-4 font-bold text-ink no-underline"
+                  className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 font-bold text-on-accent no-underline"
                 >
                   Apple Calendar / Outlook
                 </a>

@@ -279,7 +279,7 @@ export default function ChartEditor({
           type="button"
           onClick={save}
           disabled={saving || (!chartChanged && !fieldsChanged)}
-          className="min-h-11 rounded-lg bg-amber px-5 font-bold text-ink disabled:opacity-40"
+          className="min-h-11 rounded-lg bg-accent px-5 font-bold text-on-accent disabled:opacity-40"
         >
           {saving ? 'Saving…' : 'Save'}
         </button>

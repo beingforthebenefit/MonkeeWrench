@@ -54,4 +54,15 @@ describe('ChartBody', () => {
       'e|---0---|',
     )
   })
+
+  it('keeps a section heading with its first line, so a column never ends on a bare label', () => {
+    const chart = parseChordPro(
+      '{start_of_chorus: Chorus}\n[C]one\n[G]two\n{end_of_chorus}\n',
+    )
+    const {container} = render(<ChartBody chart={chart} />)
+    const keep = container.querySelector('.chart-keep')!
+    expect(keep.querySelector('h3')?.textContent).toBe('Chorus')
+    expect(keep.querySelectorAll('.chart-line')).toHaveLength(1)
+    expect(container.querySelectorAll('.chart-line')).toHaveLength(2)
+  })
 })

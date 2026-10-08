@@ -102,7 +102,7 @@ export default async function SetlistsPage() {
             </Link>
             <Link
               href={`/perform/${next.id}`}
-              className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-amber font-extrabold text-ink no-underline"
+              className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-accent font-extrabold text-on-accent no-underline"
             >
               <PlayIcon /> Perform
             </Link>

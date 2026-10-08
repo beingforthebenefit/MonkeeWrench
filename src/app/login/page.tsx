@@ -90,7 +90,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={busy}
-          className="mt-6 min-h-12 w-full rounded-xl bg-amber text-[17px] font-extrabold text-ink disabled:opacity-50"
+          className="mt-6 min-h-12 w-full rounded-xl bg-accent text-[17px] font-extrabold text-on-accent disabled:opacity-50"
         >
           {busy ? 'Signing in…' : 'Sign in'}
         </button>

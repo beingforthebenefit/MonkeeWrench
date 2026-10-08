@@ -37,7 +37,7 @@ export default function RestoreButton({
           type="button"
           onClick={restore}
           disabled={state === 'busy'}
-          className="min-h-11 rounded-lg bg-amber px-4 font-bold text-ink"
+          className="min-h-11 rounded-lg bg-accent px-4 font-bold text-on-accent"
         >
           Restore
         </button>

@@ -144,7 +144,7 @@ export default function ChartScreen({
           <button
             type="button"
             onClick={() => setPdfOpen(true)}
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-amber px-4 font-bold text-ink"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-accent px-4 font-bold text-on-accent"
           >
             <DownloadIcon /> PDF
           </button>

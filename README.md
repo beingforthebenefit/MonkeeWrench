@@ -32,13 +32,14 @@ The band hub for **Monkee Business**: chord charts with full version history, se
 - **Charts**: every song's chart is ChordPro text, rendered as chords over lyrics. Transpose and text size are remembered per device. Every section is always written out in full — no "same as verse 1".
 - **History**: every save is a new version with author, date and an optional note; a musician-readable diff between versions; a PDF of any version; admins can restore (which saves a new version, so nothing is lost). Two people saving at once can't overwrite each other: the second save is refused with a 409.
 - **PDFs**: generated on request — one song in any key, or a whole setlist in order with each song's set key and note. Letter or A4. The footer stamps the version and editor, so an old printout is obvious.
-- **Setlists**: drag (or up/down) to reorder, a key and a note per song (e.g. vocal assignments).
-- **Performance mode** (`/perform/:id`): black, chart-only, fitted to the screen; long songs page instead of shrinking. Next/previous by edge tap, swipe, or a Bluetooth page-turn pedal (arrow/page keys). Keeps the screen awake; the whole set loads up front.
+- **Setlists**: drag (or up/down) to reorder, a key and a note per song (e.g. vocal assignments). Admins can delete a setlist from its edit page.
+- **Performance mode** (`/perform/:id`): chart-only, two layouts with a toggle in the header (remembered per device). **Pages** (default on iPad/desktop): fitted to the screen in columns; long songs page instead of shrinking. **Scroll** (default on phones): one tall single column, never multiple columns, so you never scroll back up mid-song. Next/previous by edge tap, swipe, or a Bluetooth page-turn pedal (arrow/page keys): pedals turn the page or scroll a screenful first, then change song. A section heading always stays with its first line. Keeps the screen awake; the whole set loads up front.
 - **Rehearsals**: everyone marks the days they can't make (Free / PM out / Out); best dates for the next two weeks; schedule a rehearsal. People who haven't answered are named and never counted as free.
 - **Recent changes** (`/activity`): who changed what, everywhere.
 - **Proposals and voting**: a proposal that reaches the vote threshold joins the book as a song to learn.
 - **Auth**: email + password (not everyone in the band has Google). An admin adds members and generates each password on **Band members** (`/members`); it is shown once, with a ready-to-send message. Resetting or changing a password signs that person out everywhere. Repeated failures are throttled. Everything except sign-in requires an account (charts are copyrighted).
-- Phone and iPad layouts throughout ("Music Stand" design: dark, chords in amber).
+- Phone and iPad layouts throughout ("Music Stand" design: chords in amber). Light, dark or match-device appearance under Account (per device).
+- Installable: "Add to Home Screen" uses the band's monkey icon (`src/app/apple-icon.png`, `public/icons/*`, `src/app/manifest.ts`).
 
 ## Stack
 

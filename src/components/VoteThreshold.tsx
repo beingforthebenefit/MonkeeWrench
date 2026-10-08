@@ -41,7 +41,7 @@ export default function VoteThreshold({
               role="radio"
               aria-checked={value === n}
               onClick={() => save(n)}
-              className={`h-11 w-11 rounded-lg font-mono font-bold ${value === n ? 'bg-amber text-ink' : 'border border-line-2'}`}
+              className={`h-11 w-11 rounded-lg font-mono font-bold ${value === n ? 'bg-accent text-on-accent' : 'border border-line-2'}`}
             >
               {n}
             </button>

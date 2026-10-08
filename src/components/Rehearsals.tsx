@@ -25,10 +25,10 @@ type RehearsalRow = {
 }
 
 const STATES: {kind: Kind | null; label: string; on: string}[] = [
-  {kind: null, label: 'Free', on: 'bg-[#1f3a2f] text-[#b6f0d4]'},
-  {kind: 'PREFER_NOT', label: 'Prefer not', on: 'bg-[#20304a] text-[#b9d4ff]'},
-  {kind: 'PM_OUT', label: 'PM out', on: 'bg-[#3a3220] text-[#f2d18a]'},
-  {kind: 'OUT', label: 'Out', on: 'bg-[#4a2a26] text-[#ffb3a6]'},
+  {kind: null, label: 'Free', on: 'bg-good-bg text-good-fg'},
+  {kind: 'PREFER_NOT', label: 'Prefer not', on: 'bg-info-bg text-info-fg'},
+  {kind: 'PM_OUT', label: 'PM out', on: 'bg-warn-bg text-warn-fg'},
+  {kind: 'OUT', label: 'Out', on: 'bg-bad-bg text-bad-fg'},
 ]
 
 export default function Rehearsals({
@@ -202,13 +202,13 @@ export default function Rehearsals({
                     {d.pmOut.length || d.preferNot.length ? (
                       <>
                         {d.pmOut.length > 0 && (
-                          <span className="text-[#f2d18a]">
+                          <span className="text-warn-fg">
                             Evening only (afternoon out: {d.pmOut.join(', ')})
                           </span>
                         )}
                         {d.pmOut.length > 0 && d.preferNot.length > 0 && ' · '}
                         {d.preferNot.length > 0 && (
-                          <span className="text-[#b9d4ff]">
+                          <span className="text-info-fg">
                             Would rather not: {d.preferNot.join(', ')}
                           </span>
                         )}
@@ -397,13 +397,13 @@ export default function Rehearsals({
                           <span
                             className={`inline-flex h-7 min-w-12 items-center justify-center rounded font-mono text-xs font-bold ${
                               k === 'OUT'
-                                ? 'bg-[#4a2a26] text-[#ffb3a6]'
+                                ? 'bg-bad-bg text-bad-fg'
                                 : k === 'PM_OUT'
-                                  ? 'bg-[#3a3220] text-[#f2d18a]'
+                                  ? 'bg-warn-bg text-warn-fg'
                                   : k === 'PREFER_NOT'
-                                    ? 'bg-[#20304a] text-[#b9d4ff]'
+                                    ? 'bg-info-bg text-info-fg'
                                     : m.answered
-                                      ? 'bg-[#1f3a2f] text-[#b6f0d4]'
+                                      ? 'bg-good-bg text-good-fg'
                                       : 'border border-dashed border-line-2 text-faint'
                             }`}
                           >
@@ -557,7 +557,7 @@ function RangeForm({
       <button
         type="submit"
         disabled={busy || !from || !to}
-        className="min-h-11 rounded-lg bg-amber font-bold text-ink disabled:opacity-40"
+        className="min-h-11 rounded-lg bg-accent font-bold text-on-accent disabled:opacity-40"
       >
         {busy ? 'Saving…' : 'Mark these days'}
       </button>
@@ -610,7 +610,7 @@ function PlanForm({date, onDone}: {date: string; onDone: () => void}) {
       <button
         type="submit"
         disabled={busy}
-        className="min-h-11 self-end rounded-lg bg-amber px-4 font-bold text-ink disabled:opacity-50"
+        className="min-h-11 self-end rounded-lg bg-accent px-4 font-bold text-on-accent disabled:opacity-50"
       >
         {busy ? 'Saving…' : `Set for ${formatDay(date)}`}
       </button>

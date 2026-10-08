@@ -1,0 +1,36 @@
+import React from 'react'
+import {describe, it, expect, vi} from 'vitest'
+import {render, screen} from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import Perform from '@/components/Perform'
+
+vi.mock('next/link', () => ({
+  default: ({children, ...p}: any) => <a {...p}>{children}</a>,
+}))
+
+const songs = [
+  {
+    id: 's1',
+    title: 'Invented Song',
+    leadSinger: null,
+    source: '{start_of_verse: Verse 1}\n[C]la la [G]la\n{end_of_verse}\n',
+    key: null,
+    note: null,
+  },
+]
+
+// jsdom has no scrolling; scroll mode jumps to the top of each song
+window.scrollTo = vi.fn() as any
+
+describe('Perform', () => {
+  it('switches between pages and scroll, and remembers the choice', async () => {
+    localStorage.clear()
+    // jsdom's matchMedia matches nothing, so this is a wide screen: pages
+    render(<Perform setId="x" name="Set" songs={songs} />)
+    await userEvent.click(screen.getByRole('button', {name: /one scrolling/}))
+    expect(localStorage.getItem('mw:perform-mode')).toBe('"scroll"')
+    await userEvent.click(screen.getByRole('button', {name: 'Show as pages'}))
+    expect(localStorage.getItem('mw:perform-mode')).toBe('"pages"')
+    localStorage.clear()
+  })
+})

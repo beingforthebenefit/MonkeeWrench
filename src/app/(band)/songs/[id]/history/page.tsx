@@ -163,7 +163,7 @@ export default async function HistoryPage({
               {diff.map((r, i) => (
                 <div
                   key={i}
-                  className={`flex gap-4 px-5 py-0.5 ${r.kind === 'added' ? 'bg-[#1d3a2c] text-[#b6f0d4]' : r.kind === 'removed' ? 'bg-[#3a2224] text-[#ffb3a6] line-through' : ''}`}
+                  className={`flex gap-4 px-5 py-0.5 ${r.kind === 'added' ? 'bg-good-bg text-good-fg' : r.kind === 'removed' ? 'bg-bad-bg text-bad-fg line-through' : ''}`}
                 >
                   <span aria-hidden="true" className="w-3 font-bold">
                     {r.kind === 'added' ? '+' : r.kind === 'removed' ? '−' : ''}

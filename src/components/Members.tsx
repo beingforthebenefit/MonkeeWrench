@@ -139,7 +139,7 @@ export default function Members({
                 <button
                   type="button"
                   onClick={() => newPassword(m)}
-                  className={`min-h-11 rounded-lg px-3 text-sm font-semibold ${m.hasPassword ? 'border border-line-2' : 'bg-amber text-ink'}`}
+                  className={`min-h-11 rounded-lg px-3 text-sm font-semibold ${m.hasPassword ? 'border border-line-2' : 'bg-accent text-on-accent'}`}
                 >
                   {m.hasPassword ? 'Reset password' : 'Create password'}
                 </button>
@@ -221,7 +221,7 @@ function PasswordNotice({
         <button
           type="button"
           onClick={() => copy('msg', message)}
-          className="min-h-11 rounded-lg bg-amber px-3 text-sm font-bold text-ink"
+          className="min-h-11 rounded-lg bg-accent px-3 text-sm font-bold text-on-accent"
         >
           {copied === 'msg' ? 'Copied ✓' : 'Copy message to send'}
         </button>
@@ -287,7 +287,7 @@ function AddMember({onAdded}: {onAdded: () => void}) {
       </label>
       <button
         type="submit"
-        className="min-h-11 rounded-lg bg-amber font-bold text-ink sm:col-span-3"
+        className="min-h-11 rounded-lg bg-accent font-bold text-on-accent sm:col-span-3"
       >
         Add
       </button>

@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import {usePathname} from 'next/navigation'
 import {signOut, useSession} from 'next-auth/react'
-import {ReactNode, useState} from 'react'
+import {ReactNode} from 'react'
+import Dropdown from '@/components/Dropdown'
 
 const TABS = [
   {href: '/songs', label: 'Songs'},
@@ -25,7 +26,6 @@ function isActive(pathname: string, href: string) {
 export default function AppShell({children}: {children: ReactNode}) {
   const pathname = usePathname() ?? '/'
   const {data: session} = useSession()
-  const [menuOpen, setMenuOpen] = useState(false)
 
   if (BARE.some((r) => r.test(pathname))) return <>{children}</>
 
@@ -57,15 +57,11 @@ export default function AppShell({children}: {children: ReactNode}) {
           </nav>
           <span className="flex-1 md:hidden" />
           {session?.user && (
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setMenuOpen((o) => !o)}
-                aria-expanded={menuOpen}
-                aria-label="Account menu"
-                className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-panel font-bold"
-              >
-                {session.user.image ? (
+            <Dropdown
+              label="Account menu"
+              triggerClassName="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-panel font-bold"
+              trigger={
+                session.user.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={session.user.image}
@@ -74,61 +70,32 @@ export default function AppShell({children}: {children: ReactNode}) {
                   />
                 ) : (
                   name.charAt(0).toUpperCase()
-                )}
-              </button>
-              {menuOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-xl border border-line-2 bg-panel p-2 shadow-xl">
-                  <p className="px-3 py-2 text-sm text-muted">{name}</p>
-                  <Link
-                    href="/activity"
-                    onClick={() => setMenuOpen(false)}
-                    className="block rounded-lg px-3 py-2.5 no-underline hover:bg-line"
-                  >
-                    Recent changes
-                  </Link>
-                  <a
-                    href={DISCORD_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block rounded-lg px-3 py-2.5 no-underline hover:bg-line"
-                  >
-                    Band Discord ↗
-                  </a>
-                  <Link
-                    href="/account"
-                    onClick={() => setMenuOpen(false)}
-                    className="block rounded-lg px-3 py-2.5 no-underline hover:bg-line"
-                  >
-                    Change password
-                  </Link>
-                  {session.user.isAdmin && (
-                    <Link
-                      href="/members"
-                      onClick={() => setMenuOpen(false)}
-                      className="block rounded-lg px-3 py-2.5 no-underline hover:bg-line"
-                    >
-                      Band members
-                    </Link>
-                  )}
-                  {session.user.isAdmin && (
-                    <Link
-                      href="/admin"
-                      onClick={() => setMenuOpen(false)}
-                      className="block rounded-lg px-3 py-2.5 no-underline hover:bg-line"
-                    >
-                      Admin
-                    </Link>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => signOut({callbackUrl: '/login'})}
-                    className="block w-full rounded-lg px-3 py-2.5 text-left hover:bg-line"
-                  >
-                    Sign out
-                  </button>
-                </div>
+                )
+              }
+            >
+              <p className="px-3 py-2 text-sm text-muted">{name}</p>
+              <MenuLink href="/activity">Recent changes</MenuLink>
+              <a
+                href={DISCORD_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block rounded-lg px-3 py-2.5 no-underline hover:bg-line"
+              >
+                Band Discord ↗
+              </a>
+              <MenuLink href="/account">Account &amp; display</MenuLink>
+              {session.user.isAdmin && (
+                <MenuLink href="/members">Band members</MenuLink>
               )}
-            </div>
+              {session.user.isAdmin && <MenuLink href="/admin">Admin</MenuLink>}
+              <button
+                type="button"
+                onClick={() => signOut({callbackUrl: '/login'})}
+                className="block w-full rounded-lg px-3 py-2.5 text-left hover:bg-line"
+              >
+                Sign out
+              </button>
+            </Dropdown>
           )}
         </header>
         {/* Phones: the tabs sit under the title bar, at the top (not a bottom bar) */}
@@ -154,5 +121,16 @@ export default function AppShell({children}: {children: ReactNode}) {
 
       <div className="flex-1">{children}</div>
     </div>
+  )
+}
+
+function MenuLink({href, children}: {href: string; children: ReactNode}) {
+  return (
+    <Link
+      href={href}
+      className="block rounded-lg px-3 py-2.5 no-underline hover:bg-line"
+    >
+      {children}
+    </Link>
   )
 }

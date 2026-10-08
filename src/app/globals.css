@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 
-/* "Music Stand" — dark, high-contrast, chords in amber. Read on a stand. */
+/* "Music Stand" — high-contrast, chords in amber. Read on a stand. Dark by
+   default; html[data-theme='light'] (set before paint from the member's
+   choice or the device setting, see src/lib/theme.ts) swaps the palette. */
 @theme {
   --color-ink: #111315;
   --color-stage: #000000;
@@ -11,11 +13,24 @@
   --color-text: #e9e6df;
   --color-muted: #b9b4aa;
   --color-faint: #8e8a82;
+  /* amber is for text (chords, keys); accent is the button fill, and
+     on-accent the text on it: both stay the same in either theme */
   --color-amber: #f2b134;
   --color-amber-hi: #ffd27a;
+  --color-accent: #f2b134;
+  --color-on-accent: #111315;
   --color-sky: #7fb2ff;
   --color-good: #6fd3a5;
   --color-bad: #ff9f8a;
+  /* Tinted chips and highlights: availability, diffs, set notes */
+  --color-good-bg: #1f3a2f;
+  --color-good-fg: #b6f0d4;
+  --color-info-bg: #20304a;
+  --color-info-fg: #b9d4ff;
+  --color-warn-bg: #3a3220;
+  --color-warn-fg: #f2d18a;
+  --color-bad-bg: #4a2a26;
+  --color-bad-fg: #ffb3a6;
   --font-sans: var(--font-archivo), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 }
@@ -24,6 +39,33 @@
 @layer base {
   :root {
     color-scheme: dark;
+  }
+
+  :root[data-theme='light'] {
+    color-scheme: light;
+    --color-ink: #f7f5f0;
+    --color-stage: #ffffff;
+    --color-panel: #ffffff;
+    --color-panel-2: #f1eee8;
+    --color-line: #e3ded4;
+    --color-line-2: #cdc6b8;
+    --color-text: #1a1c1e;
+    --color-muted: #57524a;
+    --color-faint: #6f695f;
+    /* Darker amber: the stage amber is unreadable as text on white */
+    --color-amber: #9c5a00;
+    --color-amber-hi: #7a4600;
+    --color-sky: #1f5fb8;
+    --color-good: #1b7a4c;
+    --color-bad: #b3361d;
+    --color-good-bg: #dcf2e6;
+    --color-good-fg: #145c3a;
+    --color-info-bg: #dfe9fb;
+    --color-info-fg: #1f4a8a;
+    --color-warn-bg: #fbf0d3;
+    --color-warn-fg: #6e4a00;
+    --color-bad-bg: #fbe0da;
+    --color-bad-fg: #962a15;
   }
 
   html,
@@ -95,6 +137,10 @@
 }
 .chart-tab {
   white-space: pre;
+}
+/* A section heading plus its first line: never split across columns/pages */
+.chart-keep {
+  break-inside: avoid;
 }
 .chart-columns {
   /* In em, so bigger text means fewer, wider columns */

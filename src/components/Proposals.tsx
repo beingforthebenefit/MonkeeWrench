@@ -5,6 +5,7 @@ import {useRouter} from 'next/navigation'
 import {useEffect, useState} from 'react'
 import type {Board, BoardProposal} from '@/lib/proposals'
 import {shortDate} from '@/lib/dates'
+import Dropdown from '@/components/Dropdown'
 
 export default function Proposals({
   board,
@@ -63,7 +64,7 @@ export default function Proposals({
           type="button"
           onClick={() => setProposing(!proposing)}
           aria-expanded={proposing}
-          className="min-h-11 shrink-0 rounded-lg bg-amber px-4 font-bold text-ink"
+          className="min-h-11 shrink-0 rounded-lg bg-accent px-4 font-bold text-on-accent"
         >
           Propose a song
         </button>
@@ -217,8 +218,10 @@ function ProposalRow({
   if (editing)
     return <EditForm p={p} onDone={() => (setEditing(false), onSaved())} />
   return (
-    <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
-      <div className="min-w-0 flex-1 basis-64">
+    // The buttons always stay at the right; a long title wraps instead, so
+    // the row keeps its shape when "Vote" becomes the wider "Voted ✓"
+    <div className="flex items-start gap-3">
+      <div className="min-w-0 flex-1">
         <p className="text-lg font-bold leading-snug">
           {p.title} <span className="font-normal text-muted">· {p.artist}</span>
         </p>
@@ -261,7 +264,7 @@ function ProposalRow({
               <span
                 key={i}
                 aria-hidden="true"
-                className={`h-2 w-7 rounded-full ${i < p.voters.length ? 'bg-amber' : 'bg-line-2'}`}
+                className={`h-2 w-7 rounded-full ${i < p.voters.length ? 'bg-accent' : 'bg-line-2'}`}
               />
             ),
           )}
@@ -271,33 +274,30 @@ function ProposalRow({
           </span>
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1">
         <button
           type="button"
           onClick={onVote}
           disabled={busy}
           aria-pressed={p.mine}
-          className={`min-h-11 rounded-lg px-4 font-bold disabled:opacity-50 ${p.mine ? 'bg-amber text-ink' : 'border border-line-2'}`}
+          className={`min-h-11 whitespace-nowrap rounded-lg px-4 font-bold disabled:opacity-50 ${p.mine ? 'bg-accent text-on-accent' : 'border border-line-2'}`}
         >
           {p.mine ? 'Voted ✓' : 'Vote'}
         </button>
         {isAdmin && (
-          <details className="relative">
-            <summary
-              className="flex min-h-11 cursor-pointer list-none items-center rounded-lg px-3 text-muted"
-              aria-label={`More for ${p.title}`}
-            >
-              •••
-            </summary>
-            <div className="absolute right-0 z-10 mt-1 w-48 rounded-xl border border-line-2 bg-panel p-1.5 shadow-xl">
-              <MenuButton onClick={onApprove}>Add to the book now</MenuButton>
-              <MenuButton onClick={() => setEditing(true)}>Edit</MenuButton>
-              <MenuButton onClick={onArchive}>Archive</MenuButton>
-              <MenuButton onClick={onDelete} danger>
-                Delete
-              </MenuButton>
-            </div>
-          </details>
+          <Dropdown
+            trigger="•••"
+            label={`More for ${p.title}`}
+            triggerClassName="flex min-h-11 items-center rounded-lg px-3 text-muted"
+            panelClassName="w-52"
+          >
+            <MenuButton onClick={onApprove}>Add to the book now</MenuButton>
+            <MenuButton onClick={() => setEditing(true)}>Edit</MenuButton>
+            <MenuButton onClick={onArchive}>Archive</MenuButton>
+            <MenuButton onClick={onDelete} danger>
+              Delete
+            </MenuButton>
+          </Dropdown>
         )}
       </div>
     </div>
@@ -402,7 +402,7 @@ function ProposeForm({onDone}: {onDone: () => void}) {
       />
       <button
         type="submit"
-        className="min-h-11 rounded-lg bg-amber font-bold text-ink sm:col-span-2"
+        className="min-h-11 rounded-lg bg-accent font-bold text-on-accent sm:col-span-2"
       >
         Propose it
       </button>
@@ -451,7 +451,7 @@ function EditForm({p, onDone}: {p: BoardProposal; onDone: () => void}) {
       <div className="flex gap-2 sm:col-span-3">
         <button
           type="submit"
-          className="min-h-11 rounded-lg bg-amber px-4 font-bold text-ink"
+          className="min-h-11 rounded-lg bg-accent px-4 font-bold text-on-accent"
         >
           Save
         </button>

@@ -27,34 +27,48 @@ export default function ChartBody({
 
 function ChartSection({section}: {section: Section}) {
   const label = section.label || (section.type === 'tab' ? '' : section.type)
+  const blocks = runs(section.lines).map((run, i) =>
+    run[0].kind === 'tab' ? (
+      // One scroll area per tab block, so the strings move together
+      <div key={i} className="chart-tab-block" data-hscroll="">
+        {run.map((l, j) => (
+          <div key={j} className="chart-tab">
+            {l.kind === 'tab' ? l.text : ''}
+          </div>
+        ))}
+      </div>
+    ) : (
+      run.map((l, j) => <Line key={`${i}-${j}`} line={l} />)
+    ),
+  )
+  const heading = (label || section.note) && (
+    <h3 className="mb-[0.4em] text-[0.62em] font-bold uppercase tracking-[0.15em] text-sky">
+      {label}
+      {section.note && (
+        <span className="ml-2 normal-case tracking-normal text-muted">
+          {section.note}
+        </span>
+      )}
+    </h3>
+  )
+  // The heading and the section's first line are one unbreakable block, so
+  // a column or page never ends on a bare "Chorus". (break-after: avoid on
+  // the heading alone is ignored by Safari in multi-column layout.)
   return (
     <section className="mb-[1.1em]">
-      {(label || section.note) && (
-        <h3 className="mb-[0.4em] text-[0.62em] font-bold uppercase tracking-[0.15em] text-sky break-after-avoid">
-          {label}
-          {section.note && (
-            <span className="ml-2 normal-case tracking-normal text-muted">
-              {section.note}
-            </span>
-          )}
-        </h3>
+      {heading && (
+        <div className="chart-keep">
+          {heading}
+          {blocks[0]}
+        </div>
       )}
-      <div className="flex flex-col gap-[0.35em]">
-        {runs(section.lines).map((run, i) =>
-          run[0].kind === 'tab' ? (
-            // One scroll area per tab block, so the strings move together
-            <div key={i} className="chart-tab-block" data-hscroll="">
-              {run.map((l, j) => (
-                <div key={j} className="chart-tab">
-                  {l.kind === 'tab' ? l.text : ''}
-                </div>
-              ))}
-            </div>
-          ) : (
-            run.map((l, j) => <Line key={`${i}-${j}`} line={l} />)
-          ),
-        )}
-      </div>
+      {blocks.length > (heading ? 1 : 0) && (
+        <div
+          className={`flex flex-col gap-[0.35em] ${heading ? 'mt-[0.35em]' : ''}`}
+        >
+          {heading ? blocks.slice(1) : blocks}
+        </div>
+      )}
     </section>
   )
 }

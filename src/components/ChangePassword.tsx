@@ -76,10 +76,10 @@ export default function ChangePassword({
   )
 
   return (
-    <main className="mx-auto max-w-sm px-4 pt-5">
-      <h1 className="text-3xl font-extrabold">
+    <section className="mt-8">
+      <h2 className="text-xl font-extrabold">
         {hasPassword ? 'Change password' : 'Set a password'}
-      </h1>
+      </h2>
       {!hasPassword && (
         <p className="mt-1 text-muted">
           You sign in with Google. A password lets you sign in without it too.
@@ -106,11 +106,11 @@ export default function ChangePassword({
         <button
           type="submit"
           disabled={busy}
-          className="min-h-12 rounded-xl bg-amber font-extrabold text-ink disabled:opacity-50"
+          className="min-h-12 rounded-xl bg-accent font-extrabold text-on-accent disabled:opacity-50"
         >
           {busy ? 'Saving…' : 'Change password'}
         </button>
       </form>
-    </main>
+    </section>
   )
 }

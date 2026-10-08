@@ -66,10 +66,27 @@ describe('Proposals', () => {
     expect(screen.queryByText('Add to the book now')).not.toBeInTheDocument()
     rerender(<Proposals board={board} isAdmin />)
     const item = screen.getAllByRole('listitem')[0]
+    await userEvent.click(
+      within(item).getByRole('button', {name: 'More for Monkey Man'}),
+    )
     await userEvent.click(within(item).getByText('Add to the book now'))
     expect((globalThis.fetch as any).mock.calls[0][0]).toBe('/api/proposals/p1')
     expect(JSON.parse((globalThis.fetch as any).mock.calls[0][1].body)).toEqual(
       {status: 'APPROVED'},
+    )
+  })
+
+  it('keeps the vote button on the title row after voting', () => {
+    const voted = {
+      ...board,
+      pending: [{...board.pending[0], mine: true, voters: ['Ed', 'Ken', 'Me']}],
+    }
+    render(<Proposals board={voted} isAdmin />)
+    const vote = screen.getByRole('button', {name: 'Voted ✓'})
+    // The actions never wrap under the title: the row does not wrap at all
+    expect(vote.parentElement?.className).toContain('shrink-0')
+    expect(vote.parentElement?.parentElement?.className).not.toContain(
+      'flex-wrap',
     )
   })
 })

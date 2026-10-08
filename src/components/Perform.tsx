@@ -31,6 +31,8 @@ export type PerformSong = {
   note: string | null
 }
 
+type PerformMode = 'auto' | 'scroll' | 'pages'
+
 // Below READABLE the song is paged instead of shrunk further
 const READABLE = 16
 const MAX_FIT = 34
@@ -62,8 +64,15 @@ export default function Perform({
 
   const chartRef = useRef<FittedChartHandle>(null)
   const [page, setPage] = useState({page: 0, pages: 1})
-  // Phones: one song is a single scrolling chart instead of fitted pages
+  // Scroll: one tall single column (never several columns, which would mean
+  // scrolling back up mid-song). Pages: fitted columns, one screen at a time.
+  // Phones default to scroll, tablets and desktops to pages.
   const narrow = useNarrow()
+  const [modePref, setModePref] = useStoredState<PerformMode>(
+    'mw:perform-mode',
+    'auto',
+  )
+  const scroll = modePref === 'auto' ? narrow : modePref === 'scroll'
   const [sizeIdx] = useStoredState('mw:text-size', 2)
   const scrollSize =
     TEXT_SIZES[Math.min(Math.max(sizeIdx, 0), TEXT_SIZES.length - 1)]
@@ -77,7 +86,7 @@ export default function Perform({
   // On phones "a page" is a screenful of scrolling.
   const go = useCallback(
     (d: number) => {
-      if (narrow) {
+      if (scroll) {
         const el = document.scrollingElement ?? document.documentElement
         const atEnd =
           d > 0
@@ -93,13 +102,13 @@ export default function Perform({
       } else if (chartRef.current?.turn(d)) return
       toSong(d)
     },
-    [narrow, toSong],
+    [scroll, toSong],
   )
 
   // A new song starts at its top
   useEffect(() => {
-    if (narrow) window.scrollTo({top: 0})
-  }, [i, narrow])
+    if (scroll) window.scrollTo({top: 0})
+  }, [i, scroll])
   const jump = (n: number) => setIndex(n)
 
   // Page-turn pedals and keyboards send arrow / page keys
@@ -131,11 +140,11 @@ export default function Perform({
     touch.current = {x: e.touches[0].clientX, y: e.touches[0].clientY}
   }
 
-  // Phones: a tap on the left or right quarter changes song. Read from the
+  // Scroll mode: a tap on the left or right quarter changes song. Read from the
   // click, which browsers don't fire after a scroll or drag, so scrolling
   // anywhere (including sideways through tab) never changes song.
   const onClick = (e: React.MouseEvent) => {
-    if (!narrow) return
+    if (!scroll) return
     if ((e.target as Element).closest('a,button,summary,input,select,textarea'))
       return
     const x = e.clientX / window.innerWidth
@@ -167,13 +176,13 @@ export default function Perform({
 
   return (
     <main
-      className={`flex flex-col bg-stage px-4 pb-[max(env(safe-area-inset-bottom),12px)] text-[#f1eee8] md:px-8 ${narrow ? 'min-h-dvh' : 'h-dvh overflow-hidden pt-[max(env(safe-area-inset-top),12px)]'}`}
+      className={`flex flex-col bg-stage px-4 pb-[max(env(safe-area-inset-bottom),12px)] text-text md:px-8 ${scroll ? 'min-h-dvh' : 'h-dvh overflow-hidden pt-[max(env(safe-area-inset-top),12px)]'}`}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
       onClick={onClick}
     >
       <header
-        className={`flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 ${narrow ? 'sticky top-0 z-10 -mx-4 bg-stage/95 px-4 pb-2 pt-[max(env(safe-area-inset-top),12px)] backdrop-blur' : ''}`}
+        className={`flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 ${scroll ? 'sticky top-0 z-10 -mx-4 bg-stage/95 px-4 pb-2 pt-[max(env(safe-area-inset-top),12px)] backdrop-blur' : ''}`}
       >
         <span className="font-mono text-muted">
           {i + 1} / {songs.length}
@@ -182,7 +191,15 @@ export default function Perform({
           {song.title}
         </h1>
         <span className="flex-1 sm:hidden" />
-        {page.pages > 1 && (
+        <button
+          type="button"
+          onClick={() => setModePref(scroll ? 'pages' : 'scroll')}
+          className="flex min-h-11 items-center rounded-lg border border-line px-3 text-sm text-muted"
+          aria-label={scroll ? 'Show as pages' : 'Show as one scrolling page'}
+        >
+          {scroll ? 'Pages' : 'Scroll'}
+        </button>
+        {!scroll && page.pages > 1 && (
           <span className="rounded-full border border-line px-2.5 py-1 font-mono text-sm text-muted">
             page {page.page + 1}/{page.pages}
           </span>
@@ -199,14 +216,14 @@ export default function Perform({
         </Link>
       </header>
       {(song.note || song.leadSinger) && (
-        <p className="mt-2.5 shrink-0 rounded-lg bg-[#1a1708] px-3.5 py-2 text-[17px] text-[#f2d18a]">
+        <p className="mt-2.5 shrink-0 rounded-lg bg-warn-bg px-3.5 py-2 text-[17px] text-warn-fg">
           {/* The set note carries this band's assignments ("Lead: Mark"); the
               song's own lead singer is only a fallback when there is none */}
           {song.note || `Lead (${song.leadSinger})`}
         </p>
       )}
 
-      {narrow ? (
+      {scroll ? (
         <div className="mt-4 flex-1 pb-6" style={{fontSize: scrollSize}}>
           <ChartBody chart={chart} columns={false} />
         </div>
@@ -215,7 +232,7 @@ export default function Perform({
       )}
 
       <footer
-        className={`flex shrink-0 items-center gap-4 border-t border-[#1c1f23] pt-3 ${narrow ? 'sticky bottom-0 z-10 -mx-4 bg-stage/95 px-4 pb-[max(env(safe-area-inset-bottom),12px)] backdrop-blur' : ''}`}
+        className={`flex shrink-0 items-center gap-4 border-t border-line pt-3 ${scroll ? 'sticky bottom-0 z-10 -mx-4 bg-stage/95 px-4 pb-[max(env(safe-area-inset-bottom),12px)] backdrop-blur' : ''}`}
       >
         <div
           className="hidden gap-1.5 sm:flex"
@@ -227,7 +244,7 @@ export default function Perform({
               type="button"
               aria-label={`Go to ${s.title}`}
               onClick={() => jump(n)}
-              className={`h-1.5 w-[18px] rounded ${n === i ? 'bg-amber' : n < i ? 'bg-[#4a4f55]' : 'bg-[#1f2328]'}`}
+              className={`h-1.5 w-[18px] rounded ${n === i ? 'bg-accent' : n < i ? 'bg-line-2' : 'bg-line'}`}
             />
           ))}
         </div>
@@ -260,22 +277,22 @@ export default function Perform({
         )}
       </footer>
 
-      {/* Invisible tap zones on the screen edges (iPad/desktop; phones use
-          onClick above so the chart can scroll freely underneath) */}
-      {!narrow && (
+      {/* Pages mode: invisible tap zones on the screen edges turn the page
+          (scroll mode uses onClick above so the chart can scroll freely) */}
+      {!scroll && (
         <>
           <button
             type="button"
             aria-label="Previous song"
             onClick={() => go(-1)}
-            className="fixed bottom-16 left-0 top-28 w-[12vw] max-w-28 opacity-0"
+            className="fixed bottom-16 left-0 top-28 w-1/4 max-w-28 opacity-0 sm:w-[12vw]"
             tabIndex={-1}
           />
           <button
             type="button"
             aria-label="Next song"
             onClick={() => go(1)}
-            className="fixed bottom-16 right-0 top-28 w-[12vw] max-w-28 opacity-0"
+            className="fixed bottom-16 right-0 top-28 w-1/4 max-w-28 opacity-0 sm:w-[12vw]"
             tabIndex={-1}
           />
         </>

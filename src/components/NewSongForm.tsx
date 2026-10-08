@@ -63,7 +63,7 @@ export default function NewSongForm() {
         <button
           type="submit"
           disabled={busy || !title.trim()}
-          className="min-h-12 rounded-lg bg-amber font-bold text-ink disabled:opacity-40"
+          className="min-h-12 rounded-lg bg-accent font-bold text-on-accent disabled:opacity-40"
         >
           {busy ? 'Adding…' : 'Add and write the chart'}
         </button>

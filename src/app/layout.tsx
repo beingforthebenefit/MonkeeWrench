@@ -6,6 +6,7 @@ import {getServerSession} from 'next-auth'
 import {authOptions} from '@/lib/auth'
 import Providers from '@/components/Providers'
 import AppShell from '@/components/AppShell'
+import {THEME_COLORS, themeScript} from '@/lib/theme'
 
 const archivo = Archivo({subsets: ['latin'], variable: '--font-archivo'})
 const jetbrains = JetBrains_Mono({
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#111315',
+  themeColor: THEME_COLORS.dark,
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
@@ -30,7 +31,15 @@ export const viewport: Viewport = {
 export default async function RootLayout({children}: {children: ReactNode}) {
   const session = await getServerSession(authOptions)
   return (
-    <html lang="en" className={`${archivo.variable} ${jetbrains.variable}`}>
+    // data-theme is set by themeScript before React hydrates
+    <html
+      lang="en"
+      className={`${archivo.variable} ${jetbrains.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{__html: themeScript}} />
+      </head>
       <body>
         <Providers session={session}>
           <AppShell>{children}</AppShell>

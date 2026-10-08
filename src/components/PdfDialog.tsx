@@ -94,7 +94,7 @@ export default function PdfDialog({
 
         <a
           href={href}
-          className="mt-2 flex min-h-13 items-center justify-center gap-2 rounded-xl bg-amber py-3.5 text-[17px] font-extrabold text-ink no-underline"
+          className="mt-2 flex min-h-13 items-center justify-center gap-2 rounded-xl bg-accent py-3.5 text-[17px] font-extrabold text-on-accent no-underline"
           onClick={() => setTimeout(onClose, 300)}
         >
           Download

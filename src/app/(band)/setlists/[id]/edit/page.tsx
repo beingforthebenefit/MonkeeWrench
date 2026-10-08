@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import {notFound} from 'next/navigation'
 import {prisma} from '@/lib/db'
+import {requireSession} from '@/lib/guard'
 import {getSetlist} from '@/lib/setlists'
 import {detectKey, parseChordPro} from '@/lib/chordpro'
 import {displayName} from '@/lib/songs'
@@ -10,6 +11,7 @@ import SetlistEditor, {type PickSong} from '@/components/SetlistEditor'
 export const metadata = {title: 'Setlist · Monkee Wrench'}
 
 export default async function SetlistPage({params}: {params: {id: string}}) {
+  const {user} = await requireSession()
   const set = await getSetlist(params.id)
   if (!set) notFound()
   const songs = await prisma.song.findMany({
@@ -49,6 +51,7 @@ export default async function SetlistPage({params}: {params: {id: string}}) {
       }}
       editedBy={displayName(set.updatedBy)}
       editedAt={set.updatedAt.toISOString()}
+      canDelete={user.isAdmin}
     />
   )
 }
