@@ -24,6 +24,13 @@ describe('written-out notes', () => {
     expect(abc).toContain('B2 B2 d2 B2 c2 =A2 | B2')
   })
 
+  it('writes a bass part in bass clef, around B2', () => {
+    const abc = linesToAbc([readNoteLine('B B D E F# A')!], 'B', 'bass')
+    expect(abc).toContain('% instrument: bass')
+    expect(abc).toContain('K:B clef=bass')
+    expect(abc).toContain('B,,2 B,,2 =D,2 E,2 F,2 =A,2')
+  })
+
   it('cancels an accidental later in the same bar', () => {
     const abc = linesToAbc([readNoteLine('(c# c c# c c# b a)')!], 'C')
     expect(abc).toMatch(/\^c2 =c2 \^c2 =c2 \^c2/)

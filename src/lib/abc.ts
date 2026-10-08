@@ -58,8 +58,10 @@ export function abcPresets(key: string | null) {
 /**
  * Which tab a lick reads best as: a "% instrument: bass" line in the ABC
  * (ABC comments are ignored by the renderer) asks for 4-string bass tab;
- * anything else gets guitar tab.
+ * "% instrument: keys" (a two-hand part) has no tab; anything else gets
+ * guitar tab.
  */
-export function abcTabInstrument(abc: string): 'guitar' | 'bass' {
-  return /^%\s*instrument:\s*bass\b/im.test(abc) ? 'bass' : 'guitar'
+export function abcTabInstrument(abc: string): 'guitar' | 'bass' | 'keys' {
+  const m = abc.match(/^%\s*instrument:\s*(bass|keys)\b/im)
+  return (m?.[1] as 'bass' | 'keys' | undefined) ?? 'guitar'
 }

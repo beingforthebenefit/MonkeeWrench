@@ -28,6 +28,7 @@ describe('abcTabInstrument', () => {
     const {abcTabInstrument} = await import('@/lib/abc')
     expect(abcTabInstrument('% instrument: bass\nK:E\nE2 G2 |]')).toBe('bass')
     expect(abcTabInstrument('% instrument: guitar\nK:E\nE2 |]')).toBe('guitar')
+    expect(abcTabInstrument('% instrument: keys\nK:E\nE2 |]')).toBe('keys')
     expect(abcTabInstrument('K:E\nE2 |]')).toBe('guitar')
   })
 })

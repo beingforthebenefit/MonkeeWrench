@@ -58,14 +58,15 @@ export default function AbcNotation({
           paddingleft: 0,
           paddingright: 0,
           // Tab under the staff: the staff keeps the rhythm, the tab the frets
-          ...(view === 'tab'
+          ...(view === 'tab' && instrument !== 'keys'
             ? {
                 tablature: [
                   instrument === 'bass'
                     ? {
                         instrument: 'guitar' as const,
                         label: 'Bass',
-                        tuning: ['E,', 'A,', 'D', 'G'],
+                        // Written in bass clef, an octave above the sound
+                        tuning: ['E,,', 'A,,', 'D,', 'G,'],
                       }
                     : {instrument: 'guitar' as const, label: 'Guitar'},
                 ],
@@ -86,25 +87,27 @@ export default function AbcNotation({
 
   return (
     <>
-      <div className="flex justify-end">
-        <div
-          role="group"
-          aria-label="Show as"
-          className="flex overflow-hidden rounded-md border border-line-2 text-[11px] font-semibold"
-        >
-          {(['notation', 'tab'] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              aria-pressed={view === v}
-              onClick={() => setView(v)}
-              className={`min-h-7 px-2 ${view === v ? 'bg-text text-ink' : 'text-muted'}`}
-            >
-              {v === 'notation' ? '♪ Notes' : 'Tab'}
-            </button>
-          ))}
+      {instrument !== 'keys' && (
+        <div className="flex justify-end">
+          <div
+            role="group"
+            aria-label="Show as"
+            className="flex overflow-hidden rounded-md border border-line-2 text-[11px] font-semibold"
+          >
+            {(['notation', 'tab'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={view === v}
+                onClick={() => setView(v)}
+                className={`min-h-7 px-2 ${view === v ? 'bg-text text-ink' : 'text-muted'}`}
+              >
+                {v === 'notation' ? '♪ Notes' : 'Tab'}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
       <div
         ref={box}
         className="abc-notation w-full overflow-hidden"

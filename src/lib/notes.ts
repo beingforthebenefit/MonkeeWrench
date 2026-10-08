@@ -137,9 +137,12 @@ export function linesToAbc(
 ) {
   const sig = keyAccidentals(key)
   const body = lines.map((line) => {
-    // Horns and keys sit around A4; a riff around B3 (guitar is written an
-    // octave above where it sounds)
-    const midi = pitches(line.notes, instrument ? 59 : 69)
+    // Horns and keys sit around A4; a guitar riff around B3 and a bass
+    // riff around B2 (both written an octave above where they sound)
+    const midi = pitches(
+      line.notes,
+      instrument === 'bass' ? 47 : instrument ? 59 : 69,
+    )
     let bar: Record<string, string> = {}
     let out = line.repeats ? `"^${line.repeats}"` : ''
     line.notes.forEach((n, i) => {
@@ -167,7 +170,7 @@ export function linesToAbc(
     ...(instrument ? [`% instrument: ${instrument}`] : []),
     `M:none`,
     `L:1/8`,
-    `K:${key ?? 'C'}`,
+    `K:${key ?? 'C'}${instrument === 'bass' ? ' clef=bass' : ''}`,
     ...body,
   ].join('\n')
 }
