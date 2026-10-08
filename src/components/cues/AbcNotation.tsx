@@ -28,6 +28,15 @@ export default function AbcNotation({
   const frame = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
   const [failed, setFailed] = useState(false)
+  // Which sides have more music past the edge (they fade out)
+  const [more, setMore] = useState({left: false, right: false})
+  const edges = () => {
+    const f = frame.current
+    if (!f) return
+    const left = f.scrollLeft > 1
+    const right = f.scrollLeft + f.clientWidth < f.scrollWidth - 1
+    setMore((m) => (m.left === left && m.right === right ? m : {left, right}))
+  }
   const part = abcPart(abc)
   // Guitar and bass parts open as tab; horn lines and melodies as notation
   const [view, setView] = useLickView(
@@ -94,6 +103,7 @@ export default function AbcNotation({
         // scroll
         const drawn = el.querySelector('svg')?.getBoundingClientRect().width
         if (drawn && drawn > width + 1) el.style.width = `${Math.ceil(drawn)}px`
+        edges()
         setFailed(!tunes.length)
         onError?.(warnings)
         // Performance mode re-counts its pages around the new height
@@ -133,6 +143,8 @@ export default function AbcNotation({
         // A sideways drag here scrolls the music, not to another song
         data-hscroll=""
         className="w-full overflow-x-auto overscroll-x-contain"
+        onScroll={edges}
+        style={fade(more)}
       >
         <div
           ref={box}
@@ -214,4 +226,11 @@ function tabOnly(el: HTMLElement, scale: number) {
   const height = y - 8
   svg.setAttribute('height', String(height))
   el.style.height = `${height * scale}px`
+}
+
+/** Fade the edges the music runs past, so it's clear it scrolls. */
+function fade({left, right}: {left: boolean; right: boolean}) {
+  if (!left && !right) return undefined
+  const mask = `linear-gradient(to right, ${left ? 'transparent, #000 2.5em' : '#000'}, ${right ? '#000 calc(100% - 2.5em), transparent' : '#000'})`
+  return {maskImage: mask, WebkitMaskImage: mask}
 }
