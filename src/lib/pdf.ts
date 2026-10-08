@@ -160,7 +160,7 @@ function toBlocks(
 ): Block[] {
   const blocks: Block[] = extraBlocks(doc, extras.top, size, colW)
   chart.sections.forEach((s, si) => {
-    if (s.label || s.type !== 'abc')
+    if (s.label || !['abc', 'part', 'tab'].includes(s.type))
       blocks.push({kind: 'label', section: s, h: size * 1.5})
     blocks.push(...extraBlocks(doc, extras.sections.get(si) ?? [], size, colW))
     const notation = extras.abc.get(si)

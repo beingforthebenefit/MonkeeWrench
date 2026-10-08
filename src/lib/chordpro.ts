@@ -402,7 +402,7 @@ const REPEAT = /^\(?x\d+\)?$/i
 const REMARK =
   /\[[^\]]*\]|\((?![A-G][#b]?[^\s)]*(?:\)|\s))(?!x\d)(?:[^()]|\([^()]*\))*\)/g
 
-function isChordLine(line: string): boolean {
+export function isChordLine(line: string): boolean {
   // Remarks don't disqualify a chord line; they are kept as notes
   const tokens = line.replace(REMARK, ' ').trim().split(/\s+/).filter(Boolean)
   if (!tokens.length) return false
@@ -431,14 +431,14 @@ function inlineChords(text: string): string {
 
 /** A tablature string line: `e|---7---5p4p0---|` */
 // "e|---7---5p4p0---|", or a bare tab staff line "-9-7---4-2----|"
-const TAB_LINE =
+export const TAB_LINE =
   /^\s*(?:[A-Ga-g]\|[-0-9a-z|~/\\^().*\s]*|[-0-9hpbr/\\~x|.]*-{6,}[-0-9hpbr/\\~x|.]*)$/
 
 const SECTION_WORDS =
   /^(intro|verse|pre-?chorus|chorus|bridge|interlude|instrumental|solo|outro|coda|ending|tag|refrain|break)\b/i
 
 /** Recognise a section header line and split it into label, note and any chords that follow. */
-function parseHeader(
+export function parseHeader(
   line: string,
 ): {label: string; note: string; chords: string} | null {
   let label: string
@@ -485,7 +485,7 @@ function titleCase(s: string): string {
     .trim()
 }
 
-function sectionType(name: string): string {
+export function sectionType(name: string): string {
   const n = name.toLowerCase()
   if (/pre-?chorus/.test(n)) return 'prechorus'
   for (const t of [

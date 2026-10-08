@@ -13,6 +13,7 @@
 - [AI Agents](#ai-agents)
 - [Quick Start (Docker)](#quick-start-docker)
 - [Production (Docker)](#production-docker)
+- [Importing a band (OnSong, spreadsheets, JSON)](#importing-a-band-onsong-spreadsheets-json)
 - [Importing charts from Google Drive](#importing-charts-from-google-drive)
 - [Writing charts (ChordPro)](#writing-charts-chordpro)
 - [Dev notes](#dev-notes)
@@ -97,6 +98,23 @@ Production runs on the `popos` server from `docker-compose.server.yml`, a standa
    The live stack (project `monkeewrench`, port 7120) and the dev stack (project `monkeewrench-dev`, port 3002) share no containers, volumes, networks or ports, so both can run at once. The dev server polls for file changes and uses about a core and 1 GB of RAM: start it when working on the app and `make down` afterwards.
 
 The entrypoint applies migrations on start. The first band and admin: `npx tsx scripts/create-band.ts "Band Name" you@example.com "Your Name"` inside the app container (the first admin also becomes the install owner), then `npx tsx scripts/set-password.ts you@example.com` prints a password once; everyone else's comes from `/members`, and further bands are started from the app. Serving several web addresses needs `AUTH_TRUST_HOST=true` (sign-in URLs follow the address used) and, for Google sign-in, each address's `/api/auth/callback/google` in the OAuth client. Demo seed data is created only when `APP_ENV=development`. `GET /api/health` is public and queries the database (`{"ok":true,"songs":N}`); the container healthcheck and the server's monitoring use it.
+
+## Importing a band (OnSong, spreadsheets, JSON)
+
+`scripts/import-band.ts` loads a band's songs, charts, personal cues,
+setlists (with sets and breaks) and rehearsals from one JSON file; its
+header documents the format. Charts can be ChordPro, or OnSong text as it
+comes out of an OnSong backup (`OnSong.sqlite3`, table `Song`, column
+`content`): the title, artist and `Key:` lines are dropped, each paragraph
+becomes a section (named when it says what it is: `Chorus:`, `intro- sax
+solo`, `piano solo`), chords above the words are merged in, and a player's
+notes on top (`Piano - Light and airy`) become that player's personal cue
+instead of part of everyone's chart. Re-running it adds nothing twice.
+
+    npx tsx scripts/import-band.ts band.json   # inside the app container
+
+The band must exist first (menu → All bands). The JSON holds lyrics: keep it
+in the gitignored `data/` and delete it afterwards.
 
 ## Importing charts from Google Drive
 
@@ -217,4 +235,6 @@ Workflow: `.github/workflows/ci.yml`.
 
 ## License
 
-See `LICENSE`.
+[GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0-only). Run it,
+change it, host it for your bands. If you offer a modified version to other
+people over a network, you must offer them its source too.

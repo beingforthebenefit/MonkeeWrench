@@ -63,7 +63,8 @@ function ChartSection({
 }) {
   const label =
     section.label ||
-    (section.type === 'tab' || section.type === 'abc' ? '' : section.type)
+    // Unlabelled paragraphs, tab and notation need no heading
+    (['tab', 'abc', 'part'].includes(section.type) ? '' : section.type)
   const notation = section.abc ? (
     <div className="chart-abc">
       <AbcNotation
