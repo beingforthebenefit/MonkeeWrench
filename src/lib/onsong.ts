@@ -139,6 +139,7 @@ type Ctx = {
 /** A line that says what the notes under it are: "horn line is" */
 const DESCRIBES =
   /\b(notes?|horns?|line|riff|melody|lick|sax|keyboards?|keys|piano|organ|strings?|guitar|bass|plays?|under this|unison)\b/i
+const SAYS_NOTES = /\b(notes?|horns?|line|riff|melody|lick|unison)\b/i
 const TAB_PART = /\b(guitar|bass|riff)\b/i
 const NOT_TAB =
   /\b(horns?|sax|keyboards?|keys|piano|organ|strings?|trumpet|trombone)\b/i
@@ -160,7 +161,9 @@ function noteLine(line: string, before: string, ctx: Ctx) {
   const w = readNoteLine(line)
   if (!w) return null
   const bracketed = /^\(/.test(line.trim())
-  const said = DESCRIBES.test(before) && !/chord/i.test(before)
+  // Unbracketed letters need the line above to say they're notes: an
+  // instrument alone ("solo- guitar") is just as likely over chords
+  const said = SAYS_NOTES.test(before) && !/chord/i.test(before)
   if (
     bracketed ||
     ctx.known.has(signature(w)) ||

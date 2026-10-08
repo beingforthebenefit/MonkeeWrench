@@ -127,4 +127,10 @@ describe('OnSong import', () => {
     const c = parseChordPro(song('[G]one\n-------\n[C]two\n').source)
     expect(c.sections.map((s) => s.type)).toEqual(['part', 'part'])
   })
+
+  it('keeps a bar-by-bar chord line under an instrument as chords', () => {
+    const r = song('solo- guitar\nC  C  C  C  F  F  C  C  F  F  C  C\n')
+    expect(r.source).not.toContain('start_of_tab')
+    expect(r.source).toContain('[C]')
+  })
 })
