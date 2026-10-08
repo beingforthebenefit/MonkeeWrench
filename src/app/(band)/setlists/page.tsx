@@ -5,6 +5,14 @@ import {prisma} from '@/lib/db'
 import {displayName} from '@/lib/songs'
 import {shortDate} from '@/lib/dates'
 import NewSetlistButton from '@/components/NewSetlistButton'
+import RunningOrder from '@/components/RunningOrder'
+import {
+  formatClock,
+  parseClock,
+  runningOrder,
+  setSummary,
+  timeRange,
+} from '@/lib/gig'
 import {pageSession} from '@/lib/guard'
 
 export const metadata = {title: 'Setlists'}
@@ -24,7 +32,7 @@ export default async function SetlistsPage() {
     include: {
       items: {
         orderBy: {position: 'asc'},
-        include: {song: {select: {title: true}}},
+        include: {song: {select: {title: true, seconds: true}}},
       },
       updatedBy: {select: {name: true, displayName: true, email: true}},
     },
@@ -33,6 +41,10 @@ export default async function SetlistsPage() {
   today.setUTCHours(0, 0, 0, 0)
   const next = sets.find((s) => s.gigDate && s.gigDate >= today)
   const rest = sets.filter((s) => s !== next)
+  const songCount = (s: (typeof sets)[number]) =>
+    s.items.filter((i) => i.kind === 'SONG').length
+  const order = next ? runningOrder(next.startTime, next.items) : null
+  const start = parseClock(next?.startTime)
 
   return (
     <main className="mx-auto max-w-3xl px-4 pt-5">
@@ -60,35 +72,73 @@ export default async function SetlistsPage() {
           <p className="mt-1 text-sm text-muted">
             {[
               next.gigDate && gigFmt.format(next.gigDate),
+              start != null && formatClock(start, true),
               next.venue,
-              `${next.items.length} songs`,
+              `${songCount(next)} songs`,
             ]
               .filter(Boolean)
               .join(' · ')}
           </p>
-          <ol className="mt-3 space-y-1 text-[15px]">
-            {next.items.slice(0, 5).map((i, n) => (
-              <li key={i.id} className="flex gap-3">
-                <span className="w-5 font-mono text-faint">{n + 1}</span>
-                {i.song.title}
-              </li>
-            ))}
-          </ol>
-          {next.items.length > 5 && (
-            // Expands in place: no need to open the setlist to see it all
-            <details className="group mt-1 text-[15px]">
-              <summary className="flex min-h-11 cursor-pointer list-none items-center pl-8 text-faint group-open:hidden">
-                + {next.items.length - 5} more
-              </summary>
-              <ol start={6} className="space-y-1">
-                {next.items.slice(5).map((i, n) => (
-                  <li key={i.id} className="flex gap-3">
-                    <span className="w-5 font-mono text-faint">{n + 6}</span>
-                    {i.song.title}
+          {order?.divided ? (
+            // Divided into sets: the shape of the night, songs on demand
+            <>
+              <ul className="mt-3 space-y-1 text-[15px]">
+                {order.entries.map((e) =>
+                  e.kind === 'SET' ? (
+                    <li key={e.item.id} className="flex flex-wrap gap-x-3">
+                      <strong>{e.info.label}</strong>
+                      <span className="font-mono">
+                        {timeRange(e.info.start, e.info.end)}
+                      </span>
+                      <span className="text-sm text-muted">
+                        {setSummary(e.info)}
+                      </span>
+                    </li>
+                  ) : e.kind === 'BREAK' ? (
+                    <li key={e.item.id} className="text-sm text-faint">
+                      Break{e.info.minutes ? ` · ${e.info.minutes} min` : ''}
+                    </li>
+                  ) : null,
+                )}
+              </ul>
+              <details className="group mt-1 text-[15px]">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center text-faint group-open:hidden">
+                  + Show the songs
+                </summary>
+                <div className="pt-2">
+                  <RunningOrder entries={order.entries} />
+                </div>
+              </details>
+            </>
+          ) : (
+            <>
+              <ol className="mt-3 space-y-1 text-[15px]">
+                {order?.entries.slice(0, 5).map((e, n) => (
+                  <li key={e.item.id} className="flex gap-3">
+                    <span className="w-5 font-mono text-faint">{n + 1}</span>
+                    {e.item.song?.title}
                   </li>
                 ))}
               </ol>
-            </details>
+              {next.items.length > 5 && order && (
+                // Expands in place: no need to open the setlist to see it all
+                <details className="group mt-1 text-[15px]">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center pl-8 text-faint group-open:hidden">
+                    + {next.items.length - 5} more
+                  </summary>
+                  <ol start={6} className="space-y-1">
+                    {order.entries.slice(5).map((e, n) => (
+                      <li key={e.item.id} className="flex gap-3">
+                        <span className="w-5 font-mono text-faint">
+                          {n + 6}
+                        </span>
+                        {e.item.song?.title}
+                      </li>
+                    ))}
+                  </ol>
+                </details>
+              )}
+            </>
           )}
           <div className="mt-4 grid grid-cols-3 gap-2">
             <Link
@@ -140,7 +190,7 @@ export default async function SetlistsPage() {
                   <span className="font-semibold">{s.name}</span>
                   <span className="text-[13px] text-muted">
                     {[
-                      `${s.items.length} songs`,
+                      `${songCount(s)} songs`,
                       s.gigDate && gigFmt.format(s.gigDate),
                       s.venue,
                       `edited by ${displayName(s.updatedBy)} · ${shortDate(s.updatedAt)}`,

@@ -508,3 +508,104 @@ export async function renderChartsPdf(
   doc.end()
   return done
 }
+
+export type SheetSet = {
+  heading: string
+  when: string
+  songs: {title: string; key: string | null}[]
+}
+
+/**
+ * The set list to tape to the floor: one page per set, song titles as big
+ * as fit, numbered, each with its key. Nothing else: it's read from six
+ * feet away mid-song.
+ */
+export async function renderSetSheetPdf(
+  sets: SheetSet[],
+  opts: PdfOptions & {footer?: string} = {},
+): Promise<Buffer> {
+  const doc = new PDFDocument({
+    size: opts.paper ?? 'LETTER',
+    margin: MARGIN,
+    autoFirstPage: false,
+    info: {Title: 'Set list'},
+  })
+  const chunks: Buffer[] = []
+  doc.on('data', (c: Buffer) => chunks.push(c))
+  const done = new Promise<Buffer>((resolve, reject) => {
+    doc.on('end', () => resolve(Buffer.concat(chunks)))
+    doc.on('error', reject)
+  })
+  for (const set of sets) {
+    doc.addPage()
+    const width = doc.page.width - MARGIN * 2
+    let y = MARGIN
+    doc.font('Helvetica-Bold').fontSize(30).fillColor('#000')
+    doc.text(set.heading, MARGIN, y, {width, lineBreak: false})
+    y += 34
+    if (set.when) {
+      doc.font(LYRIC).fontSize(14).fillColor('#444')
+      doc.text(set.when, MARGIN, y, {width, lineBreak: false})
+      y += 20
+    }
+    y += 10
+    doc
+      .moveTo(MARGIN, y)
+      .lineTo(MARGIN + width, y)
+      .lineWidth(2)
+      .stroke('#000')
+    y += 14
+
+    // The biggest type that fits every song on the page, one line each
+    const bottom = doc.page.height - MARGIN - 24
+    const n = set.songs.length
+    const numW = (size: number) => size * 1.6
+    const fits = (size: number) => {
+      if (y + n * size * 1.35 > bottom) return false
+      doc.font('Helvetica-Bold').fontSize(size)
+      return set.songs.every((s) => {
+        const keyW = s.key ? doc.widthOfString(s.key) + size : 0
+        return doc.widthOfString(s.title) + numW(size) + keyW <= width
+      })
+    }
+    let size = 40
+    while (size > 12 && !fits(size)) size -= 1
+    set.songs.forEach((s, i) => {
+      const lineY = y + i * size * 1.35
+      doc
+        .font(LYRIC)
+        .fontSize(size * 0.7)
+        .fillColor('#777')
+      doc.text(String(i + 1), MARGIN, lineY + size * 0.2, {
+        width: numW(size) - size * 0.4,
+        align: 'right',
+        lineBreak: false,
+      })
+      doc.font('Helvetica-Bold').fontSize(size).fillColor('#000')
+      doc.text(s.title, MARGIN + numW(size), lineY, {lineBreak: false})
+      if (s.key) {
+        doc
+          .font('Helvetica')
+          .fontSize(size * 0.8)
+          .fillColor('#000')
+        const kw = doc.widthOfString(s.key)
+        doc.text(s.key, MARGIN + width - kw, lineY + size * 0.12, {
+          lineBreak: false,
+        })
+      }
+    })
+    if (opts.footer) {
+      const saved = doc.page.margins.bottom
+      doc.page.margins.bottom = 0
+      doc.font(LYRIC).fontSize(9).fillColor('#777')
+      doc.text(opts.footer, MARGIN, doc.page.height - MARGIN + 12, {
+        width,
+        lineBreak: false,
+      })
+      doc.page.margins.bottom = saved
+    }
+  }
+  if (!sets.length) doc.addPage()
+  doc.end()
+  return done
+}

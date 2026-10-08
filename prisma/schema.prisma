@@ -178,6 +178,8 @@ model Song {
   youtubeUrl  String?
   lyricsUrl   String?
   status      SongStatus @default(LEARNING)
+  // How long the band plays it, for timing sets
+  seconds     Int?
   notes       String?    @db.Text
   // Bumped on every chart save so lists can show "edited by X" cheaply
   updatedBy   User?      @relation("SongEditor", fields: [updatedById], references: [id], onDelete: SetNull)
@@ -214,6 +216,8 @@ model Setlist {
   bandId      String
   name        String
   gigDate     DateTime?
+  // When the first set starts, "20:00"; sets and breaks are timed from it
+  startTime   String?
   venue       String?
   notes       String?       @db.Text
   items       SetlistItem[]
@@ -225,12 +229,27 @@ model Setlist {
   @@index([bandId])
 }
 
+enum SetlistItemKind {
+  SONG
+  SET // starts a set: "Set 1", how long it runs, maybe its own start time
+  BREAK // a break between sets, and how long
+}
+
+/// One row of a gig's running order: a song, a set header or a break.
 model SetlistItem {
-  id        String  @id @default(cuid())
-  setlist   Setlist @relation(fields: [setlistId], references: [id], onDelete: Cascade)
+  id        String          @id @default(cuid())
+  setlist   Setlist         @relation(fields: [setlistId], references: [id], onDelete: Cascade)
   setlistId String
-  song      Song    @relation(fields: [songId], references: [id], onDelete: Cascade)
-  songId    String
+  kind      SetlistItemKind @default(SONG)
+  // SONG rows only
+  song      Song?           @relation(fields: [songId], references: [id], onDelete: Cascade)
+  songId    String?
+  // SET: its name ("Set 1", "Encore")
+  label     String?
+  // SET: planned length; BREAK: how long
+  minutes   Int?
+  // SET: its own start time ("21:30"), else straight after what's before
+  startTime String?
   position  Int
   // Shown above the chart in performance mode ("Micky counts it in")
   note      String?

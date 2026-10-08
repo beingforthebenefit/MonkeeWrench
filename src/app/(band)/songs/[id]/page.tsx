@@ -36,6 +36,7 @@ export default async function SongPage({params}: {params: {id: string}}) {
         writer: song.writer,
         leadSinger: song.leadSinger,
         guitars: song.guitars,
+        seconds: song.seconds,
         keys: song.keys,
         percussion: song.percussion,
         youtubeUrl: song.youtubeUrl,

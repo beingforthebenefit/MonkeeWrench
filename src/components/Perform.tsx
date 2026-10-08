@@ -33,6 +33,13 @@ export type PerformSong = {
   note: string | null
   /** Your own cues on this song */
   cues: Cue[]
+  /** Its place in its set, when the gig is divided into sets */
+  set?: {label: string; n: number; count: number} | null
+  /** What comes before the next song: a break, or the next set */
+  after?:
+    | {kind: 'break'; minutes: number | null; until: string | null}
+    | {kind: 'set'; label: string}
+    | null
 }
 
 type PerformMode = 'auto' | 'scroll' | 'pages'
@@ -192,7 +199,18 @@ export default function Perform({
         className={`flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 ${scroll ? 'sticky top-0 z-10 -mx-4 bg-stage/95 px-4 pb-2 pt-[max(env(safe-area-inset-top),12px)] backdrop-blur' : ''}`}
       >
         <span className="font-mono text-muted">
-          {i + 1} / {songs.length}
+          {song.set ? (
+            <>
+              <span className="font-sans font-semibold text-text">
+                {song.set.label}
+              </span>{' '}
+              · {song.set.n}/{song.set.count}
+            </>
+          ) : (
+            <>
+              {i + 1} / {songs.length}
+            </>
+          )}
         </span>
         <h1 className="order-last w-full text-2xl font-extrabold leading-tight sm:order-none sm:w-auto sm:min-w-0 sm:flex-1 sm:truncate md:text-[34px]">
           {song.title}
@@ -262,7 +280,8 @@ export default function Perform({
               type="button"
               aria-label={`Go to ${s.title}`}
               onClick={() => jump(n)}
-              className={`h-1.5 w-[18px] rounded ${n === i ? 'bg-accent' : n < i ? 'bg-line-2' : 'bg-line'}`}
+              // A gap between sets, so the shape of the night shows
+              className={`h-1.5 w-[18px] rounded ${n === i ? 'bg-accent' : n < i ? 'bg-line-2' : 'bg-line'} ${songs[n - 1]?.after ? 'ml-3' : ''}`}
             />
           ))}
         </div>
@@ -282,7 +301,19 @@ export default function Perform({
             onClick={() => toSong(1)}
             className="flex min-h-11 items-center gap-3 rounded-lg px-2 text-left"
           >
-            <span className="text-muted">Next</span>
+            {song.after?.kind === 'break' ? (
+              <span className="rounded-md bg-warn-bg px-2 py-0.5 text-sm font-semibold text-warn-fg">
+                Break
+                {song.after.minutes ? ` · ${song.after.minutes} min` : ''}
+                {song.after.until ? `, back ${song.after.until}` : ''}
+              </span>
+            ) : song.after?.kind === 'set' ? (
+              <span className="rounded-md bg-panel px-2 py-0.5 text-sm font-semibold">
+                {song.after.label}
+              </span>
+            ) : (
+              <span className="text-muted">Next</span>
+            )}
             <span className="max-w-[40vw] truncate text-lg font-bold md:text-xl">
               {next.title}
             </span>
@@ -291,7 +322,9 @@ export default function Perform({
             </span>
           </button>
         ) : (
-          <span className="text-muted">End of set</span>
+          <span className="text-muted">
+            {song.set ? 'End of the gig' : 'End of set'}
+          </span>
         )}
       </footer>
 

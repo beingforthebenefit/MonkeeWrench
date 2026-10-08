@@ -4,6 +4,7 @@ import Link from 'next/link'
 import {useMemo, useState} from 'react'
 import {detectKey, parseChordPro, transposeChart} from '@/lib/chordpro'
 import {shortDate} from '@/lib/dates'
+import {formatLength} from '@/lib/gig'
 import ChartBody from '@/components/chart/ChartBody'
 import PdfDialog from '@/components/PdfDialog'
 import {useStoredState} from '@/components/useStoredState'
@@ -16,6 +17,7 @@ export type ChartSong = {
   writer: string | null
   leadSinger: string | null
   guitars: number | null
+  seconds: number | null
   keys: string | null
   percussion: string | null
   youtubeUrl: string | null
@@ -74,6 +76,7 @@ export default function ChartScreen({
     [song.keys, song.percussion].filter(Boolean).join(' · '),
     song.guitars != null &&
       `${song.guitars} guitar${song.guitars === 1 ? '' : 's'}`,
+    song.seconds && formatLength(song.seconds),
   ].filter(Boolean)
 
   return (

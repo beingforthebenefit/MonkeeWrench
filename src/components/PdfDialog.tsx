@@ -13,6 +13,7 @@ export default function PdfDialog({
   originalKey,
   footnote,
   hasCues = false,
+  sheet = false,
   onClose,
 }: {
   title: string
@@ -23,11 +24,14 @@ export default function PdfDialog({
   footnote?: string
   /** The reader has cues on this: offer to print them */
   hasCues?: boolean
+  /** A setlist: offer the big-type set list as well as the charts */
+  sheet?: boolean
   onClose: () => void
 }) {
   const [useShown, setUseShown] = useState(Boolean(shownKey))
   const [paper, setPaper] = useState<'letter' | 'a4'>('letter')
   const [withCues, setWithCues] = useState(false)
+  const [what, setWhat] = useState<'charts' | 'sheet'>('charts')
   const closeRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
@@ -39,7 +43,8 @@ export default function PdfDialog({
 
   const params = new URLSearchParams({download: '1', paper})
   if (useShown && shownKey) params.set('key', shownKey)
-  if (withCues) params.set('cues', '1')
+  if (what === 'sheet') params.set('sheet', '1')
+  else if (withCues) params.set('cues', '1')
   const href = `${baseUrl}?${params}`
 
   return (
@@ -74,6 +79,17 @@ export default function PdfDialog({
         </div>
         <p className="mb-4 text-muted">{title}</p>
 
+        {sheet && (
+          <Choice
+            legend="What"
+            options={[
+              ['charts', 'Charts'],
+              ['sheet', 'Set list, big type'],
+            ]}
+            value={what}
+            onChange={(v) => setWhat(v as 'charts' | 'sheet')}
+          />
+        )}
         {shownKey && (
           <Choice
             legend="Key"
@@ -95,7 +111,7 @@ export default function PdfDialog({
           onChange={(v) => setPaper(v as 'letter' | 'a4')}
         />
 
-        {hasCues && (
+        {hasCues && what === 'charts' && (
           <Choice
             legend="Your cues"
             options={[

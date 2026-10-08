@@ -5,6 +5,7 @@ import {useRouter} from 'next/navigation'
 import {useMemo, useRef, useState} from 'react'
 import {detectKey, importChordsOverWords, parseChordPro} from '@/lib/chordpro'
 import {abcPresets} from '@/lib/abc'
+import {parseLength} from '@/lib/gig'
 import ChartBody from '@/components/chart/ChartBody'
 
 export type SongFormValues = {
@@ -12,6 +13,8 @@ export type SongFormValues = {
   writer: string
   leadSinger: string
   guitars: string
+  /** "3:12" */
+  length: string
   keys: string
   percussion: string
   youtubeUrl: string
@@ -25,15 +28,19 @@ const FIELDS: [keyof SongFormValues, string, string?][] = [
   ['writer', 'Written by'],
   ['leadSinger', 'Lead singer'],
   ['guitars', 'Guitars', 'number'],
+  ['length', 'Length (m:ss)'],
   ['keys', 'Keys'],
   ['percussion', 'Percussion'],
   ['youtubeUrl', 'Recording link', 'url'],
   ['lyricsUrl', 'Lyrics link', 'url'],
 ]
 
-export function toPayload(v: SongFormValues) {
+export function toPayload({length, ...v}: SongFormValues) {
+  const seconds = parseLength(length)
   return {
     ...v,
+    // Unreadable ("3.12"): leave the saved length alone rather than erase it
+    ...(seconds === undefined ? {} : {seconds}),
     guitars: v.guitars.trim() === '' ? null : Number(v.guitars),
     notes: v.notes.trim() || null,
   }

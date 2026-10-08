@@ -25,6 +25,14 @@ import {transposeKey} from '@/lib/chordpro'
 import {shortDate} from '@/lib/dates'
 import PdfDialog from '@/components/PdfDialog'
 import AutoTextarea from '@/components/AutoTextarea'
+import {
+  formatLength,
+  runningOrder,
+  setSummary,
+  timeRange,
+  type BreakInfo,
+  type SetInfo,
+} from '@/lib/gig'
 
 export type PickSong = {
   id: string
@@ -32,15 +40,40 @@ export type PickSong = {
   ready: boolean
   leadSinger: string | null
   key: string | null
+  /** How long it runs, for timing sets */
+  seconds: number | null
 }
 
-type Item = {uid: string; songId: string; note: string; key: string}
+type SongItem = {
+  uid: string
+  kind: 'SONG'
+  songId: string
+  note: string
+  key: string
+}
+/** Starts a set; minutes and startTime are text while being typed */
+type SetItem = {
+  uid: string
+  kind: 'SET'
+  label: string
+  minutes: string
+  startTime: string
+}
+type BreakItem = {uid: string; kind: 'BREAK'; minutes: string}
+export type Item = SongItem | SetItem | BreakItem
 type Values = {
   name: string
   gigDate: string
+  /** When the first set starts, "20:00" */
+  startTime: string
   venue: string
   notes: string
   items: Item[]
+}
+
+const toMinutes = (t: string) => {
+  const n = Number(t)
+  return t.trim() && Number.isInteger(n) && n > 0 && n <= 600 ? n : null
 }
 
 /** The 12 keys reachable from a song's key, spelled conventionally. */
@@ -79,7 +112,30 @@ export default function SetlistEditor({
 
   const byId = useMemo(() => new Map(library.map((s) => [s.id, s])), [library])
   const dirty = JSON.stringify(v) !== JSON.stringify(saved)
-  const inSet = new Set(v.items.map((i) => i.songId))
+  const inSet = new Set(
+    v.items.flatMap((i) => (i.kind === 'SONG' ? [i.songId] : [])),
+  )
+  const songCount = v.items.filter((i) => i.kind === 'SONG').length
+  // Timing, worked out live as rows move
+  const order = useMemo(
+    () =>
+      runningOrder(
+        v.startTime || null,
+        v.items.map((i) =>
+          i.kind === 'SONG'
+            ? {kind: i.kind, song: {seconds: byId.get(i.songId)?.seconds}}
+            : i.kind === 'SET'
+              ? {
+                  kind: i.kind,
+                  label: i.label || 'Set',
+                  minutes: toMinutes(i.minutes),
+                  startTime: i.startTime || null,
+                }
+              : {kind: i.kind, minutes: toMinutes(i.minutes)},
+        ),
+      ),
+    [v.items, v.startTime, byId],
+  )
 
   const sensors = useSensors(
     useSensor(PointerSensor, {activationConstraint: {distance: 6}}),
@@ -88,8 +144,31 @@ export default function SetlistEditor({
   )
 
   const setItems = (items: Item[]) => setV({...v, items})
-  const update = (uid: string, patch: Partial<Item>) =>
-    setItems(v.items.map((i) => (i.uid === uid ? {...i, ...patch} : i)))
+  const update = (
+    uid: string,
+    // Any row's text fields; `kind` never changes
+    patch: Partial<
+      Record<'note' | 'key' | 'label' | 'minutes' | 'startTime', string>
+    >,
+  ) =>
+    setItems(
+      v.items.map((i) => (i.uid === uid ? ({...i, ...patch} as Item) : i)),
+    )
+
+  /** A new set: the first goes on top (around what's there), later ones at the end. */
+  function addSet() {
+    const n = v.items.filter((i) => i.kind === 'SET').length + 1
+    const row: SetItem = {
+      uid: newUid(),
+      kind: 'SET',
+      label: `Set ${n}`,
+      minutes: '45',
+      startTime: '',
+    }
+    setItems(n === 1 ? [row, ...v.items] : [...v.items, row])
+  }
+  const addBreak = () =>
+    setItems([...v.items, {uid: newUid(), kind: 'BREAK', minutes: '15'}])
   const move = (from: number, to: number) =>
     to >= 0 && to < v.items.length && setItems(arrayMove(v.items, from, to))
 
@@ -109,13 +188,26 @@ export default function SetlistEditor({
       body: JSON.stringify({
         name: v.name,
         gigDate: v.gigDate || null,
+        startTime: v.startTime || null,
         venue: v.venue || null,
         notes: v.notes || null,
-        items: v.items.map(({songId, note, key}) => ({
-          songId,
-          note: note || null,
-          key: key || null,
-        })),
+        items: v.items.map((i) =>
+          i.kind === 'SONG'
+            ? {
+                kind: i.kind,
+                songId: i.songId,
+                note: i.note || null,
+                key: i.key || null,
+              }
+            : i.kind === 'SET'
+              ? {
+                  kind: i.kind,
+                  label: i.label.trim() || 'Set',
+                  minutes: toMinutes(i.minutes),
+                  startTime: i.startTime || null,
+                }
+              : {kind: i.kind, minutes: toMinutes(i.minutes)},
+        ),
       }),
     })
     setBusy(false)
@@ -164,10 +256,10 @@ export default function SetlistEditor({
         />
       </label>
       <p className="mt-1 px-1 text-sm text-muted">
-        {v.items.length} songs · edited by {editedBy} · {shortDate(editedAt)}
+        {songCount} songs · edited by {editedBy} · {shortDate(editedAt)}
       </p>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-[1fr_auto_1fr]">
         <label className="flex flex-col gap-1 text-sm text-muted">
           Gig date
           <input
@@ -178,6 +270,15 @@ export default function SetlistEditor({
           />
         </label>
         <label className="flex flex-col gap-1 text-sm text-muted">
+          Starts
+          <input
+            type="time"
+            value={v.startTime}
+            onChange={(e) => setV({...v, startTime: e.target.value})}
+            className="min-h-11 rounded-lg border border-line-2 bg-panel px-3 text-base text-text"
+          />
+        </label>
+        <label className="col-span-2 flex flex-col gap-1 text-sm text-muted sm:col-span-1">
           Venue
           <input
             value={v.venue}
@@ -213,20 +314,47 @@ export default function SetlistEditor({
           strategy={verticalListSortingStrategy}
         >
           <ol className="mt-5">
-            {v.items.map((item, n) => (
-              <Row
-                key={item.uid}
-                item={item}
-                n={n}
-                count={v.items.length}
-                song={byId.get(item.songId)}
-                onChange={(p) => update(item.uid, p)}
-                onMove={(d) => move(n, n + d)}
-                onRemove={() =>
-                  setItems(v.items.filter((i) => i.uid !== item.uid))
-                }
-              />
-            ))}
+            {v.items.map((item, n) => {
+              const entry = order.entries[n]
+              const common = {
+                n,
+                count: v.items.length,
+                onMove: (d: number) => move(n, n + d),
+                onRemove: () =>
+                  setItems(v.items.filter((i) => i.uid !== item.uid)),
+              }
+              if (item.kind === 'SET' && entry?.kind === 'SET')
+                return (
+                  <SetRow
+                    key={item.uid}
+                    {...common}
+                    item={item}
+                    info={entry.info}
+                    onChange={(p) => update(item.uid, p)}
+                  />
+                )
+              if (item.kind === 'BREAK' && entry?.kind === 'BREAK')
+                return (
+                  <BreakRow
+                    key={item.uid}
+                    {...common}
+                    item={item}
+                    info={entry.info}
+                    onChange={(p) => update(item.uid, p)}
+                  />
+                )
+              if (item.kind !== 'SONG') return null
+              return (
+                <Row
+                  key={item.uid}
+                  {...common}
+                  item={item}
+                  number={entry?.kind === 'SONG' ? entry.n : n + 1}
+                  song={byId.get(item.songId)}
+                  onChange={(p) => update(item.uid, p)}
+                />
+              )
+            })}
           </ol>
         </SortableContext>
       </DndContext>
@@ -263,7 +391,13 @@ export default function SetlistEditor({
                     onClick={() =>
                       setItems([
                         ...v.items,
-                        {uid: newUid(), songId: s.id, note: '', key: ''},
+                        {
+                          uid: newUid(),
+                          kind: 'SONG',
+                          songId: s.id,
+                          note: '',
+                          key: '',
+                        },
                       ])
                     }
                     className="flex min-h-12 w-full items-center gap-3 border-t border-line px-1 text-left"
@@ -283,13 +417,29 @@ export default function SetlistEditor({
             </ul>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => setPicking(true)}
-            className="min-h-12 w-full rounded-xl border border-dashed border-line-2 font-semibold"
-          >
-            + Add songs
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setPicking(true)}
+              className="min-h-12 flex-1 rounded-xl border border-dashed border-line-2 font-semibold"
+            >
+              + Add songs
+            </button>
+            <button
+              type="button"
+              onClick={addSet}
+              className="min-h-12 rounded-xl border border-dashed border-amber px-4 font-semibold text-amber"
+            >
+              + Set
+            </button>
+            <button
+              type="button"
+              onClick={addBreak}
+              className="min-h-12 rounded-xl border border-dashed border-line-2 px-4 font-semibold text-muted"
+            >
+              + Break
+            </button>
+          </div>
         )}
       </div>
 
@@ -341,7 +491,8 @@ export default function SetlistEditor({
 
       {pdfOpen && (
         <PdfDialog
-          title={`${v.name} — ${v.items.length} charts in set order, each in its set key`}
+          title={`${v.name} — ${songCount} charts in set order, each in its set key`}
+          sheet
           baseUrl={`/api/setlists/${id}/pdf`}
           shownKey={null}
           originalKey={null}
@@ -358,17 +509,20 @@ export default function SetlistEditor({
 function Row({
   item,
   n,
+  number,
   count,
   song,
   onChange,
   onMove,
   onRemove,
 }: {
-  item: Item
+  item: SongItem
   n: number
+  /** Its number within its set */
+  number: number
   count: number
   song: PickSong | undefined
-  onChange: (p: Partial<Item>) => void
+  onChange: (p: Partial<SongItem>) => void
   onMove: (d: number) => void
   onRemove: () => void
 }) {
@@ -385,35 +539,25 @@ function Row({
       className={`border-t border-line py-2 ${isDragging ? 'relative z-10 rounded-lg bg-panel shadow-xl' : ''}`}
     >
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          aria-label={`Drag to reorder ${song?.title ?? 'song'}`}
-          className="flex h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center text-faint"
-          {...attributes}
-          {...listeners}
-        >
-          <svg
-            width="14"
-            height="20"
-            viewBox="0 0 14 20"
-            fill="currentColor"
-            aria-hidden="true"
-          >
-            {[3, 10, 17].map((y) => (
-              <g key={y}>
-                <circle cx="4" cy={y} r="1.6" />
-                <circle cx="10" cy={y} r="1.6" />
-              </g>
-            ))}
-          </svg>
-        </button>
-        <span className="w-6 font-mono text-sm text-faint">{n + 1}</span>
+        <DragHandle
+          label={song?.title ?? 'song'}
+          attributes={attributes}
+          listeners={listeners}
+        />
+        <span className="w-6 font-mono text-sm text-faint">{number}</span>
         <span className="min-w-0 flex-1">
           <span className="block font-semibold leading-snug">
             {song?.title ?? 'Deleted song'}
           </span>
-          {song?.leadSinger && (
-            <span className="text-[13px] text-muted">{song.leadSinger}</span>
+          {(song?.leadSinger || song?.seconds) && (
+            <span className="text-[13px] text-muted">
+              {[
+                song.leadSinger,
+                song.seconds ? formatLength(song.seconds) : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </span>
           )}
         </span>
         {keys.length > 0 && (
@@ -507,6 +651,194 @@ function Row({
             + Note
           </button>
         )}
+      </div>
+    </li>
+  )
+}
+
+function DragHandle({
+  label,
+  attributes,
+  listeners,
+}: {
+  label: string
+  attributes: ReturnType<typeof useSortable>['attributes']
+  listeners: ReturnType<typeof useSortable>['listeners']
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={`Drag to reorder ${label}`}
+      className="flex h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center text-faint"
+      {...attributes}
+      {...listeners}
+    >
+      <svg
+        width="14"
+        height="20"
+        viewBox="0 0 14 20"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        {[3, 10, 17].map((y) => (
+          <g key={y}>
+            <circle cx="4" cy={y} r="1.6" />
+            <circle cx="10" cy={y} r="1.6" />
+          </g>
+        ))}
+      </svg>
+    </button>
+  )
+}
+
+function useRow(uid: string) {
+  const s = useSortable({id: uid})
+  return {
+    ...s,
+    style: {
+      transform: CSS.Transform.toString(s.transform),
+      transition: s.transition,
+    },
+    lifted: s.isDragging ? 'relative z-10 rounded-lg bg-panel shadow-xl' : '',
+  }
+}
+
+/** A set header: its name and length; its times are worked out. */
+function SetRow({
+  item,
+  info,
+  onChange,
+  onRemove,
+}: {
+  item: SetItem
+  info: SetInfo
+  n: number
+  count: number
+  onChange: (p: Partial<SetItem>) => void
+  onMove: (d: number) => void
+  onRemove: () => void
+}) {
+  const r = useRow(item.uid)
+  const [timeOpen, setTimeOpen] = useState(Boolean(item.startTime))
+  const when = timeRange(info.start, info.end)
+  return (
+    <li
+      ref={r.setNodeRef}
+      style={r.style}
+      className={`mt-4 border-b-2 border-amber pb-2 pt-1 ${r.lifted}`}
+    >
+      <div className="flex items-center gap-2">
+        <DragHandle
+          label={item.label}
+          attributes={r.attributes}
+          listeners={r.listeners}
+        />
+        <label className="min-w-0 flex-1">
+          <span className="sr-only">Set name</span>
+          <input
+            value={item.label}
+            onChange={(e) => onChange({label: e.target.value})}
+            className="min-h-11 w-full rounded-lg border border-transparent bg-transparent px-1 text-lg font-extrabold hover:border-line-2 focus:border-line-2"
+          />
+        </label>
+        <label className="flex shrink-0 items-center gap-1 text-sm text-muted">
+          <span className="sr-only">Length of {item.label} in minutes</span>
+          <input
+            inputMode="numeric"
+            value={item.minutes}
+            onChange={(e) =>
+              onChange({minutes: e.target.value.replace(/\D/g, '')})
+            }
+            placeholder="—"
+            className="min-h-11 w-14 rounded-lg border border-line-2 bg-panel px-2 text-center font-mono text-base text-text"
+          />
+          min
+        </label>
+        <button
+          type="button"
+          aria-label={`Remove ${item.label} (its songs stay)`}
+          onClick={onRemove}
+          className="h-11 w-9 text-xl text-faint"
+        >
+          ×
+        </button>
+      </div>
+      <p className="flex flex-wrap items-center gap-x-3 pl-10 text-sm text-muted">
+        {when && <span className="font-mono text-text">{when}</span>}
+        <span>{setSummary(info)}</span>
+        {timeOpen ? (
+          <label className="flex items-center gap-1">
+            starts at
+            <input
+              type="time"
+              value={item.startTime}
+              onChange={(e) => onChange({startTime: e.target.value})}
+              className="min-h-9 rounded-lg border border-line-2 bg-panel px-2 text-text"
+            />
+          </label>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setTimeOpen(true)}
+            className="min-h-9 text-faint hover:text-text"
+          >
+            set its own start time
+          </button>
+        )}
+      </p>
+    </li>
+  )
+}
+
+/** A break between sets: how long; its times are worked out. */
+function BreakRow({
+  item,
+  info,
+  onChange,
+  onRemove,
+}: {
+  item: BreakItem
+  info: BreakInfo
+  n: number
+  count: number
+  onChange: (p: Partial<BreakItem>) => void
+  onMove: (d: number) => void
+  onRemove: () => void
+}) {
+  const r = useRow(item.uid)
+  const when = timeRange(info.start, info.end)
+  return (
+    <li ref={r.setNodeRef} style={r.style} className={`my-2 ${r.lifted}`}>
+      <div className="flex items-center gap-2 rounded-lg bg-panel px-1 text-muted">
+        <DragHandle
+          label="break"
+          attributes={r.attributes}
+          listeners={r.listeners}
+        />
+        <span className="flex-1 font-semibold">
+          Break
+          {when && <span className="ml-3 font-mono font-normal">{when}</span>}
+        </span>
+        <label className="flex items-center gap-1 text-sm">
+          <span className="sr-only">Length of the break in minutes</span>
+          <input
+            inputMode="numeric"
+            value={item.minutes}
+            onChange={(e) =>
+              onChange({minutes: e.target.value.replace(/\D/g, '')})
+            }
+            className="min-h-10 w-14 rounded-lg border border-line-2 bg-ink px-2 text-center font-mono text-base text-text"
+          />
+          min
+        </label>
+        <button
+          type="button"
+          aria-label="Remove the break"
+          onClick={onRemove}
+          className="h-11 w-9 text-xl text-faint"
+        >
+          ×
+        </button>
       </div>
     </li>
   )

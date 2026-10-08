@@ -23,6 +23,8 @@ export const SongFields = z.object({
   writer: optText,
   leadSinger: optText,
   guitars: z.number().int().min(0).max(9).nullable().optional(),
+  // How long the band plays it, in seconds
+  seconds: z.number().int().min(1).max(3600).nullable().optional(),
   keys: optText,
   percussion: optText,
   youtubeUrl: optUrl,
@@ -38,6 +40,7 @@ const LABELS: Record<keyof SongFieldValues, string> = {
   writer: 'writer',
   leadSinger: 'lead singer',
   guitars: 'guitars',
+  seconds: 'length',
   keys: 'keys',
   percussion: 'percussion',
   youtubeUrl: 'YouTube link',

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import {notFound} from 'next/navigation'
 import {getSong} from '@/lib/songs'
 import ChartEditor from '@/components/ChartEditor'
+import {formatLength} from '@/lib/gig'
 import {pageSession} from '@/lib/guard'
 
 export const metadata = {title: 'Edit'}
@@ -19,6 +20,7 @@ export default async function EditSongPage({params}: {params: {id: string}}) {
         writer: song.writer ?? '',
         leadSinger: song.leadSinger ?? '',
         guitars: song.guitars == null ? '' : String(song.guitars),
+        length: song.seconds ? formatLength(song.seconds) : '',
         keys: song.keys ?? '',
         percussion: song.percussion ?? '',
         youtubeUrl: song.youtubeUrl ?? '',

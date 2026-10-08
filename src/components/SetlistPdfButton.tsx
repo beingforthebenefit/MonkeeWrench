@@ -29,6 +29,7 @@ export default function SetlistPdfButton({
           shownKey={null}
           originalKey={null}
           hasCues
+          sheet
           onClose={() => setOpen(false)}
         />
       )}
