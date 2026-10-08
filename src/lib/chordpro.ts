@@ -414,6 +414,15 @@ export function isChordLine(line: string): boolean {
     const bare = t.replace(/^\(|\)$/g, '')
     const glued = t.match(/^(.+?)(\(x\d+\))$/i)
     if (isChord(tidyChord(bare)) || (glued && isChord(glued[1]))) chords++
+    // "C-Bb-G": quick changes within a bar ("rest-B-C-C#-D" a walk)
+    else if (
+      /-/.test(bare) &&
+      bare.split('-').every((c) => isChord(c) || /^rest$/i.test(c)) &&
+      bare.split('-').some((c) => isChord(c))
+    )
+      chords++
+    // "////" and "--": beats and holds; "Pause", "rest", "stop": silences
+    else if (/^(\/+\.?|-+|pause|rest|stop|hold)$/i.test(t)) continue
     else if (!NON_CHORD_TOKENS.has(t) && !REPEAT.test(t)) return false
   }
   return chords > 0
@@ -598,6 +607,8 @@ function snapToSyllable(lyric: string, col: number) {
     // "a|gain"), after a vowel earlier in the word
     const syllable =
       VOWEL.test(lyric.slice(s, col)) &&
+      // never just after an apostrophe: "we'|ve", "don'|t"
+      !/['’]$/.test(lyric.slice(s, col)) &&
       /^[b-df-hj-np-tv-z][aeiouy]/i.test(lyric.slice(col, e))
     return syllable ? col : s
   }

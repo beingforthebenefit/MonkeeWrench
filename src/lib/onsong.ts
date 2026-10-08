@@ -3,6 +3,7 @@ import {
   isChord,
   isChordLine,
   mergeChordLine,
+  placeChords,
   placeInlineChords,
   parseHeader,
   sectionType,
@@ -56,11 +57,18 @@ export function isNoteText(line: string) {
   const t = line.trim()
   if (!t || /[[{]/.test(t) || readNoteLine(t)) return false
   if (t.split(/\s+/).length > 14) return false
-  // "/ BREAK" under a chord: beats for the chord row, not a note
-  if (/(^|\s)\/+(\.|\s|$)/.test(t)) return false
+  // Beat slashes are for the chord row above; what's left decides.
+  // "/ BREAK" under a chord is the chord's beats, not a note
+  const words = t.replace(/(^|\s)\/+\.?(?=\s|$)/g, ' ').trim()
+  if (words !== t && (!words || /^(break|stop|end|hold)\W*$/i.test(words)))
+    return false
+  // A section's name on its own line: "Verse", "Chorus 2"
+  if (/^(verse|chorus|bridge|intro|outro|solo|tag)\s*\d*\s*:?$/i.test(t))
+    return true
   // All capitals and no lyric shape: "BACK TO SLOWER TEMPO"
-  if (/^[^a-z]*[A-Z]{3}[^a-z]*$/.test(t) && !/[?!]$/.test(t)) return true
-  return NOTE_WORDS.test(t)
+  if (/^[^a-z]*[A-Z]{3}[^a-z]*$/.test(words) && !/[?!]$/.test(words))
+    return true
+  return NOTE_WORDS.test(words)
 }
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '')
@@ -221,7 +229,21 @@ function chooseTab(ctx: Ctx, w: WrittenLine, name: string, para: string) {
   return asTab
 }
 
-function convertParagraph(p: string[], ctx: Ctx): string[] {
+// "[A]ev[D-D]eryo[C]ne accents this then 4 bars guitar solo": chords
+// typed into an instruction. The chords, then the instruction as a note
+function splitInlineNotes(lines: string[]) {
+  return lines.flatMap((l) => {
+    if (!/\[/.test(l) || /^\s*\{/.test(l)) return [l]
+    const text = l.replace(/\[[^\]]*\]/g, '')
+    // "Intro: [A] [Bm]" is a labelled section, not a note
+    if (!isNoteText(text) || /:\s*$/.test(text.trim())) return [l]
+    const chords = [...l.matchAll(/\[([^\]]*)\]/g)].map((m) => `[${m[1]}]`)
+    return [chords.join('   '), text.trim()]
+  })
+}
+
+function convertParagraph(para: string[], ctx: Ctx): string[] {
+  const p = splitInlineNotes(para)
   const first = p[0].trim()
   // A directive on its own ({chorus}, {comment: ...}) passes through
   if (p.length === 1 && /^\{.*\}$/.test(first)) return [first]
@@ -229,8 +251,9 @@ function convertParagraph(p: string[], ctx: Ctx): string[] {
   if (p.length === 1 && /^\(.*\)$/.test(first) && !/\[/.test(first))
     return [`{comment: ${first.slice(1, -1)}}`]
 
+  // A row of chords alone ("[A///]   [A-A-G-F#-F-E]") is never a heading
   let label: {label: string; note: string; chords: string} | null =
-    parseHeader(first)
+    /^(\s*\[[^\]]+\])+\s*$/.test(first) ? null : parseHeader(first)
   // "Intro: [A] [Bm] [A] [Bm]": the chords to play, not a remark
   if (label?.note && /^(\s*\[[^\]]+\]\s*)+$/.test(label.note)) {
     label = {...label, chords: label.note.trim(), note: ''}
@@ -268,16 +291,6 @@ function convertParagraph(p: string[], ctx: Ctx): string[] {
     !readNoteLine(rest[0])
   )
     rest = [`{comment: ${rest[0].trim().slice(1, -1)}}`, ...rest.slice(1)]
-
-  // "[A]ev[D-D]eryo[C]ne accents this then 4 bars guitar solo": chords
-  // typed into an instruction. The chords, then the instruction as a note
-  rest = rest.flatMap((l) => {
-    if (!/\[/.test(l) || /^\s*\{/.test(l)) return [l]
-    const text = l.replace(/\[[^\]]*\]/g, '')
-    if (!isNoteText(text)) return [l]
-    const chords = [...l.matchAll(/\[([^\]]*)\]/g)].map((m) => `[${m[1]}]`)
-    return [chords.join('   '), text.trim()]
-  })
 
   // Chords typed inline: "[A[fine" for "[A]fine", "[G6-]" (a hold mark on
   // the chord), and each chord onto its syllable (see placeChords)
@@ -360,6 +373,29 @@ function convertParagraph(p: string[], ctx: Ctx): string[] {
       i--
       lines.push('\u0000tab', ...tab, '\u0000endtab')
       continue
+    }
+    // "[Emaj7]        [C#m7]" over the words: a chord row typed with
+    // brackets. Each chord goes where its bracket was typed
+    const bracketRow = /^(\s*\[[^\]]+\])+\s*$/.test(line)
+    if (bracketRow) {
+      const next = rest[i + 1]
+      if (
+        next !== undefined &&
+        next.trim() &&
+        !/[[{]/.test(next) &&
+        !isChordLine(next) &&
+        !isNoteText(next) &&
+        !readNoteLine(next) &&
+        !TAB_LINE.test(next)
+      ) {
+        const marks = [...line.matchAll(/\[([^\]]+)\]/g)].map((m) => ({
+          col: m.index!,
+          chord: m[1],
+        }))
+        lines.push(placeChords(next, marks))
+        i++
+        continue
+      }
     }
     if (!/\[/.test(line) && isChordLine(line)) {
       const next = rest[i + 1]
