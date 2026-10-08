@@ -1,6 +1,11 @@
 // Vitest + Testing Library setup
 import '@testing-library/jest-dom/vitest'
 
+// next-auth/react parses NEXTAUTH_URL when it loads and throws on "", which
+// is what the dev Docker image sets (ENV from an unset build arg)
+if (!process.env.NEXTAUTH_URL)
+  process.env.NEXTAUTH_URL = 'http://localhost:3000'
+
 // JSDOM has no matchMedia (theme and perform mode read it); nothing matches
 if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({

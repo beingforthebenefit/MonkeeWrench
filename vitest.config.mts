@@ -10,6 +10,8 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
+    // Only the suite: not stray local files such as gitignored tmp-preview/
+    include: ['tests/**/*.{test,spec}.{ts,tsx}'],
     setupFiles: [resolve(__dirname, 'tests/setup.ts')],
     globals: true,
     coverage: {
