@@ -97,7 +97,13 @@ export async function restoreVersion(args: {
 }
 
 const authorSelect = {
-  select: {id: true, name: true, displayName: true, email: true},
+  select: {
+    id: true,
+    name: true,
+    displayName: true,
+    email: true,
+    avatarAt: true,
+  },
 } as const
 
 /** Songs with their latest chart version's number, author and date. */

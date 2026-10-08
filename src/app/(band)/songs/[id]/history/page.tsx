@@ -10,6 +10,8 @@ import {parseChordPro} from '@/lib/chordpro'
 import {fullDate, shortDate} from '@/lib/dates'
 import ChartBody from '@/components/chart/ChartBody'
 import RestoreButton from '@/components/RestoreButton'
+import Avatar from '@/components/Avatar'
+import {avatarUrl} from '@/lib/avatars'
 
 export const metadata = {title: 'History · Monkee Wrench'}
 
@@ -68,9 +70,11 @@ export default async function HistoryPage({
                     aria-current={on ? 'true' : undefined}
                     className={`flex gap-3 border-l-4 px-4 py-3 no-underline ${on ? 'border-amber bg-panel' : 'border-transparent hover:bg-panel-2'}`}
                   >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-line font-bold">
-                      {displayName(v.author).charAt(0)}
-                    </span>
+                    <Avatar
+                      name={displayName(v.author)}
+                      src={v.author && avatarUrl(v.author)}
+                      size={36}
+                    />
                     <span className="flex min-w-0 flex-col gap-0.5">
                       <span>
                         <strong>{displayName(v.author)}</strong>{' '}

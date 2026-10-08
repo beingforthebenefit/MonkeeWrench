@@ -92,7 +92,7 @@ deploy: ## Build & (re)start production, then wait for it to report healthy
 .PHONY: build
 # Shares .next with the dev server: run `make dev-restart` afterwards if dev is up
 build: ## Next.js production build in a one-off container (checks it compiles)
-	$(TOOLS) npm run build --silent
+	$(COMPOSE_DEV) run --rm --no-deps -e NODE_ENV=production -e NEXTAUTH_URL=http://localhost:3000 tools npm run build --silent
 
 # ------------------------------------------------------------------------------
 # Logs / Shells
