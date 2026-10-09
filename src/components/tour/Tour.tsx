@@ -1,6 +1,6 @@
 'use client'
 
-import {useCallback, useEffect, useLayoutEffect, useState} from 'react'
+import {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react'
 import {usePathname, useRouter} from 'next/navigation'
 import {STEPS, type TourStep} from './steps'
 
@@ -97,13 +97,18 @@ export default function Tour({auto}: {auto: boolean}) {
     }
   }, [current, pathname])
 
-  // A step whose thing isn't on this page (a song with no notation): skip it
+  // A step whose thing isn't on this page (a song with no notation): skip
+  // it, the way you were going
+  const heading = useRef<1 | -1>(1)
   useEffect(() => {
-    if (missing && step !== null) go(step + 1 < STEPS.length ? step + 1 : null)
+    if (!missing || step === null) return
+    const n = step + heading.current
+    go(n >= 0 && n < STEPS.length ? n : null)
   }, [missing, step, go])
 
   const next = () => {
     if (step === null) return
+    heading.current = 1
     let n = step + 1
     // Steps on this page whose thing isn't here (no notation in this song)
     while (
@@ -125,9 +130,19 @@ export default function Tour({auto}: {auto: boolean}) {
   }
   const back = () => {
     if (!step) return
-    const to = STEPS[step - 1]
+    heading.current = -1
+    let n = step - 1
+    // Back past steps on this page whose thing isn't here (no notation)
+    while (
+      n > 0 &&
+      STEPS[n].target &&
+      (!STEPS[n].path || STEPS[n].path!.test(pathname)) &&
+      !visible(STEPS[n].target!)
+    )
+      n--
+    const to = STEPS[n]
     if (to.path && !to.path.test(pathname)) router.back()
-    go(step - 1)
+    go(n)
   }
 
   if (!current || step === null) return null
