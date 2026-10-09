@@ -86,7 +86,16 @@ services:
       start_period: 60s
 
   caddy:
-    image: caddy:2
+    # The Caddyfile is built into the image, not mounted: git replaces files
+    # (and on a branch switch, folders) on the server, and a bind mount then
+    # shows the old, deleted copy. A changed Caddyfile is a new image, and
+    # `up -d --build` swaps the container.
+    build:
+      context: ./deploy
+      dockerfile_inline: |
+        FROM caddy:2
+        COPY Caddyfile /etc/caddy/Caddyfile
+    image: bandstand-caddy:latest
     container_name: bandstand-caddy
     restart: unless-stopped
     logging: *default-logging
@@ -99,9 +108,6 @@ services:
       APP_HOST: ${APP_HOST:-app.bandstand.info}
       ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env.hosted}
     volumes:
-      # The folder, not the file: git replaces the file on every pull, and a
-      # single-file mount keeps showing the old one
-      - ./deploy:/etc/caddy:ro
       - caddy_data:/data
       - caddy_config:/config
 

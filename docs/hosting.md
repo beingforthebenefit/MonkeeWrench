@@ -269,7 +269,7 @@ wiki.
 
 Automatic. When CI's tests pass on a push, the `deploy-hosted` job connects
 to the server and it updates itself. That's `make hosted-deploy`: pull,
-rebuild, restart, re-read the Caddyfile, wait for `/api/health`. It only
+rebuild, restart, wait for `/api/health`. It only
 deploys the branch the server runs (`git -C ~/Bandstand branch` there); a
 push to any other branch is a no-op. A failed deploy fails the CI run, and
 GitHub emails you.
@@ -316,11 +316,11 @@ and store it with
 - Compose doesn't recreate a container when only an inline `configs:` changes,
   so a plain `up -d` keeps the old backup script. `make hosted-deploy` always
   recreates the backup container.
-- Caddy gets the `deploy/` folder, not the Caddyfile alone: `git pull`
-  replaces the file, and a single-file mount keeps showing the old one. It
-  also only reads the file at start or on `caddy reload`, which
-  `make hosted-deploy` runs. Both bit on 2026-10-09: a Caddyfile change
-  deployed but never took effect.
+- Nothing from the repo is mounted into a container. The Caddyfile is built
+  into Caddy's image instead. `git pull` replaces files, and a branch switch
+  can replace whole folders; a bind mount then keeps showing the old, deleted
+  copy. On 2026-10-09 a mounted Caddyfile, then a mounted folder, both went
+  stale that way.
 - The app keeps live updates and the push-notification queue in memory: run
   exactly one app container.
 - Polar may deliver webhooks late or out of order. `applySubscription` only

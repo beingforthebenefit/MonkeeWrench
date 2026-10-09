@@ -124,17 +124,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: demo
-          POSTGRES_PASSWORD: demo
-          POSTGRES_DB: demo
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd "pg_isready -U demo -d demo"
-          --health-interval 5s --health-timeout 5s --health-retries 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -142,6 +131,12 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci --no-audit --no-fund
+      # The runner's own Postgres: pulling postgres:16 from Docker Hub timed
+      # out on GitHub's runners twice on 2026-10-09
+      - name: Start Postgres
+        run: |
+          sudo systemctl start postgresql
+          sudo -u postgres psql -v ON_ERROR_STOP=1 -c "CREATE USER demo PASSWORD 'demo' CREATEDB" -c "CREATE DATABASE demo OWNER demo"
       - name: Build and capture the demo
         run: scripts/demo.sh demo-out
         env:
