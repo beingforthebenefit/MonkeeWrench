@@ -413,26 +413,30 @@ export default function Rehearsals({
                 <table className="w-full border-collapse text-sm">
                   <thead>
                     <tr>
-                      <th className="sticky left-0 bg-ink px-3 py-2 text-left font-semibold">
-                        Day
+                      <th className="sticky left-0 bg-ink px-3 py-2 text-left align-bottom font-semibold">
+                        {/* level with the names, above their status line */}
+                        <span
+                          className={`block ${unanswered.length ? 'pb-5' : ''}`}
+                        >
+                          Day
+                        </span>
                       </th>
                       {liveMembers.map((m) => (
                         <th
                           key={m.id}
-                          className="px-2 py-2 text-center font-semibold"
+                          className="px-2 py-2 text-center align-bottom font-semibold"
                         >
-                          <Avatar
-                            name={m.name}
-                            src={m.avatar}
-                            size={28}
-                            className="mx-auto mb-1"
-                          />
-                          {m.name}
-                          {!m.answered && (
-                            <span className="block text-[11px] font-normal text-faint">
-                              no answer
-                            </span>
-                          )}
+                          {/* Picture, name, and a status line kept even when
+                              empty, so every name sits on the same line */}
+                          <span className="flex flex-col items-center gap-1">
+                            <Avatar name={m.name} src={m.avatar} size={28} />
+                            <span className="whitespace-nowrap">{m.name}</span>
+                            {unanswered.length > 0 && (
+                              <span className="block min-h-[1rem] text-[11px] font-normal text-faint">
+                                {m.answered ? '' : 'no answer'}
+                              </span>
+                            )}
+                          </span>
                         </th>
                       ))}
                     </tr>
