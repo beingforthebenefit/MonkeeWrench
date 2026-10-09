@@ -101,8 +101,12 @@ export const STEPS: TourStep[] = [
     body: 'Full screen, chart only, the whole set loaded up front. Tap the screen’s edges or swipe to turn — or use a Bluetooth page-turn pedal: anything that sends arrow or page keys works.',
   },
   {
+    title: 'Take it with you',
+    body: 'Add the app to your home screen: it opens like an app, works without signal (open a setlist once and the whole gig is saved), and can tell you when someone changes a chart or a setlist. Account → The app on this device has the steps for your phone.',
+  },
+  {
     target: '[aria-label="Account menu"]',
     title: 'Everything else',
-    body: 'Your photo and password, switching bands, Recent changes, and Help — with every feature explained and this tour again.',
+    body: 'Account (your photo, password, installing the app and notifications), switching bands, Recent changes, and Help — with every feature explained and this tour again.',
   },
 ]

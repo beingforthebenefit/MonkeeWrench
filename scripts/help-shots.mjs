@@ -228,4 +228,16 @@ async function element(p, selector, name, pad = 12) {
   await p.close()
 }
 
+// The app on this device, as an iPhone in Safari sees it before installing
+{
+  const p = await page(PHONE)
+  await p.setUserAgent(
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+  )
+  await p.goto(base + '/account', {waitUntil: 'networkidle2'})
+  await wait(800)
+  await element(p, '#notifications', 'app', 16)
+  await p.close()
+}
+
 await browser.close()

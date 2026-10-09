@@ -23,7 +23,9 @@ const SECTIONS = [
   {id: 'proposals', title: 'Proposals'},
   {id: 'bands', title: 'More than one band'},
   {id: 'account', title: 'Your account'},
-  {id: 'phone', title: 'On your phone'},
+  {id: 'install', title: 'Install the app'},
+  {id: 'offline', title: 'Without signal'},
+  {id: 'notifications', title: 'Notifications'},
   {id: 'admins', title: 'For admins'},
 ]
 
@@ -390,16 +392,87 @@ export default function HelpPage() {
         </ul>
       </Section>
 
-      <Section id="phone" title="On your phone">
+      <Section id="install" title="Install the app">
+        <Shot
+          src="app"
+          w={768}
+          h={644}
+          alt="The app section of Account: install and notifications"
+          narrow
+        />
         <ul>
           <li>
-            Add it to your home screen and it opens like an app, full screen,
-            with the band’s icon. <b>iPhone or iPad:</b> Share →{' '}
-            <i>Add to Home Screen</i>. <b>Android:</b> the ⋮ menu →{' '}
-            <i>Add to home screen</i> or <i>Install app</i>.
+            Installed, it opens from your home screen like any app: full screen,
+            with the band’s icon, no browser bars. It also works without signal
+            and can send you notifications.
+          </li>
+          <li>
+            <b>iPhone or iPad:</b> open it in <b>Safari</b>, tap <b>Share</b>{' '}
+            (the square with an arrow), then <b>Add to Home Screen</b> →{' '}
+            <b>Add</b>. From then on, open it from the home screen.
+          </li>
+          <li>
+            <b>Android:</b> in Chrome, the <b>⋮</b> menu → <b>Install app</b>{' '}
+            (or <b>Add to home screen</b>).
+          </li>
+          <li>
+            <b>A computer:</b> in Chrome or Edge, the install icon at the right
+            of the address bar. Safari on a Mac: File → <b>Add to Dock</b>.
+          </li>
+          <li>
+            Where the browser can do it for you,{' '}
+            <b>Account → The app on this device</b> has an <b>Install app</b>{' '}
+            button; otherwise it shows the steps for your phone.
           </li>
           <li>
             The <b>◐</b> button at the top switches between light and dark.
+          </li>
+        </ul>
+      </Section>
+
+      <Section id="offline" title="Without signal">
+        <ul>
+          <li>
+            Every page you open is kept on your device. With no signal you still
+            get the saved copy, and an <b>Offline</b> tag shows at the top.
+          </li>
+          <li>
+            <b>Opening a setlist saves the whole gig</b> — performance mode and
+            every chart in it — and says <b>✓ Saved for offline</b>. Open the
+            setlist once before you leave and the gig works in a basement with
+            no bars.
+          </li>
+          <li>
+            When the signal’s back you get the latest again. A page you’ve never
+            opened can’t be shown offline; it says so.
+          </li>
+          <li>Signing out or switching band clears what’s saved.</li>
+        </ul>
+      </Section>
+
+      <Section id="notifications" title="Notifications">
+        <ul>
+          <li>
+            Turn them on in <b>Account → The app on this device</b>, once on
+            each phone, tablet or computer you want them on.
+          </li>
+          <li>
+            You hear when <b>someone else</b> changes a chart, a setlist, a
+            rehearsal or a proposal — never about your own changes. A burst of
+            edits comes as one notification. Tap it to open what changed.
+          </li>
+          <li>
+            Choose which of those you want under <b>Tell me about</b>; that goes
+            for all your devices. <b>Send a test</b> checks it’s working.
+          </li>
+          <li>
+            <b>iPhone and iPad</b> only give notifications to apps on the home
+            screen: install it first (above), open it from the home screen, then
+            turn them on. Android and computers work in the browser too.
+          </li>
+          <li>
+            Turned them off by mistake in the phone’s settings? Turn them back
+            on there (Settings → Notifications → the app), then in Account.
           </li>
         </ul>
       </Section>

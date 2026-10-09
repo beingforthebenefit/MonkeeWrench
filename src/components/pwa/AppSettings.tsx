@@ -149,7 +149,7 @@ export default function AppSettings({
             It opens full screen like an app, works without signal for anything
             you’ve opened, and can send notifications.
           </p>
-          {offer ? (
+          {offer && plat !== 'ios' ? (
             <button
               type="button"
               onClick={async () => setInstalled(await install())}
@@ -223,7 +223,7 @@ export default function AppSettings({
       </div>
 
       {/* What to hear about: per person, every device */}
-      {(on || devices.length > 0) && (
+      {(on || (devices.length > 0 && !needsInstall)) && (
         <div className="border-t border-line py-3">
           <p className="font-semibold">Tell me about</p>
           <ul className="mt-1">
