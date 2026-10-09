@@ -17,6 +17,8 @@ const PUBLIC_API = [
   /^\/api\/password\/(forgot|set)$/,
   // Polar's webhooks: signed, checked in the route
   /^\/api\/billing\/webhook$/,
+  // Caddy, asking whether to get a certificate for a band's web address
+  /^\/api\/tls\/ask$/,
 ]
 
 export function middleware(req: NextRequest) {

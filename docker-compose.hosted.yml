@@ -51,6 +51,8 @@ services:
       NODE_ENV: production
       NEXTAUTH_URL: https://${APP_HOST:-app.bandstand.info}
       AUTH_TRUST_HOST: 'true'
+      # Caddy may get certificates for this address and bands' own ones
+      APP_HOST: ${APP_HOST:-app.bandstand.info}
       DATABASE_URL: postgresql://bandstand:${POSTGRES_PASSWORD}@db:5432/bandstand?schema=public
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?set NEXTAUTH_SECRET in .env.hosted}
       # Sign-up, trials and billing (src/lib/hosted.ts)

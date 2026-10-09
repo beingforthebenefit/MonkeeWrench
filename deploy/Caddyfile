@@ -2,10 +2,25 @@
 # renewed automatically) in front of the app. docker-compose.hosted.yml.
 {
 	email {$ACME_EMAIL}
+	# A band's own web address gets its certificate on its first visit,
+	# once the app confirms the address belongs to a band
+	on_demand_tls {
+		ask http://app:3000/api/tls/ask
+	}
 }
 
 {$APP_HOST} {
 	encode zstd gzip
 	# Sets X-Forwarded-Host/-Proto, which the app uses for its links
+	reverse_proxy app:3000
+}
+
+# Bands' own addresses (Admin → All bands), e.g. members.yourband.com with
+# its DNS pointed at this server
+https:// {
+	tls {
+		on_demand
+	}
+	encode zstd gzip
 	reverse_proxy app:3000
 }

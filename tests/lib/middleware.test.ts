@@ -28,6 +28,7 @@ describe('middleware', () => {
       '/api/password/forgot',
       '/api/password/set',
       '/api/billing/webhook',
+      '/api/tls/ask',
     ])
       expect(middleware(req(p)).status).toBe(200)
     expect(middleware(req('/api/billing/checkout')).status).toBe(401)
