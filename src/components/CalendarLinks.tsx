@@ -60,8 +60,8 @@ export function AddToCalendar({
 }
 
 /**
- * A personal feed of every rehearsal. Calendar apps check it on their own,
- * so new and changed rehearsals appear without anyone adding them.
+ * A personal feed of every rehearsal and gig. Calendar apps check it on
+ * their own, so new and changed ones appear without anyone adding them.
  */
 export function SubscribeCalendar() {
   const [url, setUrl] = useState<string | null>(null)
@@ -94,13 +94,13 @@ export function SubscribeCalendar() {
         aria-expanded={open}
         className="min-h-9 text-sm font-semibold text-sky"
       >
-        Subscribe to all rehearsals {open ? '▴' : '▾'}
+        Subscribe to rehearsals and gigs {open ? '▴' : '▾'}
       </button>
       {open && (
         <div className="mt-2 space-y-3 text-sm">
           <p className="text-muted">
-            New rehearsals then show up in your calendar by themselves. This
-            link is yours: don’t share it.
+            Rehearsals and gigs, in every band you’re in, then show up in your
+            calendar by themselves. This link is yours: don’t share it.
           </p>
           {url ? (
             <>

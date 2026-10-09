@@ -3,13 +3,15 @@ export const dynamic = 'force-dynamic'
 import {prisma} from '@/lib/db'
 import {buildIcs} from '@/lib/ics'
 import {rehearsalEvent} from '@/lib/rehearsal-events'
+import {gigEvent} from '@/lib/gig-events'
 import {bandSite} from '@/lib/band'
 
 /**
- * Subscribable feed of every rehearsal in every band this person is in:
+ * Subscribable feed of every rehearsal and gig (a setlist with a date) in
+ * every band this person is in:
  * /api/calendar/<token>.ics. Calendar apps can't sign in, so the URL carries
  * a per-person secret instead; it can be reset from the Rehearsals page,
- * which kills the old link. Only rehearsal dates, times and places are in
+ * which kills the old link. Only dates, times, places and set times are in
  * it -- no charts.
  */
 export const GET = async (
@@ -40,15 +42,30 @@ export const GET = async (
     where: {date: {gte: since}, bandId: {in: [...bands.keys()]}},
     orderBy: {date: 'asc'},
   })
+  const gigs = await prisma.setlist.findMany({
+    where: {gigDate: {gte: since}, bandId: {in: [...bands.keys()]}},
+    orderBy: {gigDate: 'asc'},
+    include: {
+      items: {
+        orderBy: {position: 'asc'},
+        include: {song: {select: {seconds: true}}},
+      },
+    },
+  })
   const name =
     bands.size === 1
-      ? `${[...bands.values()][0].name} rehearsals`
-      : 'Band rehearsals'
+      ? `${[...bands.values()][0].name} rehearsals and gigs`
+      : 'Band rehearsals and gigs'
   return new Response(
     buildIcs(
-      rehearsals.map((r) =>
-        rehearsalEvent(r, bands.get(r.bandId)!, sites.get(r.bandId)),
-      ),
+      [
+        ...rehearsals.map((r) =>
+          rehearsalEvent(r, bands.get(r.bandId)!, sites.get(r.bandId)),
+        ),
+        ...gigs.flatMap(
+          (g) => gigEvent(g, bands.get(g.bandId)!, sites.get(g.bandId)) ?? [],
+        ),
+      ],
       {name},
     ),
     {

@@ -323,6 +323,11 @@ export default function HelpPage() {
             Scheduled rehearsals show the time and place, with a map link and
             buttons to add them to your calendar.
           </li>
+          <li>
+            <b>Subscribe to rehearsals and gigs</b> puts every band’s rehearsals
+            and gigs in your phone’s calendar, kept up to date by itself. Each
+            gig shows its venue and set times.
+          </li>
         </ul>
       </Section>
 
@@ -373,10 +378,7 @@ export default function HelpPage() {
         <Shot src="account" w={1650} h={1080} alt="Account and settings" />
         <ul>
           <li>Your photo, your password, and how you appear to the band.</li>
-          <li>
-            A <b>calendar feed</b>: subscribe once and every band’s rehearsals
-            appear in your phone’s calendar.
-          </li>
+
           <li>
             Across your bands: share your days off with all of them or not, and
             whether a gig with one marks you busy in the others.
