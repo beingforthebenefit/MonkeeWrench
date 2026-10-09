@@ -225,28 +225,82 @@ export default function Perform({
       <header
         className={`flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 sm:gap-x-4 ${scroll ? 'sticky top-0 z-10 -mx-4 bg-stage/95 px-4 pb-2 pt-[max(env(safe-area-inset-top),12px)] backdrop-blur' : ''}`}
       >
-        <span className="font-mono text-muted">
-          {song.set ? (
-            <>
-              <span className="font-sans font-semibold text-text">
-                {song.set.label}
-              </span>{' '}
-              · {song.set.n}/{song.set.count}
-            </>
-          ) : (
-            <>
-              {i + 1} / {songs.length}
-            </>
-          )}
-          <OfflineBadge className="ml-2" />
-          {!scroll && page.pages > 1 && (
-            <span className="ml-2 rounded-full border border-line px-2 py-0.5 text-sm">
-              page {page.page + 1}/{page.pages}
-            </span>
-          )}
-        </span>
+        {/* Phones: where you are and the buttons on one line that never
+            wraps (the position gives way first), the song below. Wider: one
+            row, the song in the middle. */}
+        <div className="flex w-full min-w-0 items-center gap-1.5 sm:contents">
+          <span className="min-w-0 flex-1 truncate font-mono text-muted sm:flex-none">
+            {song.set ? (
+              <>
+                <span className="font-sans font-semibold text-text">
+                  {song.set.label}
+                </span>
+                <span className="hidden sm:inline"> · </span>
+                <span className="sm:hidden"> </span>
+                {song.set.n}/{song.set.count}
+              </>
+            ) : (
+              <>
+                {i + 1} / {songs.length}
+              </>
+            )}
+            <OfflineBadge className="ml-2" />
+            {!scroll && page.pages > 1 && (
+              <span className="ml-1.5 text-sm sm:ml-2 sm:rounded-full sm:border sm:border-line sm:px-2 sm:py-0.5">
+                <span className="hidden sm:inline">page </span>
+                <span className="sm:hidden">p.</span>
+                {page.page + 1}/{page.pages}
+              </span>
+            )}
+          </span>
+          <div
+            role="group"
+            aria-label="Text size"
+            className="flex shrink-0 items-center rounded-lg border border-line sm:order-2"
+          >
+            <button
+              type="button"
+              aria-label="Smaller text"
+              onClick={() =>
+                scroll
+                  ? setSizeIdx(Math.max(0, sizeIdx - 1))
+                  : setFitStep(Math.max(-3, fitStep - 1))
+              }
+              className="h-11 w-9 text-sm font-semibold text-muted sm:w-10"
+            >
+              A
+            </button>
+            <button
+              type="button"
+              aria-label="Larger text"
+              onClick={() =>
+                scroll
+                  ? setSizeIdx(Math.min(TEXT_SIZES.length - 1, sizeIdx + 1))
+                  : setFitStep(Math.min(5, fitStep + 1))
+              }
+              className="h-11 w-9 text-xl font-semibold text-muted sm:w-10"
+            >
+              A
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => setModePref(scroll ? 'pages' : 'scroll')}
+            className="flex min-h-11 shrink-0 items-center rounded-lg border border-line px-2.5 text-sm text-muted sm:order-2 sm:px-3"
+            aria-label={scroll ? 'Show as pages' : 'Show as one scrolling page'}
+          >
+            {scroll ? 'Pages' : 'Scroll'}
+          </button>
+          <Link
+            href={`/setlists/${setId}`}
+            className="flex min-h-11 shrink-0 items-center rounded-lg border border-line px-2.5 text-sm text-muted no-underline sm:order-2 sm:px-3.5"
+            aria-label={`Exit ${name}`}
+          >
+            Exit
+          </Link>
+        </div>
         {/* The song and its key read together; the buttons sit apart */}
-        <div className="order-last flex w-full min-w-0 items-baseline gap-3 sm:order-none sm:w-auto sm:flex-1">
+        <div className="flex w-full min-w-0 items-baseline gap-3 sm:order-1 sm:w-auto sm:flex-1">
           <h1 className="min-w-0 text-2xl font-extrabold leading-tight sm:truncate md:text-[34px]">
             {song.title}
           </h1>
@@ -257,52 +311,6 @@ export default function Perform({
             {detectKey(chart)}
           </span>
         </div>
-        <span className="flex-1 sm:hidden" />
-        <div
-          role="group"
-          aria-label="Text size"
-          className="flex items-center rounded-lg border border-line"
-        >
-          <button
-            type="button"
-            aria-label="Smaller text"
-            onClick={() =>
-              scroll
-                ? setSizeIdx(Math.max(0, sizeIdx - 1))
-                : setFitStep(Math.max(-3, fitStep - 1))
-            }
-            className="h-11 w-9 text-sm font-semibold text-muted sm:w-10"
-          >
-            A
-          </button>
-          <button
-            type="button"
-            aria-label="Larger text"
-            onClick={() =>
-              scroll
-                ? setSizeIdx(Math.min(TEXT_SIZES.length - 1, sizeIdx + 1))
-                : setFitStep(Math.min(5, fitStep + 1))
-            }
-            className="h-11 w-9 text-xl font-semibold text-muted sm:w-10"
-          >
-            A
-          </button>
-        </div>
-        <button
-          type="button"
-          onClick={() => setModePref(scroll ? 'pages' : 'scroll')}
-          className="flex min-h-11 items-center rounded-lg border border-line px-3 text-sm text-muted"
-          aria-label={scroll ? 'Show as pages' : 'Show as one scrolling page'}
-        >
-          {scroll ? 'Pages' : 'Scroll'}
-        </button>
-        <Link
-          href={`/setlists/${setId}`}
-          className="flex min-h-11 items-center rounded-lg border border-line px-3.5 text-sm text-muted no-underline"
-          aria-label={`Exit ${name}`}
-        >
-          Exit
-        </Link>
       </header>
       {(song.note || song.leadSinger) && (
         <p className="mt-2.5 shrink-0 rounded-lg bg-warn-bg px-3.5 py-2 text-[17px] text-warn-fg">

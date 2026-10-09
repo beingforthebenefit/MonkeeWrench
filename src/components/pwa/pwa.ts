@@ -77,11 +77,28 @@ export async function clearSaved() {
   } catch {}
 }
 
-/** Save pages ahead of time, so they open without signal. */
-export function saveForOffline(urls: string[]) {
-  navigator.serviceWorker?.ready
-    .then((reg) => reg.active?.postMessage({type: 'save', urls}))
-    .catch(() => {})
+/**
+ * Save pages ahead of time, so they open without signal. Resolves once the
+ * service worker has them: how many of them it kept (null: no answer).
+ */
+export function saveForOffline(
+  urls: string[],
+): Promise<{saved: number; total: number} | null> {
+  return new Promise((resolve) => {
+    const sw = navigator.serviceWorker
+    if (!sw) return resolve(null)
+    const timer = setTimeout(() => resolve(null), 120_000)
+    sw.ready
+      .then((reg) => {
+        const channel = new MessageChannel()
+        channel.port1.onmessage = (e) => {
+          clearTimeout(timer)
+          resolve(e.data)
+        }
+        reg.active?.postMessage({type: 'save', urls}, [channel.port2])
+      })
+      .catch(() => resolve(null))
+  })
 }
 
 // ---------------------------------------------------------------------------

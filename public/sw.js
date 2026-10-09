@@ -46,12 +46,14 @@ self.addEventListener('message', (event) => {
       (async () => {
         const cache = await caches.open(PAGES)
         const code = await caches.open(STATIC)
+        let saved = 0
         for (const url of msg.urls) {
           try {
             const res = await fetch(url, {credentials: 'same-origin'})
             if (!keepable(res)) continue
             const html = await res.clone().text()
             await cache.put(url, res)
+            saved++
             // And the code that page runs on, or it can't work offline
             if (DEV) continue
             for (const m of html.matchAll(
@@ -63,6 +65,8 @@ self.addEventListener('message', (event) => {
               }
           } catch {}
         }
+        // Tell the page how it went: it says "Saved" only when it was
+        event.ports[0]?.postMessage({saved, total: msg.urls.length})
       })(),
     )
 })

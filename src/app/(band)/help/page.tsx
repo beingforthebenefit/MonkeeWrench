@@ -101,7 +101,9 @@ export default function HelpPage() {
             link to the recording. Notes about the song sit just below it.
           </li>
           <li>
-            <b>PDF</b> prints the chart in whatever key you’re looking at.
+            <b>PDF</b> prints the chart in whatever key you’re looking at. In
+            the app on an iPhone or iPad it opens the share sheet, for{' '}
+            <b>Save to Files</b>, <b>Print</b> or sending it on.
           </li>
         </ul>
       </Section>
@@ -438,9 +440,10 @@ export default function HelpPage() {
           </li>
           <li>
             <b>Opening a setlist saves the whole gig</b> — performance mode and
-            every chart in it — and says <b>✓ Saved for offline</b>. Open the
-            setlist once before you leave and the gig works in a basement with
-            no bars.
+            every chart in it — and says <b>✓ Saved for offline</b> once it’s
+            all on your device (or how many of them saved, if some didn’t).
+            Going straight to <b>Perform</b> saves the same. Do it once before
+            you leave and the gig works in a basement with no bars.
           </li>
           <li>
             When the signal’s back you get the latest again. A page you’ve never

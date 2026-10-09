@@ -1,6 +1,7 @@
 'use client'
 
 import {useEffect, useRef, useState} from 'react'
+import {isInstalled, platform} from './pwa/pwa'
 
 /**
  * Download-a-PDF sheet. A bottom sheet on phones, a centered dialog on wider
@@ -33,6 +34,16 @@ export default function PdfDialog({
   const [withCues, setWithCues] = useState(false)
   const [what, setWhat] = useState<'charts' | 'sheet'>('charts')
   const closeRef = useRef<HTMLButtonElement>(null)
+  // The app on an iPhone or iPad opens a PDF link in a viewer with no way to
+  // save it, so there the PDF goes to the share sheet (Save to Files, Print,
+  // AirDrop). Sharing needs a fresh tap, so it's made first, then shared.
+  const [shareSheet, setShareSheet] = useState(false)
+  const [made, setMade] = useState<File | 'making' | 'failed' | null>(null)
+  useEffect(() => {
+    setShareSheet(
+      isInstalled() && platform() === 'ios' && 'canShare' in navigator,
+    )
+  }, [])
 
   useEffect(() => {
     closeRef.current?.focus()
@@ -46,6 +57,35 @@ export default function PdfDialog({
   if (what === 'sheet') params.set('sheet', '1')
   else if (withCues) params.set('cues', '1')
   const href = `${baseUrl}?${params}`
+  // A different choice is a different PDF
+  useEffect(() => setMade(null), [href])
+
+  async function make() {
+    setMade('making')
+    try {
+      const r = await fetch(href)
+      if (!r.ok) throw new Error(String(r.status))
+      const name =
+        r.headers
+          .get('Content-Disposition')
+          ?.match(/filename="([^"]+)"/)?.[1] ?? `${title}.pdf`
+      const file = new File([await r.blob()], name, {
+        type: 'application/pdf',
+      })
+      setMade(navigator.canShare?.({files: [file]}) ? file : 'failed')
+    } catch {
+      setMade('failed')
+    }
+  }
+
+  async function share(file: File) {
+    try {
+      await navigator.share({files: [file]})
+      onClose()
+    } catch {
+      // Closed the share sheet: leave the button there to try again
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center">
@@ -125,17 +165,41 @@ export default function PdfDialog({
 
         {footnote && <p className="my-4 text-[13px] text-muted">{footnote}</p>}
 
-        <a
-          href={href}
-          className="mt-2 flex min-h-13 items-center justify-center gap-2 rounded-xl bg-accent py-3.5 text-[17px] font-extrabold text-on-accent no-underline"
-          onClick={() => setTimeout(onClose, 300)}
-        >
-          Download
-        </a>
+        {shareSheet && made !== 'failed' ? (
+          <button
+            type="button"
+            disabled={made === 'making'}
+            onClick={() => (made instanceof File ? share(made) : make())}
+            className={`${big} w-full disabled:opacity-70`}
+          >
+            {made === 'making'
+              ? 'Making the PDF…'
+              : made instanceof File
+                ? 'Save or share PDF'
+                : 'Make PDF'}
+          </button>
+        ) : (
+          <a
+            href={href}
+            className={`${big} no-underline`}
+            onClick={() => setTimeout(onClose, 300)}
+          >
+            Download
+          </a>
+        )}
+        {made instanceof File && (
+          <p className="mt-2 text-center text-[13px] text-muted">
+            Ready — choose <b>Save to Files</b>, <b>Print</b> or where to send
+            it.
+          </p>
+        )}
       </section>
     </div>
   )
 }
+
+const big =
+  'mt-2 flex min-h-13 items-center justify-center gap-2 rounded-xl bg-accent py-3.5 text-[17px] font-extrabold text-on-accent'
 
 function Choice({
   legend,

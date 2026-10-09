@@ -8,6 +8,7 @@ import {followToBand} from '@/lib/band'
 import {getSetlist} from '@/lib/setlists'
 import Perform, {type PerformSong} from '@/components/Perform'
 import {myCues} from '@/lib/cues-server'
+import SaveOffline from '@/components/pwa/SaveOffline'
 import {formatClock, runningOrder} from '@/lib/gig'
 
 export const metadata = {title: 'Perform'}
@@ -64,5 +65,19 @@ export default async function PerformPage({params}: {params: {id: string}}) {
             : null,
     })
   })
-  return <Perform setId={set.id} name={set.name} songs={songs} />
+  return (
+    <>
+      <Perform setId={set.id} name={set.name} songs={songs} />
+      {/* The setlist and its charts too, as opening the setlist does */}
+      <SaveOffline
+        quiet
+        urls={[
+          `/setlists/${set.id}`,
+          ...new Set(
+            set.items.flatMap((i) => (i.songId ? [`/songs/${i.songId}`] : [])),
+          ),
+        ]}
+      />
+    </>
+  )
 }
