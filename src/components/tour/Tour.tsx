@@ -3,6 +3,7 @@
 import {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react'
 import {usePathname, useRouter} from 'next/navigation'
 import {STEPS, type TourStep} from './steps'
+import {DEMO} from '@/lib/demo'
 
 /** Start the tour from anywhere (the menu, the help page). */
 export function startTour() {
@@ -10,6 +11,17 @@ export function startTour() {
 }
 
 const KEY = 'ms:tour-step'
+// The public demo can't save that someone took the tour: their browser
+// remembers instead, so it opens once per visitor, not on every page load
+const DEMO_DONE = 'ms:tour-done'
+
+function doneHere() {
+  try {
+    return DEMO && localStorage.getItem(DEMO_DONE) === '1'
+  } catch {
+    return false
+  }
+}
 
 /**
  * A walk through the app on the real screens: the screen dims except the
@@ -43,7 +55,7 @@ export default function Tour({auto}: {auto: boolean}) {
     } catch {}
     const asked = new URLSearchParams(window.location.search).has('tour')
     if (saved !== null && !Number.isNaN(saved)) setStep(saved)
-    else if (asked || (auto && pathname === '/songs')) go(0)
+    else if (asked || (auto && pathname === '/songs' && !doneHere())) go(0)
     const start = () => {
       if (window.location.pathname !== '/songs') router.push('/songs')
       go(0)
@@ -56,6 +68,10 @@ export default function Tour({auto}: {auto: boolean}) {
 
   const finish = useCallback(() => {
     go(null)
+    if (DEMO)
+      try {
+        localStorage.setItem(DEMO_DONE, '1')
+      } catch {}
     // Off the sample pages, back to the band's own songs
     if (window.location.pathname.startsWith('/tour/')) router.push('/songs')
     fetch('/api/account/settings', {

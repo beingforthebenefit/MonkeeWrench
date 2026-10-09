@@ -57,6 +57,8 @@ export function pushSupported() {
 
 export function registerServiceWorker() {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
+  // The public demo is static files; nothing to keep offline
+  if (process.env.NEXT_PUBLIC_DEMO === '1') return
   const dev = process.env.NODE_ENV !== 'production'
   // The dev server only when asked: localStorage ms:sw-dev = "1" (pages
   // only; its code changes on every save) or "full" (as in production, to

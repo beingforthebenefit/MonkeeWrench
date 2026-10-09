@@ -2,6 +2,8 @@
 const prodHost = process.env.NEXTAUTH_URL?.replace(/^https?:\/\//, '')
 const nextConfig = {
   reactStrictMode: true,
+  // scripts/demo.sh builds the public demo beside the dev server's .next
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   webpack: (config, {dev}) => {
     // In Docker the dev server can't see Tailwind's source-file dependencies
     // through the bind mount, so webpack's on-disk cache served stale CSS

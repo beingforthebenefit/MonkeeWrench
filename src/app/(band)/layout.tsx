@@ -7,6 +7,8 @@ import {authOptions} from '@/lib/auth'
 import {prisma} from '@/lib/db'
 import {currentBand} from '@/lib/band'
 import Tour from '@/components/tour/Tour'
+import DemoStrip from '@/components/DemoStrip'
+import {DEMO} from '@/lib/demo'
 
 // Everything here holds copyrighted charts: band members only, and only the
 // band they're looking at.
@@ -24,6 +26,7 @@ export default async function BandLayout({children}: {children: ReactNode}) {
   if (!band) redirect('/bands?next=' + encodeURIComponent(path))
   return (
     <>
+      {DEMO && <DemoStrip />}
       {children}
       {/* The first-time tour, until they finish or skip it */}
       <Tour auto={!user.tourDoneAt} />

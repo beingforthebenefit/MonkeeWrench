@@ -59,7 +59,14 @@ const config = [
 
   // Ignores
   {
-    ignores: ['node_modules', '.next', 'dist', 'build'],
+    ignores: [
+      'node_modules',
+      '.next',
+      '.next-demo',
+      'demo-out',
+      'dist',
+      'build',
+    ],
   },
 ]
 

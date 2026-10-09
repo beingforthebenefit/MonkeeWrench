@@ -9,6 +9,7 @@ import {brandForRequest, currentBand, iconUrl, PRODUCT} from '@/lib/band'
 import {chatLabel} from '@/lib/band-fields'
 import Providers from '@/components/Providers'
 import AppShell, {type ShellBand} from '@/components/AppShell'
+import {DEMO} from '@/lib/demo'
 import {THEME_COLORS, themeScript} from '@/lib/theme'
 
 const archivo = Archivo({subsets: ['latin'], variable: '--font-archivo'})
@@ -45,6 +46,8 @@ export async function generateMetadata(): Promise<Metadata> {
     appleWebApp: {capable: true, title: appName, statusBarStyle: 'black'},
     manifest: '/manifest.webmanifest',
     icons: {icon, apple: icon},
+    // The public demo is a copy of one made-up band, not a place to land
+    ...(DEMO ? {robots: {index: false, follow: false}} : {}),
   }
 }
 
@@ -81,6 +84,9 @@ export default async function RootLayout({children}: {children: ReactNode}) {
     >
       <head>
         <script dangerouslySetInnerHTML={{__html: themeScript}} />
+        {/* Before anything can save: see scripts/demo/demo.js */}
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        {DEMO && <script src="/demo.js" />}
       </head>
       <body>
         <Providers session={session}>

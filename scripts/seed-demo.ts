@@ -4,6 +4,7 @@
  * and real charts are copyrighted.
  *
  *   npx tsx scripts/seed-demo.ts you@example.com
+ *   npx tsx scripts/seed-demo.ts sam@example.com   # the public demo: as Sam
  *
  * You become an admin of it (alongside your other bands); four demo members
  * (@example.com, no passwords, so they can't sign in) fill the rehearsal grid
@@ -20,6 +21,8 @@ const MEMBERS = [
   {email: 'lou@example.com', name: 'Lou Baker', displayName: 'Lou'},
   {email: 'dee@example.com', name: 'Dee Mason', displayName: 'Dee'},
   {email: 'ray@example.com', name: 'Ray Ortiz', displayName: 'Ray'},
+  // Only when Sam is the one signing in (the public demo): still five
+  {email: 'jo@example.com', name: 'Jo Park', displayName: 'Jo'},
 ]
 
 const SONGS: {
@@ -195,7 +198,15 @@ const day = (offset: number) => {
 async function main() {
   const email = process.argv[2]
   if (!email) throw new Error('Usage: seed-demo <your email>')
-  const me = await prisma.user.findFirstOrThrow({where: {email}})
+  // One of the demo members (the public demo signs in as Sam), or you
+  const demo = MEMBERS.find((m) => m.email === email)
+  const me = demo
+    ? await prisma.user.upsert({
+        where: {email},
+        create: {...demo, availabilityUpdatedAt: new Date()},
+        update: {},
+      })
+    : await prisma.user.findFirstOrThrow({where: {email}})
   const band = await prisma.band.upsert({
     where: {slug: SLUG},
     create: {slug: SLUG, name: 'The Riverside Five'},
@@ -207,7 +218,7 @@ async function main() {
     update: {isAdmin: true},
   })
   const members = [me]
-  for (const m of MEMBERS) {
+  for (const m of MEMBERS.filter((m) => m.email !== me.email).slice(0, 4)) {
     const u = await prisma.user.upsert({
       where: {email: m.email},
       create: {...m, availabilityUpdatedAt: new Date()},

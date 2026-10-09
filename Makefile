@@ -28,6 +28,7 @@ help:
 	@echo "  dev-restart    Restart dev containers"
 	@echo "  deploy         Build & (re)start the live server stack (popos)"
 	@echo "  build          Next.js production build (one-off container)"
+	@echo "  demo           Build the public demo into demo-out/ (one-off container)"
 	@echo "  logs           Tail app+db logs"
 	@echo "  app-sh         Shell into app container"
 	@echo "  db-sh          Shell into db container"
@@ -93,6 +94,15 @@ deploy: ## Build & (re)start production, then wait for it to report healthy
 # Shares .next with the dev server: run `make dev-restart` afterwards if dev is up
 build: ## Next.js production build in a one-off container (checks it compiles)
 	$(COMPOSE_DEV) run --rm --no-deps -e NODE_ENV=production -e NEXTAUTH_URL=http://localhost:3000 tools npm run build --silent
+
+# The public demo, as CI publishes it: a scratch "demo" database beside the
+# dev one, wiped and refilled each time. Preview: python3 -m http.server -d demo-out
+.PHONY: demo
+demo: ## Build the static public demo into demo-out/
+	$(COMPOSE_DEV) up -d $(DB_SVC)
+	$(COMPOSE_DEV) exec -T $(DB_SVC) psql -U monkee -d monkee -tc "SELECT 1 FROM pg_database WHERE datname='demo'" | grep -q 1 || \
+	  $(COMPOSE_DEV) exec -T $(DB_SVC) createdb -U monkee demo
+	$(COMPOSE_DEV) run --rm -e DATABASE_URL='postgresql://monkee:monkee@db:5432/demo?schema=public' tools bash scripts/demo.sh demo-out
 
 # ------------------------------------------------------------------------------
 # Logs / Shells

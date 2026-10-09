@@ -2,11 +2,11 @@
 
 [![CI](https://github.com/beingforthebenefit/Bandstand/actions/workflows/ci.yml/badge.svg)](https://github.com/beingforthebenefit/Bandstand/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/Bandstand/badges/badges/tests.json)](https://github.com/beingforthebenefit/Bandstand/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/Bandstand/badges/badges/coverage.json)](https://beingforthebenefit.github.io/Bandstand/coverage/)
+[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/Bandstand/badges/badges/coverage.json)](https://bandstand.info/coverage/)
 
 **Bandstand**: a self-hosted hub for bands — chord charts with full version history, setlists, a stage performance mode, rehearsal availability, and song proposals. One install serves several bands; each can have its own name, icon and web address. Built with Next.js, NextAuth, Prisma/Postgres and Vitest. It started as Monkee Wrench, the hub for **Monkee Business** (still its name there), live at <https://members.monkeebusinessband.com>.
 
-Product page: <https://beingforthebenefit.github.io/Bandstand/> (from `site/`, published by CI with each push to `main`; its screenshots come from `scripts/site-shots.mjs`).
+Product page: <https://bandstand.info> (from `site/`; its screenshots come from `scripts/site-shots.mjs`). Live demo: <https://bandstand.info/songs>. CI publishes both with each push to `main`; see [Public demo](#public-demo).
 
 ## Table of Contents
 
@@ -26,6 +26,7 @@ Product page: <https://beingforthebenefit.github.io/Bandstand/> (from `site/`, p
 - [Testing](#testing)
 - [Linting & Formatting](#linting--formatting)
 - [CI](#ci)
+- [Public demo](#public-demo)
 - [Coverage Report](#coverage-report)
 - [File Map](#file-map)
 - [License](#license)
@@ -154,6 +155,7 @@ The editor also converts pasted chords-above-lyrics text with one button.
 - `dev`/`dev-d`/`dev-up`/`dev-up-d`: run dev stack with/without rebuild, fg/bg
 - `deploy`: build and (re)start the live stack on popos, then wait for `/api/health`
 - `build`: Next.js production build in a one-off container (checks it compiles)
+- `demo`: build the static public demo into `demo-out/` (see [Public demo](#public-demo))
 - `logs`: tail logs for app + db
 - `app-sh`/`db-sh`/`psql`: shells and psql into the DB
 - `prisma-gen`: prisma format + generate (inside app)
@@ -216,12 +218,42 @@ GitHub Actions workflow runs on every push/PR:
 
 - Node 20, `npm ci`, lint, tests with coverage, publish a summary
 - Coverage HTML uploaded as artifact for the run
+- On `main` only: builds the public demo (`demo` job), then publishes GitHub Pages (`pages` job): the product page, the demo and the coverage report, at bandstand.info
 
 Workflow: `.github/workflows/ci.yml`.
 
+## Public demo
+
+<https://bandstand.info/songs> is the real app, frozen: CI builds it with
+`NEXT_PUBLIC_DEMO=1`, runs it against a scratch database seeded with the demo
+band (`scripts/seed-demo.ts`, public-domain songs only), signs in as its
+member Sam and saves every page as static HTML, with the PDFs it links to
+(`scripts/demo.sh`, `scripts/demo/capture.mjs`). It shares the site with the
+product page, so its pages sit at the root (`/songs`, `/setlists`, …).
+
+Because it is rebuilt on every push to `main`, it always shows the current
+UI; nothing needs updating by hand. In the demo build:
+
+- Every page loads `scripts/demo/demo.js` first: any change the app tries to
+  save gets a refusal and a "nothing you change is saved" notice.
+- A strip on each page says it's a made-up band, with links to the tour and
+  back to the product page.
+- The tour opens on a visitor's first visit; their browser remembers once
+  they finish or skip it (the account can't save it).
+- No service worker, and the pages ask search engines not to index them.
+
+What a static copy can't do: anything that saves; the History page shows the
+latest version whatever version you pick, and PDFs come in the chart's own
+key and paper size whatever the options.
+
+Preview it locally: `make demo` (uses a scratch `demo` database beside the
+dev one), then `python3 -m http.server -d demo-out` and open `/songs`. To see
+it with the product page, copy `site/` into a folder together with
+`demo-out/`.
+
 ## Coverage Report
 
-- Latest HTML report: https://beingforthebenefit.github.io/Bandstand/coverage/
+- Latest HTML report: https://bandstand.info/coverage/
 - Coverage badge source is generated in CI and pushed to the `badges` branch as `badges/coverage.json`.
 
 ## File Map
@@ -232,6 +264,7 @@ Workflow: `.github/workflows/ci.yml`.
 - Prisma: `prisma/schema.prisma`, `prisma/migrations/`, `prisma/seed.mjs`
 - Charts: `src/lib/chordpro.ts` (parse/transpose/import), `src/lib/pdf.ts`, `src/lib/chart-diff.ts`, `src/components/chart/ChartBody.tsx`
 - Import: `scripts/drive-export-to-json.py`, `scripts/import-songs.ts`
+- Product page and demo: `site/`, `scripts/demo.sh`, `scripts/demo/`, `src/lib/demo.ts`
 - App: `src/app/(band)/*` (signed-in pages), `src/app/perform/*`, `src/app/api/*`, `src/components/*`, `src/lib/*`, `src/middleware.ts`
 - Tests: `tests/*`, `vitest.config.mts`
 

@@ -105,6 +105,7 @@ make deploy
 - Chart saves go through `saveChart()` in `src/lib/songs.ts` (versioning, conflict check, activity). Log every user-visible change with `logActivity()`.
 - Never commit real chart text: it is copyrighted. Test fixtures use invented lyrics; imports live in gitignored `data/`.
 
+- The public demo (bandstand.info) is this app captured as static pages by CI on every push to `main` (`scripts/demo.sh`; README "Public demo"). New pages are found by following links from the menu; a page reachable only some other way needs adding to `SEEDS` in `scripts/demo/paths.mjs`. Client code that writes must go through `fetch('/api/…')` (non-GET) so the demo can refuse it; behaviour that must differ in the demo checks `DEMO` from `src/lib/demo.ts`.
 - AuthZ/AuthN: Use `requireSession()` and `requireAdmin()` from `src/lib/guard.ts` in server routes.
 - Realtime: Use the SSE event bus in `src/lib/events.ts` for UI updates; clean up listeners to avoid leaks (see `src/app/api/stream/route.ts`).
 - URL and validation helpers live in `src/lib/url.ts` and other `lib/*` utilities; prefer these over ad‑hoc parsing.

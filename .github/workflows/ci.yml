@@ -112,25 +112,46 @@ jobs:
           name: coverage-html
           path: coverage
 
-      # GitHub Pages: the product site (site/) at the root, this run's
-      # coverage report under /coverage/
-      - name: Assemble Pages
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          mkdir -p _site
-          cp -r site/. _site/
-          cp -r coverage _site/coverage
-
-      - name: Upload Pages artifact
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
-          name: github-pages
-
-  publish-coverage:
+  # The public demo: the app built in demo mode, captured as static pages
+  # from a scratch database (scripts/demo.sh). Rebuilt on every push to main,
+  # so it always shows the current UI.
+  demo:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: build-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: demo
+          POSTGRES_PASSWORD: demo
+          POSTGRES_DB: demo
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U demo -d demo"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Build and capture the demo
+        run: scripts/demo.sh demo-out
+        env:
+          DATABASE_URL: postgresql://demo:demo@localhost:5432/demo?schema=public
+      - uses: actions/upload-artifact@v4
+        with:
+          name: demo
+          path: demo-out
+
+  # GitHub Pages (bandstand.info): the product page (site/) at the root, the
+  # demo beside it (/songs, /setlists, …), this run's coverage under /coverage/
+  pages:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build-and-test, demo]
     runs-on: ubuntu-latest
     permissions:
       pages: write
@@ -140,10 +161,23 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: demo
+          path: _site
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage-html
+          path: _site/coverage
+      - name: Add the product page
+        run: |
+          cp -r site/. _site/
+          test -f _site/index.html && test -f _site/songs.html && test -d _site/_next/static
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        with:
-          artifact_name: github-pages
