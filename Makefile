@@ -97,13 +97,13 @@ COMPOSE_HOSTED ?= $(COMPOSE) -f docker-compose.hosted.yml --env-file .env.hosted
 hosted-deploy: ## Pull, rebuild and restart the hosted service; wait for health
 	@test -f .env.hosted || { echo ".env.hosted is missing (copy .env.hosted.example)"; exit 1; }
 	git pull --ff-only
-	$(COMPOSE_HOSTED) up -d --build
+	GIT_SHA=$$(git rev-parse --short HEAD) $(COMPOSE_HOSTED) up -d --build
 	$(COMPOSE_HOSTED) up -d --force-recreate --no-deps backup
 	# Caddy only reads its Caddyfile at start or on reload
 	$(COMPOSE_HOSTED) exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
 	@echo "Waiting for /api/health..."
 	@for i in $$(seq 1 45); do \
-	  $(COMPOSE_HOSTED) exec -T app curl -fsS http://localhost:3000/api/health 2>/dev/null | grep -q '"ok":true' && { echo healthy; exit 0; }; \
+	  $(COMPOSE_HOSTED) exec -T app curl -fsS http://localhost:3000/api/health 2>/dev/null | grep -q '"ok":true' && { echo "healthy: $$($(COMPOSE_HOSTED) exec -T app curl -fsS http://localhost:3000/api/health)"; exit 0; }; \
 	  sleep 2; \
 	done; echo "Not healthy after 90s: docker logs bandstand-app"; exit 1
 

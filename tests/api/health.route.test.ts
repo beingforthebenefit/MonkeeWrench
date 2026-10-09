@@ -9,7 +9,15 @@ describe('GET /api/health', () => {
     const {GET} = await import('@/app/api/health/route')
     const res = await GET()
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ok: true, songs: 33})
+    expect(await res.json()).toEqual({ok: true, songs: 33, version: null})
+  })
+
+  it('says which commit is running, when the build knows', async () => {
+    count = async () => 1
+    process.env.GIT_SHA = 'abc1234'
+    const {GET} = await import('@/app/api/health/route')
+    expect((await (await GET()).json()).version).toBe('abc1234')
+    delete process.env.GIT_SHA
   })
 
   it('is 503 when the database does not', async () => {

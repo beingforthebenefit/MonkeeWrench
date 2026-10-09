@@ -22,5 +22,10 @@ ARG NEXTAUTH_URL
 ENV NEXTAUTH_URL=$NEXTAUTH_URL
 RUN if [ "$APP_ENV" = "production" ]; then npm run build; else echo "Skipping build for dev image"; fi
 
+# The commit this image was built from, for /api/health (make hosted-deploy
+# passes it). Last, so it never invalidates the build above.
+ARG GIT_SHA=
+ENV GIT_SHA=$GIT_SHA
+
 EXPOSE 3000
 ENTRYPOINT ["/app/scripts/entrypoint.sh"]

@@ -39,6 +39,8 @@ services:
       args:
         APP_ENV: production
         NEXTAUTH_URL: https://${APP_HOST:-app.bandstand.info}
+        # Shown by /api/health (make hosted-deploy sets it)
+        GIT_SHA: ${GIT_SHA:-}
     image: bandstand:latest
     container_name: bandstand-app
     restart: unless-stopped
