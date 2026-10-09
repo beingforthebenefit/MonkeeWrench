@@ -95,7 +95,7 @@ G,B,DB, G,B,DB, | D,F,A,F, D,F,A,F, |]
 M:4/4
 L:1/8
 K:G clef=bass
-G,,2 D,2 G,,2 D,2 | D,,2 A,,2 D,,2 A,,2 |]
+G,,2 D,2 G,,2 D,2 | D,2 A,,2 D,2 A,,2 |]
 {end_of_abc}
 
 {start_of_verse: Verse 1}

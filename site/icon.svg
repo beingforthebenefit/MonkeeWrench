@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#f2b134"/>
+  <g fill="none" stroke="#111315" stroke-linecap="round" stroke-linejoin="round">
+    <!-- the desk, holding a page of music -->
+    <path d="M136 120 H376 L352 268 H160 Z" stroke-width="22" fill="#111315"/>
+    <g stroke="#f2b134" stroke-width="7">
+      <path d="M176 156 H336"/><path d="M174 180 H338"/><path d="M172 204 H340"/><path d="M170 228 H342"/>
+    </g>
+    <!-- lip that holds the page -->
+    <path d="M150 280 H362" stroke-width="20"/>
+    <!-- pole and tripod -->
+    <path d="M256 290 V400" stroke-width="20"/>
+    <path d="M256 400 L178 440 M256 400 L334 440 M256 400 V444" stroke-width="18"/>
+  </g>
+</svg>

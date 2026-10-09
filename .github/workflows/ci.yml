@@ -112,11 +112,20 @@ jobs:
           name: coverage-html
           path: coverage
 
-      - name: Upload coverage to Pages artifact
+      # GitHub Pages: the product site (site/) at the root, this run's
+      # coverage report under /coverage/
+      - name: Assemble Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p _site
+          cp -r site/. _site/
+          cp -r coverage _site/coverage
+
+      - name: Upload Pages artifact
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: coverage
+          path: _site
           name: github-pages
 
   publish-coverage:
