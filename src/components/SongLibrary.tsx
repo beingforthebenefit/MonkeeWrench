@@ -18,7 +18,8 @@ export type LibrarySong = {
   imported?: boolean
 }
 
-type Filter = 'all' | 'ready' | 'needs'
+/** learning: has a chart, not gig-ready yet */
+type Filter = 'all' | 'ready' | 'learning' | 'needs'
 
 export default function SongLibrary({songs}: {songs: LibrarySong[]}) {
   const [q, setQ] = useState('')
@@ -28,6 +29,7 @@ export default function SongLibrary({songs}: {songs: LibrarySong[]}) {
     const needle = q.trim().toLowerCase()
     return songs.filter((s) => {
       if (filter === 'ready' && !s.ready) return false
+      if (filter === 'learning' && (s.ready || !s.hasChart)) return false
       if (filter === 'needs' && s.hasChart) return false
       if (!needle) return true
       return [s.title, s.leadSinger, s.writer].some((v) =>
@@ -38,6 +40,7 @@ export default function SongLibrary({songs}: {songs: LibrarySong[]}) {
 
   const ready = songs.filter((s) => s.ready).length
   const needs = songs.filter((s) => !s.hasChart).length
+  const learning = songs.filter((s) => s.hasChart && !s.ready).length
 
   return (
     <main className="mx-auto max-w-4xl px-4 pt-5">
@@ -46,6 +49,7 @@ export default function SongLibrary({songs}: {songs: LibrarySong[]}) {
           <h1 className="text-3xl font-extrabold">The book</h1>
           <p className="mt-1 text-muted">
             {songs.length} songs · {ready} gig-ready
+            {learning > 0 && ` · ${learning} learning`}
             {needs > 0 && ` · ${needs} need charts`}
           </p>
         </div>
@@ -69,11 +73,12 @@ export default function SongLibrary({songs}: {songs: LibrarySong[]}) {
           placeholder="Search title, singer, writer"
           className="min-h-11 flex-1 basis-60 rounded-lg border border-line-2 bg-panel px-3.5 text-text placeholder:text-faint"
         />
-        <div className="flex gap-2" role="group" aria-label="Filter">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter">
           {(
             [
               ['all', 'All'],
               ['ready', 'Gig-ready'],
+              ['learning', 'Learning'],
               ['needs', 'Needs chart'],
             ] as const
           ).map(([f, label]) => (
