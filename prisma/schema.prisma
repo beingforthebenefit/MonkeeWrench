@@ -63,6 +63,8 @@ model User {
   blockOtherBands       Boolean            @default(true)
   // Finished or skipped the first-time tour (null: show it on sign-in)
   tourDoneAt            DateTime?
+  // Emailed links to set a password (sign-up, invites, resets)
+  emailTokens           EmailToken[]
   // What their phones are told about (push notifications); each device
   // turns notifications on for itself (PushSubscription)
   notifyCharts          Boolean            @default(true)
@@ -329,34 +331,44 @@ model Rehearsal {
 // ---------------------------------------------------------------------------
 
 model Band {
-  id            String       @id @default(cuid())
+  id                  String       @id @default(cuid())
   // Used in nothing public; a stable handle for scripts ("monkee-business")
-  slug          String       @unique
-  name          String // "Monkee Business"
+  slug                String       @unique
+  name                String // "Monkee Business"
   // What the app is called for this band: header, tab title, home screen
-  appName       String       @default("Bandstand")
+  appName             String       @default("Bandstand")
   // Rehearsal times and "today" are in this zone (IANA name)
-  timezone      String       @default("America/Los_Angeles")
+  timezone            String       @default("America/Los_Angeles")
   // The band's group chat (Discord, WhatsApp...), linked from the menu
-  chatUrl       String?
+  chatUrl             String?
   // For a tribute band: the act it covers. A proposal with no artist is
   // theirs, and their songs don't get an "Originally by" note.
-  tributeTo     String?
-  voteThreshold Int          @default(2)
+  tributeTo           String?
+  voteThreshold       Int          @default(2)
   // The scheduling tool (availability, suggested days). Off: Rehearsals
   // just lists the rehearsals; the availability API answers 404.
-  scheduling    Boolean      @default(true)
+  scheduling          Boolean      @default(true)
+  // The hosted service (bandstand.info, BANDSTAND_HOSTED=1): the band can
+  // make changes until this; after it, read-only until someone renews.
+  // Null: never billed (every self-hosted band; bands the owner comps).
+  paidUntil           DateTime?
+  // Polar's subscription status, as last reported ("active", "canceled"…)
+  subscriptionStatus  String?
+  polarCustomerId     String?
+  polarSubscriptionId String?      @unique
+  // The last checkout started, to find the band if Polar's metadata is lost
+  polarCheckoutId     String?
   // Home-screen icon; null = the default Bandstand icon
-  iconAt        DateTime?
-  icon          BandIcon?
-  domains       BandDomain[]
-  memberships   Membership[]
-  songs         Song[]
-  setlists      Setlist[]
-  rehearsals    Rehearsal[]
-  proposals     Proposal[]
-  activities    Activity[]
-  createdAt     DateTime     @default(now())
+  iconAt              DateTime?
+  icon                BandIcon?
+  domains             BandDomain[]
+  memberships         Membership[]
+  songs               Song[]
+  setlists            Setlist[]
+  rehearsals          Rehearsal[]
+  proposals           Proposal[]
+  activities          Activity[]
+  createdAt           DateTime     @default(now())
 }
 
 /// A 512px square PNG, kept out of Band so loading bands never pulls bytes.
@@ -445,6 +457,28 @@ model PushSubscription {
   device     String?
   createdAt  DateTime  @default(now())
   lastUsedAt DateTime?
+
+  @@index([userId])
+}
+
+// An emailed link that lets someone set their password: the welcome after
+// starting a band, an invite from a band's admin, or a reset. Only a hash is
+// stored; a link works once, until it expires.
+enum EmailTokenKind {
+  WELCOME
+  INVITE
+  RESET
+}
+
+model EmailToken {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      EmailTokenKind
+  tokenHash String         @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime       @default(now())
 
   @@index([userId])
 }

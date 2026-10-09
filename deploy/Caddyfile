@@ -1,0 +1,11 @@
+# The hosted service's front door: HTTPS (certificates from Let's Encrypt,
+# renewed automatically) in front of the app. docker-compose.hosted.yml.
+{
+	email {$ACME_EMAIL}
+}
+
+{$APP_HOST} {
+	encode zstd gzip
+	# Sets X-Forwarded-Host/-Proto, which the app uses for its links
+	reverse_proxy app:3000
+}

@@ -24,6 +24,7 @@
     "@emotion/styled": "^11.11.5",
     "@mui/icons-material": "^5.11.16",
     "@mui/material": "^5.15.14",
+    "@polar-sh/sdk": "^1.0.2",
     "@prisma/client": "^5.16.2",
     "@tombatossals/chords-db": "^0.5.1",
     "abcjs": "^6.7.1",
@@ -32,6 +33,7 @@
     "jsdom": "^26.1.0",
     "next": "^14.2.8",
     "next-auth": "^4.24.7",
+    "nodemailer": "^10.0.16",
     "pdfkit": "^0.17.2",
     "pg": "^8.11.5",
     "react": "^18.3.1",
@@ -51,6 +53,7 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20.12.12",
+    "@types/nodemailer": "^8.0.2",
     "@types/pdfkit": "^0.17.6",
     "@types/react": "^18.2.79",
     "@types/validator": "^13.15.2",
@@ -70,5 +73,10 @@
     "tsx": "^4.23.15",
     "typescript": "^5.4.5",
     "vitest": "^3.2.4"
+  },
+  "overrides": {
+    "next-auth": {
+      "nodemailer": "$nodemailer"
+    }
   }
 }

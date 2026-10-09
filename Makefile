@@ -27,6 +27,7 @@ help:
 	@echo "  dev-up-d       Run dev detached without rebuild"
 	@echo "  dev-restart    Restart dev containers"
 	@echo "  deploy         Build & (re)start the live server stack (popos)"
+	@echo "  hosted-deploy  Update & (re)start the hosted service (on its own server)"
 	@echo "  build          Next.js production build (one-off container)"
 	@echo "  demo           Build the public demo into demo-out/ (one-off container)"
 	@echo "  logs           Tail app+db logs"
@@ -85,6 +86,31 @@ deploy: ## Build & (re)start production, then wait for it to report healthy
 	  curl -fsS http://localhost:7120/api/health 2>/dev/null | grep -q '"ok":true' && { curl -fsS http://localhost:7120/api/health; echo; exit 0; }; \
 	  sleep 2; \
 	done; echo "Not healthy after 90s: docker logs monkeewrench-app"; exit 1
+
+# The hosted service, app.bandstand.info, on its own server (docs/hosting.md).
+# Run there, from the repo. Compose doesn't recreate a container when only an
+# inline config changed, so the backup container is always recreated.
+COMPOSE_HOSTED ?= $(COMPOSE) -f docker-compose.hosted.yml --env-file .env.hosted
+
+.PHONY: hosted-deploy
+hosted-deploy: ## Pull, rebuild and restart the hosted service; wait for health
+	@test -f .env.hosted || { echo ".env.hosted is missing (copy .env.hosted.example)"; exit 1; }
+	git pull --ff-only
+	$(COMPOSE_HOSTED) up -d --build
+	$(COMPOSE_HOSTED) up -d --force-recreate --no-deps backup
+	@echo "Waiting for /api/health..."
+	@for i in $$(seq 1 45); do \
+	  $(COMPOSE_HOSTED) exec -T app curl -fsS http://localhost:3000/api/health 2>/dev/null | grep -q '"ok":true' && { echo healthy; exit 0; }; \
+	  sleep 2; \
+	done; echo "Not healthy after 90s: docker logs bandstand-app"; exit 1
+
+.PHONY: hosted-logs
+hosted-logs:
+	$(COMPOSE_HOSTED) logs -f --tail=100 app caddy
+
+.PHONY: hosted-psql
+hosted-psql:
+	$(COMPOSE_HOSTED) exec db psql -U bandstand -d bandstand
 
 # ------------------------------------------------------------------------------
 # Build

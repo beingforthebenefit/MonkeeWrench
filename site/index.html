@@ -64,6 +64,7 @@
           <a href="#charts">Charts</a>
           <a href="#perform">Perform</a>
           <a href="#together">Together</a>
+          <a href="#pricing">Pricing</a>
           <a href="#host">Self-host</a>
         </nav>
         <a class="nav-cta" href="songs">Try the demo</a>
@@ -80,8 +81,10 @@
           tablet and laptop. In any key. Even with no signal.
         </p>
         <div class="ctas reveal">
-          <a class="btn btn-amber" href="songs">Try the demo</a>
-          <a class="btn btn-ghost" href="#host">Host your own</a>
+          <a class="btn btn-amber" href="https://app.bandstand.info/start"
+            >Start your band</a
+          >
+          <a class="btn btn-ghost" href="songs">Try the demo</a>
         </div>
         <div class="hero-stage">
           <figure class="ipad tilt">
@@ -416,6 +419,44 @@
       </section>
 
       <!-- Self-host -->
+      <section id="pricing" class="dark pricing">
+        <div class="head center reveal">
+          <p class="kicker">Pricing</p>
+          <h2 class="display-2">$12.</h2>
+          <p class="sub">
+            A year, for the whole band, however many of you there are. That’s
+            what the server costs to run, split between bands. Or run it
+            yourself, free.
+          </p>
+        </div>
+        <div class="plans reveal">
+          <div class="plan plan-main">
+            <p class="plan-name">Hosted</p>
+            <p class="plan-price">$12 <span>a band, a year</span></p>
+            <ul>
+              <li>Everyone in the band, on every device</li>
+              <li>30 days free, no card needed</li>
+              <li>We run the server, the backups and the updates</li>
+              <li>Stop paying and it goes read-only; nothing is deleted</li>
+            </ul>
+            <a class="btn btn-amber" href="https://app.bandstand.info/start"
+              >Start your band</a
+            >
+          </div>
+          <div class="plan">
+            <p class="plan-name">Self-hosted</p>
+            <p class="plan-price">Free <span>open source, AGPL</span></p>
+            <ul>
+              <li>Your own server, in Docker</li>
+              <li>Several bands on one install</li>
+              <li>Every feature; same code as the hosted one</li>
+              <li>You look after it</li>
+            </ul>
+            <a class="btn btn-ghost" href="#host">How to install it</a>
+          </div>
+        </div>
+      </section>
+
       <section id="host" class="dark host">
         <div class="head center reveal">
           <p class="kicker">Self-hosted · open source</p>
@@ -485,6 +526,9 @@ $dc exec app npx tsx scripts/set-password.ts you@example.com</code></pre>
             >AGPL-3.0</a
           >
           <a href="coverage/">Test coverage</a>
+          <a href="terms">Terms</a>
+          <a href="privacy">Privacy</a>
+          <a href="copyright">Copyright</a>
         </nav>
       </div>
     </footer>

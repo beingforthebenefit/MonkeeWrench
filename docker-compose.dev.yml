@@ -19,6 +19,19 @@ services:
       VAPID_SUBJECT: ${VAPID_SUBJECT}
       USER_ALLOWLIST: ${USER_ALLOWLIST}
       VOTE_THRESHOLD: ${VOTE_THRESHOLD}
+      # The hosted service, to try locally: BANDSTAND_HOSTED=1 MAIL_LOG=1
+      # (emails go to the log) make dev-d. See docs/hosting.md.
+      BANDSTAND_HOSTED: ${BANDSTAND_HOSTED:-}
+      MAIL_LOG: ${MAIL_LOG:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      POLAR_ACCESS_TOKEN: ${POLAR_ACCESS_TOKEN:-}
+      POLAR_PRODUCT_ID: ${POLAR_PRODUCT_ID:-}
+      POLAR_WEBHOOK_SECRET: ${POLAR_WEBHOOK_SECRET:-}
+      POLAR_SERVER: ${POLAR_SERVER:-}
       CHOKIDAR_USEPOLLING: 'true' # robust watching in Docker
       WATCHPACK_POLLING: 'true'
     ports:

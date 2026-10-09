@@ -5,6 +5,9 @@ import {prisma} from '@/lib/db'
 import {requireAdmin} from '@/lib/guard'
 import {logActivity} from '@/lib/songs'
 import {route} from '@/lib/route'
+import {requestOrigin} from '@/lib/band'
+import {mailConfigured} from '@/lib/mail'
+import {sendPasswordLink} from '@/lib/email-tokens'
 
 export const GET = route(async () => {
   const {band} = await requireAdmin()
@@ -43,7 +46,9 @@ const Body = z.object({
 
 /**
  * Add someone to this band. If they already have an account (they play in
- * another band here), they join with it: same sign-in, same photo.
+ * another band here), they join with it: same sign-in, same photo. With
+ * email set up, someone who can't sign in yet is emailed a link to choose
+ * their password.
  */
 export const POST = route(async (req: Request) => {
   const {user: admin, band} = await requireAdmin()
@@ -83,8 +88,25 @@ export const POST = route(async (req: Request) => {
     })
     return u
   })
+  let invited = false
+  if (mailConfigured() && !result.passwordHash && result.email) {
+    try {
+      await sendPasswordLink({
+        userId: result.id,
+        email: result.email,
+        kind: 'INVITE',
+        origin: requestOrigin(),
+        bandName: band.name,
+        by: admin.displayName ?? admin.name,
+      })
+      invited = true
+    } catch (e) {
+      // They're in the band either way; the admin can set a password instead
+      console.error('[members] invite email failed', e)
+    }
+  }
   return Response.json(
-    {id: result.id, existing: Boolean(exists)},
+    {id: result.id, existing: Boolean(exists), invited},
     {status: 201},
   )
 })

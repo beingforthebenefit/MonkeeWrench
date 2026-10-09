@@ -22,6 +22,30 @@ describe('middleware', () => {
       expect(middleware(req(p)).status).toBe(200)
   })
 
+  it('lets starting a band, emailed password links and Polar in signed out', () => {
+    for (const p of [
+      '/api/signup',
+      '/api/password/forgot',
+      '/api/password/set',
+      '/api/billing/webhook',
+    ])
+      expect(middleware(req(p)).status).toBe(200)
+    expect(middleware(req('/api/billing/checkout')).status).toBe(401)
+  })
+
+  it('tells the guards the method, whatever the request claims', () => {
+    const r = new NextRequest(new URL('http://x/api/songs'), {
+      method: 'POST',
+      headers: {
+        cookie: 'next-auth.session-token=t',
+        'x-request-method': 'GET',
+      },
+    })
+    expect(
+      middleware(r).headers.get('x-middleware-request-x-request-method'),
+    ).toBe('POST')
+  })
+
   it('lets a request with a session cookie reach the route guard', () => {
     expect(
       middleware(req('/api/songs', 'next-auth.session-token=t')).status,

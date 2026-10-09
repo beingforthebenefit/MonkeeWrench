@@ -6,11 +6,19 @@ import {pageAdmin} from '@/lib/guard'
 import {iconUrl} from '@/lib/band'
 import VoteThreshold from '@/components/VoteThreshold'
 import BandSettings from '@/components/BandSettings'
+import BillingPanel from '@/components/BillingPanel'
+import {HOSTED, PRICE} from '@/lib/hosted'
+import {bandBilling} from '@/lib/billing'
 
 export const metadata = {title: 'Admin'}
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: {billing?: string}
+}) {
   const {band, user} = await pageAdmin()
+  const billing = HOSTED ? await bandBilling(band.id) : null
   const [members, noPassword, songs, versions] = await Promise.all([
     prisma.membership.count({where: {bandId: band.id}}),
     prisma.membership.count({
@@ -23,7 +31,7 @@ export default async function AdminPage() {
     {
       href: '/members',
       title: 'Band members',
-      body: `${members} members${noPassword ? ` · ${noPassword} without a password yet` : ''}. Add people, send passwords, make admins.`,
+      body: `${members} member${members === 1 ? '' : 's'}${noPassword ? ` · ${noPassword} without a password yet` : ''}. Add people, send passwords, make admins.`,
     },
     {
       href: '/activity',
@@ -52,6 +60,21 @@ export default async function AdminPage() {
           </Link>
         ))}
       </div>
+      {billing && billing.kind !== 'free' && (
+        <section id="billing" aria-labelledby="billing-h" className="mt-8">
+          <h2
+            id="billing-h"
+            className="text-xs font-bold uppercase tracking-widest text-muted"
+          >
+            Subscription
+          </h2>
+          <BillingPanel
+            billing={billing}
+            price={PRICE}
+            thanks={searchParams.billing === 'thanks'}
+          />
+        </section>
+      )}
       <section aria-labelledby="band-h" className="mt-8">
         <h2
           id="band-h"

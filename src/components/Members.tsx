@@ -22,12 +22,15 @@ export default function Members({
   initial,
   bandName,
   site,
+  invites = false,
 }: {
   me: string
   initial: Member[]
   bandName: string
   /** This band's web address, for the sign-in message */
   site: string
+  /** Email is set up: adding someone emails them a link */
+  invites?: boolean
 }) {
   const router = useRouter()
   const [members, setMembers] = useState(initial)
@@ -37,6 +40,8 @@ export default function Members({
   )
   const [error, setError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+  // What adding someone did (joined with their account, or was emailed)
+  const [notice, setNotice] = useState<string | null>(null)
 
   async function newPassword(m: Member) {
     setError(null)
@@ -101,22 +106,30 @@ export default function Members({
         </button>
       </div>
       <p className="mt-1 text-muted">
-        Everyone signs in with their email and a password generated here. Nobody
-        is told anything until you send them their password.
+        {invites
+          ? 'Everyone signs in with their email and a password. Adding someone emails them a link to choose theirs; you can also make one here and send it yourself.'
+          : 'Everyone signs in with their email and a password generated here. Nobody is told anything until you send them their password.'}
       </p>
 
       {adding && (
         <AddMember
-          onAdded={(existing) => {
+          onAdded={({existing, invited}) => {
             setAdding(false)
-            setError(
-              existing
+            setNotice(
+              existing && !invited
                 ? 'They already had an account from another band here, so they’re in with the same email and password.'
-                : null,
+                : invited
+                  ? 'Added. We emailed them a link to choose their password.'
+                  : null,
             )
             router.refresh()
           }}
         />
+      )}
+      {notice && (
+        <p role="status" className="mt-3 text-muted">
+          {notice}
+        </p>
       )}
       {error && (
         <p role="alert" className="mt-3 text-bad">
@@ -273,7 +286,11 @@ function PasswordNotice({
   )
 }
 
-function AddMember({onAdded}: {onAdded: (existing: boolean) => void}) {
+function AddMember({
+  onAdded,
+}: {
+  onAdded: (r: {existing: boolean; invited: boolean}) => void
+}) {
   const [name, setName] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
@@ -285,8 +302,14 @@ function AddMember({onAdded}: {onAdded: (existing: boolean) => void}) {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({name, displayName, email}),
     })
-    if (r.ok) onAdded(Boolean((await r.json().catch(() => ({}))).existing))
-    else setError((await r.json().catch(() => ({}))).error ?? 'Could not add.')
+    if (r.ok) {
+      const body = await r.json().catch(() => ({}))
+      onAdded({
+        existing: Boolean(body.existing),
+        invited: Boolean(body.invited),
+      })
+    } else
+      setError((await r.json().catch(() => ({}))).error ?? 'Could not add.')
   }
   return (
     <form

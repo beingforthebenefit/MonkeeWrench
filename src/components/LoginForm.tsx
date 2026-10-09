@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import {useRouter, useSearchParams} from 'next/navigation'
 import {getProviders, signIn} from 'next-auth/react'
 import {useEffect, useState} from 'react'
@@ -14,10 +15,16 @@ export default function LoginForm({
   appName,
   bandName,
   iconUrl,
+  forgot = false,
+  signup = false,
 }: {
   appName: string
   bandName: string | null
   iconUrl: string
+  /** Email is set up: offer a reset link */
+  forgot?: boolean
+  /** The hosted service: anyone can start a band */
+  signup?: boolean
 }) {
   const params = useSearchParams()
   const router = useRouter()
@@ -50,7 +57,9 @@ export default function LoginForm({
     setError(
       res?.error === 'throttled'
         ? 'Too many tries. Wait 15 minutes, or ask your band’s admin for a new password.'
-        : 'That email and password don’t match. Passwords look like k7mq-x2vd-9rta-hp3e.',
+        : forgot
+          ? 'That email and password don’t match.'
+          : 'That email and password don’t match. Passwords look like k7mq-x2vd-9rta-hp3e.',
     )
   }
 
@@ -135,8 +144,23 @@ export default function LoginForm({
           </>
         )}
         <p className="mt-4 text-sm text-faint">
-          No password yet, or lost it? Your band’s admin can send you a new one.
+          {forgot ? (
+            <Link href="/forgot" className="text-sky">
+              Forgot your password?
+            </Link>
+          ) : (
+            'No password yet, or lost it? Your band’s admin can send you a new one.'
+          )}
         </p>
+        {signup && (
+          <p className="mt-2 text-sm text-faint">
+            New here?{' '}
+            <Link href="/start" className="text-sky">
+              Start your band
+            </Link>{' '}
+            — free for 30 days.
+          </p>
+        )}
       </form>
     </main>
   )

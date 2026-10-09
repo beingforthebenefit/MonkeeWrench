@@ -26,6 +26,7 @@ Product page: <https://bandstand.info> (from `site/`; its screenshots come from 
 - [Testing](#testing)
 - [Linting & Formatting](#linting--formatting)
 - [CI](#ci)
+- [Hosted service](#hosted-service)
 - [Public demo](#public-demo)
 - [Coverage Report](#coverage-report)
 - [File Map](#file-map)
@@ -156,6 +157,7 @@ The editor also converts pasted chords-above-lyrics text with one button.
 - `deploy`: build and (re)start the live stack on popos, then wait for `/api/health`
 - `build`: Next.js production build in a one-off container (checks it compiles)
 - `demo`: build the static public demo into `demo-out/` (see [Public demo](#public-demo))
+- `hosted-deploy`/`hosted-logs`/`hosted-psql`: the hosted service, on its own server (see [docs/hosting.md](docs/hosting.md))
 - `logs`: tail logs for app + db
 - `app-sh`/`db-sh`/`psql`: shells and psql into the DB
 - `prisma-gen`: prisma format + generate (inside app)
@@ -222,6 +224,22 @@ GitHub Actions workflow runs on every push/PR:
 
 Workflow: `.github/workflows/ci.yml`.
 
+## Hosted service
+
+<https://app.bandstand.info>: anyone can start a band. It's free for 30 days,
+then $12 a year per band, paid through Polar. This is the same app with
+`BANDSTAND_HOSTED=1`, running on its own server
+(`docker-compose.hosted.yml`, `make hosted-deploy`). That switch adds:
+
+- **Sign-up** at `/start`.
+- **Email links** to choose a password: the welcome, invites from Members, and
+  `/forgot`. These need SMTP, and work on any install that sets `SMTP_HOST`.
+- **Billing and read-only:** a 30-day trial, then billing. A band that stops
+  paying becomes read-only, and nothing is deleted.
+
+Setup, accounts and running it: [docs/hosting.md](docs/hosting.md).
+Self-hosted installs leave all of this off.
+
 ## Public demo
 
 <https://bandstand.info/songs> is the real app, frozen: CI builds it with
@@ -267,6 +285,7 @@ it with the product page, copy `site/` into a folder together with
 - Charts: `src/lib/chordpro.ts` (parse/transpose/import), `src/lib/pdf.ts`, `src/lib/chart-diff.ts`, `src/components/chart/ChartBody.tsx`
 - Import: `scripts/drive-export-to-json.py`, `scripts/import-songs.ts`
 - Product page and demo: `site/`, `scripts/demo.sh`, `scripts/demo/`, `src/lib/demo.ts`
+- Hosted service: `docker-compose.hosted.yml`, `deploy/Caddyfile`, `src/lib/{hosted,billing,mail,email-tokens}.ts`, `scripts/comp-band.ts`, `docs/hosting.md`
 - App: `src/app/(band)/*` (signed-in pages), `src/app/perform/*`, `src/app/api/*`, `src/components/*`, `src/lib/*`, `src/middleware.ts`
 - Tests: `tests/*`, `vitest.config.mts`
 

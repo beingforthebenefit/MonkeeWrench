@@ -5,6 +5,7 @@ import {pageAdmin} from '@/lib/guard'
 import {requestOrigin} from '@/lib/band'
 import Members from '@/components/Members'
 import {avatarUrl} from '@/lib/avatars'
+import {mailConfigured} from '@/lib/mail'
 
 export const metadata = {title: 'Band members'}
 
@@ -27,6 +28,7 @@ export default async function MembersPage() {
       me={user.id}
       bandName={band.name}
       site={requestOrigin()}
+      invites={mailConfigured()}
       initial={rows.map(({isAdmin, user: u}) => ({
         id: u.id,
         name: u.name ?? '',

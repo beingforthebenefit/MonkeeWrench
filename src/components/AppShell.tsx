@@ -35,7 +35,7 @@ export type ShellBand = {
 }
 
 // Screens that take the whole display (performance mode) or stand alone
-const BARE = [/^\/perform\//, /^\/login/]
+const BARE = [/^\/perform\//, /^\/login/, /^\/(start|forgot|set-password)$/]
 
 // The tour's sample pages stand in for these tabs
 const TOUR_TABS: [RegExp, string][] = [

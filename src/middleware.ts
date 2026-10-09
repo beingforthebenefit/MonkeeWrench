@@ -12,6 +12,11 @@ const PUBLIC_API = [
   /^\/api\/health$/,
   // Calendar apps fetch the feed with no session; its URL holds a secret
   /^\/api\/calendar\/[^/]+$/,
+  // Starting a band, and setting a password from an emailed link
+  /^\/api\/signup$/,
+  /^\/api\/password\/(forgot|set)$/,
+  // Polar's webhooks: signed, checked in the route
+  /^\/api\/billing\/webhook$/,
 ]
 
 export function middleware(req: NextRequest) {
@@ -23,7 +28,11 @@ export function middleware(req: NextRequest) {
     const signedIn = SESSION_COOKIES.some((c) => req.cookies.has(c))
     if (!signedIn && !PUBLIC_API.some((r) => r.test(pathname)))
       return new NextResponse('Unauthorized', {status: 401})
-    return NextResponse.next()
+    // The guards can't see the method; they need it to keep a lapsed hosted
+    // band read-only. Always set here, so a request can't claim its own.
+    const headers = new Headers(req.headers)
+    headers.set('x-request-method', req.method)
+    return NextResponse.next({request: {headers}})
   }
 
   // Expose the requested path to server layouts so a sign-in redirect can

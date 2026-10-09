@@ -106,6 +106,7 @@ make deploy
 - Never commit real chart text: it is copyrighted. Test fixtures use invented lyrics; imports live in gitignored `data/`.
 
 - The public demo (bandstand.info) is this app captured as static pages by CI on every push to `main` (`scripts/demo.sh`; README "Public demo"). New pages are found by following links from the menu; a page reachable only some other way needs adding to `SEEDS` in `scripts/demo/paths.mjs`. Client code that writes must go through `fetch('/api/…')` (non-GET) so the demo can refuse it; behaviour that must differ in the demo checks `DEMO` from `src/lib/demo.ts`.
+- The hosted service (`BANDSTAND_HOSTED=1`, docs/hosting.md) keeps a lapsed band read-only in `requireSession()`: every non-GET API call through it is refused with 402. A route that must work for a lapsed band (renewing) passes `{allowLapsed: true}`. New writes need nothing extra as long as they use the guards. Never set `isOwner` from a web request; only the CLI scripts create the install's owner.
 - AuthZ/AuthN: Use `requireSession()` and `requireAdmin()` from `src/lib/guard.ts` in server routes.
 - Realtime: Use the SSE event bus in `src/lib/events.ts` for UI updates; clean up listeners to avoid leaks (see `src/app/api/stream/route.ts`).
 - URL and validation helpers live in `src/lib/url.ts` and other `lib/*` utilities; prefer these over ad‑hoc parsing.
