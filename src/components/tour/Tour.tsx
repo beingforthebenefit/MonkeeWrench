@@ -267,11 +267,15 @@ export default function Tour({auto}: {auto: boolean}) {
   )
 }
 
-/** The first match that's actually on screen (the header has two navs). */
-function visible(selector: string) {
-  for (const el of Array.from(document.querySelectorAll(selector))) {
-    const r = el.getBoundingClientRect()
-    if (r.width > 0 && r.height > 0) return el
-  }
+/**
+ * The first match that's actually on screen (the header has two navs);
+ * several selectors are tried in order.
+ */
+function visible(selectors: string | string[]) {
+  for (const selector of Array.isArray(selectors) ? selectors : [selectors])
+    for (const el of Array.from(document.querySelectorAll(selector))) {
+      const r = el.getBoundingClientRect()
+      if (r.width > 0 && r.height > 0) return el
+    }
   return null
 }

@@ -6,12 +6,14 @@
 export type TourStep = {
   title: string
   body: string
-  /** Where on the page; none: a card in the middle */
-  target?: string
+  /** Where on the page (the first of these that's there); none: a card in
+   * the middle */
+  target?: string | string[]
   /** The page it's on */
   path?: RegExp
-  /** The link (on the previous page) that leads to `path` */
-  from?: string
+  /** The link (on the previous page) that leads to `path`: the first of
+   * these that's there */
+  from?: string | string[]
 }
 
 const SONGS = /^\/songs$/
@@ -39,13 +41,14 @@ export const STEPS: TourStep[] = [
   },
   {
     path: SONGS,
-    target: 'main ul a[href^="/songs/"]',
+    // A song with written-out parts, so the notation step has one to show
+    target: ['main ul a[data-notation]', 'main ul a[href^="/songs/"]'],
     title: 'Open a song',
     body: 'Tap any song for its chart. Let’s open this one.',
   },
   {
     path: SONG,
-    from: 'main ul a[href^="/songs/"]',
+    from: ['main ul a[data-notation]', 'main ul a[href^="/songs/"]'],
     target: '[role="group"][aria-label="Key"]',
     title: 'Any key',
     body: 'Move the chart up or down a semitone at a time. Chords and notation move together, and this device remembers the key you chose.',
