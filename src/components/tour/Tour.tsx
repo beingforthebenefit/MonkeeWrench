@@ -1,8 +1,15 @@
 'use client'
 
-import {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import {usePathname, useRouter} from 'next/navigation'
-import {STEPS, type TourStep} from './steps'
+import {stepsFor, type TourFeatures, type TourStep} from './steps'
 import {DEMO} from '@/lib/demo'
 
 /** Start the tour from anywhere (the menu, the help page). */
@@ -29,7 +36,15 @@ function doneHere() {
  * time someone signs in; "Take the tour" (menu, Help) or ?tour on any page
  * starts it again.
  */
-export default function Tour({auto}: {auto: boolean}) {
+export default function Tour({
+  auto,
+  features = {scheduling: true},
+}: {
+  auto: boolean
+  /** The band's switchable tools: steps about ones it has off are left out */
+  features?: TourFeatures
+}) {
+  const STEPS = useMemo(() => stepsFor(features), [features])
   const router = useRouter()
   const pathname = usePathname() ?? '/'
   const [step, setStep] = useState<number | null>(null)
@@ -110,7 +125,12 @@ export default function Tour({auto}: {auto: boolean}) {
       el = find()
       if (el) {
         clearInterval(timer)
-        el.scrollIntoView({block: 'center', behavior: 'instant'})
+        // Taller than most of the screen (the editor): from its top, clear
+        // of the sticky header
+        const r = el.getBoundingClientRect()
+        if (r.height > window.innerHeight * 0.6)
+          window.scrollBy({top: r.top - 88, behavior: 'instant'})
+        else el.scrollIntoView({block: 'center', behavior: 'instant'})
         measure()
         // Show it working: open it once the page has stopped moving (a
         // scroll puts a chord's diagram away)
@@ -144,7 +164,7 @@ export default function Tour({auto}: {auto: boolean}) {
     if (!missing || step === null) return
     const n = step + heading.current
     go(n >= 0 && n < STEPS.length ? n : null)
-  }, [missing, step, go])
+  }, [missing, step, go, STEPS.length])
 
   const next = () => {
     if (step === null) return
@@ -187,6 +207,14 @@ export default function Tour({auto}: {auto: boolean}) {
     go(n)
   }
 
+  // The card's real height, to tell whether it fits beside what it points at
+  const card = useRef<HTMLDivElement>(null)
+  const [cardH, setCardH] = useState(240)
+  useLayoutEffect(() => {
+    const h = card.current?.offsetHeight
+    if (h && h !== cardH) setCardH(h)
+  }, [step, rect, cardH])
+
   if (!current || step === null) return null
   if (current.path && !current.path.test(pathname)) return null
   if (current.target && !rect) return null
@@ -198,11 +226,19 @@ export default function Tour({auto}: {auto: boolean}) {
     w: rect.width + pad * 2,
     h: rect.height + pad * 2,
   }
-  // The card goes below what it points at, or above it near the bottom
+  // The card goes below what it points at, or above it; when neither has
+  // room (a tall editor), over its lower part, so Next stays on screen
   const vw = typeof window === 'undefined' ? 400 : window.innerWidth
   const vh = typeof window === 'undefined' ? 800 : window.innerHeight
   const width = Math.min(340, vw - 24)
-  const below = hole ? hole.y + hole.h + 220 < vh || hole.y < 240 : true
+  const gap = 14
+  const place = !hole
+    ? 'center'
+    : hole.y + hole.h + gap + cardH <= vh - 12
+      ? 'below'
+      : hole.y - gap - cardH >= 12
+        ? 'above'
+        : 'over'
   const left = hole
     ? Math.min(Math.max(12, hole.x + hole.w / 2 - width / 2), vw - width - 12)
     : (vw - width) / 2
@@ -248,24 +284,27 @@ export default function Tour({auto}: {auto: boolean}) {
         )}
       </svg>
       <div
+        ref={card}
         className="absolute rounded-2xl border border-line-2 bg-panel p-4 text-text shadow-2xl"
         style={{
           width,
           left,
-          ...(hole
-            ? below
-              ? {top: hole.y + hole.h + 14}
-              : {bottom: vh - hole.y + 14}
-            : {top: '50%', transform: 'translateY(-50%)'}),
+          ...(place === 'below'
+            ? {top: hole!.y + hole!.h + gap}
+            : place === 'above'
+              ? {bottom: vh - hole!.y + gap}
+              : place === 'over'
+                ? {bottom: 16}
+                : {top: '50%', transform: 'translateY(-50%)'}),
         }}
       >
-        {hole && (
+        {(place === 'below' || place === 'above') && (
           <span
             aria-hidden
             className="absolute h-3 w-3 rotate-45 border-line-2 bg-panel"
             style={{
               left: arrowX - 6,
-              ...(below
+              ...(place === 'below'
                 ? {top: -7, borderLeftWidth: 1, borderTopWidth: 1}
                 : {bottom: -7, borderRightWidth: 1, borderBottomWidth: 1}),
             }}

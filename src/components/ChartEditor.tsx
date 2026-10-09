@@ -51,12 +51,16 @@ export default function ChartEditor({
   initialFields,
   initialSource,
   baseNumber,
+  demo = false,
 }: {
   songId: string
   initialFields: SongFormValues
   initialSource: string
   baseNumber: number
+  /** The tour's sample song: everything works but Save */
+  demo?: boolean
 }) {
+  const back = demo ? '/tour/song' : `/songs/${songId}`
   const router = useRouter()
   const [fields, setFields] = useState(initialFields)
   const [source, setSource] = useState(initialSource)
@@ -96,6 +100,7 @@ export default function ChartEditor({
   }
 
   async function save() {
+    if (demo) return
     setSaving(true)
     setError(null)
     try {
@@ -141,7 +146,7 @@ export default function ChartEditor({
   return (
     <main className="mx-auto max-w-[1400px] px-4 pb-16 pt-4 md:px-7">
       <Link
-        href={`/songs/${songId}`}
+        href={back}
         className="text-sm text-muted no-underline hover:text-text"
       >
         ‹ Back to chart
@@ -246,7 +251,7 @@ export default function ChartEditor({
             </button>
           )}
         </div>
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div data-tour="editor" className="grid gap-6 lg:grid-cols-2">
           <div className={tab === 'edit' ? '' : 'hidden lg:block'}>
             <label htmlFor="chart-source" className="sr-only">
               Chart (ChordPro)
@@ -316,7 +321,7 @@ export default function ChartEditor({
           />
         </label>
         <Link
-          href={`/songs/${songId}`}
+          href={back}
           className="inline-flex min-h-11 items-center px-3 text-muted"
         >
           Cancel
@@ -324,7 +329,8 @@ export default function ChartEditor({
         <button
           type="button"
           onClick={save}
-          disabled={saving || (!chartChanged && !fieldsChanged)}
+          disabled={demo || saving || (!chartChanged && !fieldsChanged)}
+          title={demo ? 'The tour’s sample: nothing saves' : undefined}
           className="min-h-11 rounded-lg bg-accent px-5 font-bold text-on-accent disabled:opacity-40"
         >
           {saving ? 'Saving…' : 'Save'}

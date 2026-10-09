@@ -5,6 +5,8 @@
  *
  * The song and setlist steps use the tour's own samples (/tour/song,
  * /tour/setlist), so the tour is the same in every band, even a new one.
+ * Steps about a tool a band can switch off (`needs`) are left out of the
+ * tour in bands that have.
  */
 export type TourStep = {
   title: string
@@ -23,11 +25,23 @@ export type TourStep = {
   open?: string
   /** Light this up too: what `open` opened */
   also?: string
+  /** Only in bands with this tool switched on (Admin) */
+  needs?: 'scheduling'
+}
+
+/** The band's switchable tools, as the tour needs to know them */
+export type TourFeatures = {scheduling: boolean}
+
+/** The tour for a band: without the steps about tools it has switched off */
+export function stepsFor(features: TourFeatures) {
+  return STEPS.filter((s) => !s.needs || features[s.needs])
 }
 
 const SONGS = /^\/songs$/
 const SONG = /^\/tour\/song$/
+const EDIT = /^\/tour\/edit$/
 const SETLIST = /^\/tour\/setlist$/
+const REHEARSALS = /^\/rehearsals$/
 
 export const STEPS: TourStep[] = [
   {
@@ -57,14 +71,9 @@ export const STEPS: TourStep[] = [
     path: SONG,
     href: '/tour/song',
     target: '[role="group"][aria-label="Key"]',
-    title: 'Any key',
-    body: 'Move the chart up or down a semitone at a time. Chords and notation move together, and this device remembers the key you chose.',
-  },
-  {
-    path: SONG,
-    target: '[role="group"][aria-label="Text size"]',
-    title: 'Text size',
-    body: 'Small A, big A. Remembered on this device too.',
+    also: '[role="group"][aria-label="Text size"]',
+    title: 'Any key, any size',
+    body: 'Move the chart up or down a semitone at a time; chords and notation move together. Small A, big A for the text. This device remembers both.',
   },
   {
     path: SONG,
@@ -96,18 +105,25 @@ export const STEPS: TourStep[] = [
   },
   {
     path: SONG,
-    target: '[data-tour="history"]',
-    title: 'Edit, safely',
-    body: 'Anyone in the band can fix a chart with Edit. Every save is kept: History shows who changed what, and an admin can put an old version back.',
-  },
-  {
-    path: SONG,
     target: '[data-tour="pdf"]',
     title: 'Paper, if you want it',
     body: 'A PDF of the chart in any key, ready to print.',
   },
   {
     path: SONG,
+    target: '[data-tour="history"]',
+    title: 'Every version kept',
+    body: 'Anyone in the band can fix a chart, and every save is kept: History shows who changed what, and an admin can put an old version back.',
+  },
+  {
+    path: EDIT,
+    href: '/tour/edit',
+    target: '[data-tour="editor"]',
+    title: 'Edit',
+    body: 'A chart is plain text: chords in [brackets] where they change, sections, and notation. The preview redraws as you type. Paste chords-over-lyrics from anywhere and Convert does the rest. Try it — this one saves nowhere.',
+  },
+  {
+    path: EDIT,
     target: 'nav[aria-label="Main"] a[href="/setlists"]',
     title: 'Setlists',
     body: 'Each gig’s songs in order, with sets, breaks and start times. Here’s a sample one.',
@@ -118,6 +134,21 @@ export const STEPS: TourStep[] = [
     target: '[data-tour="perform"]',
     title: 'Perform',
     body: 'Full screen, chart only, the whole set loaded up front. Tap the screen’s edges or swipe to turn — or use a Bluetooth page-turn pedal: anything that sends arrow or page keys works.',
+  },
+  {
+    path: REHEARSALS,
+    href: '/rehearsals',
+    target: '[data-tour="my-days"]',
+    needs: 'scheduling',
+    title: 'Your days',
+    body: 'Mark the days you can’t make, or would rather not; it saves as you tap. Going away? Mark a stretch… does a whole trip at once. Days you leave alone count as free.',
+  },
+  {
+    path: REHEARSALS,
+    target: '[data-tour="best-days"]',
+    needs: 'scheduling',
+    title: 'A day everyone can make',
+    body: 'Worked out from everyone’s days: the next ones nobody’s out, with who’d only make the evening. Set rehearsal on one, and it’s on everyone’s list and calendar.',
   },
   {
     title: 'Take it with you',

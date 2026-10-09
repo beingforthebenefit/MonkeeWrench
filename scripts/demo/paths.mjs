@@ -17,6 +17,7 @@ export const SEEDS = [
   '/bands',
   '/songs/new',
   '/tour/song',
+  '/tour/edit',
   '/tour/setlist',
 ]
 

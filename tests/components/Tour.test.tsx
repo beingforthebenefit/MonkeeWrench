@@ -56,4 +56,19 @@ describe('Tour', () => {
       expect.objectContaining({method: 'PATCH'}),
     )
   })
+
+  it('leaves out the scheduling steps in a band that has scheduling off', async () => {
+    const {stepsFor} = await import('@/components/tour/steps')
+    const on = stepsFor({scheduling: true})
+    const off = stepsFor({scheduling: false})
+    expect(on.length - off.length).toBe(2)
+    expect(off.some((s) => s.needs)).toBe(false)
+
+    const Tour = await tour(false)
+    const {unmount} = render(<Tour auto features={{scheduling: false}} />)
+    expect(screen.getByText(`1 of ${off.length}`)).toBeTruthy()
+    unmount()
+    render(<Tour auto features={{scheduling: true}} />)
+    expect(screen.getByText(`1 of ${on.length}`)).toBeTruthy()
+  })
 })

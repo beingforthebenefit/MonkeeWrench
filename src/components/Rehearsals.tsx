@@ -190,6 +190,7 @@ export default function Rehearsals({
         <>
           <section
             aria-labelledby="best-h"
+            data-tour="best-days"
             className="mt-4 rounded-2xl bg-panel p-4"
           >
             <h2
@@ -298,37 +299,40 @@ export default function Rehearsals({
 
           <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
             <section aria-labelledby="mine-h">
-              <div className="flex items-baseline justify-between">
-                <h2 id="mine-h" className="text-lg font-bold">
-                  Your days
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setRanging(!ranging)}
-                  aria-expanded={ranging}
-                  className="min-h-11 rounded-lg px-2 text-sm font-semibold text-sky"
-                >
-                  Mark a stretch…
-                </button>
-                <span className="text-[13px] text-muted">
-                  {failed ? 'Couldn’t save — try again' : 'Saved as you tap'}
-                </span>
+              {/* The tour points here, not at the whole list of days */}
+              <div data-tour="my-days">
+                <div className="flex items-baseline justify-between">
+                  <h2 id="mine-h" className="text-lg font-bold">
+                    Your days
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setRanging(!ranging)}
+                    aria-expanded={ranging}
+                    className="min-h-11 rounded-lg px-2 text-sm font-semibold text-sky"
+                  >
+                    Mark a stretch…
+                  </button>
+                  <span className="text-[13px] text-muted">
+                    {failed ? 'Couldn’t save — try again' : 'Saved as you tap'}
+                  </span>
+                </div>
+                <p className="mt-1 text-[13px] text-muted">
+                  Mark the days you can’t make, or would rather not. Everything
+                  else counts as free.
+                  {blocksOn && (
+                    <>
+                      {' '}
+                      Rehearsals and gigs with your other bands count
+                      automatically (
+                      <Link href="/account" className="text-sky">
+                        change
+                      </Link>
+                      ).
+                    </>
+                  )}
+                </p>
               </div>
-              <p className="mt-1 text-[13px] text-muted">
-                Mark the days you can’t make, or would rather not. Everything
-                else counts as free.
-                {blocksOn && (
-                  <>
-                    {' '}
-                    Rehearsals and gigs with your other bands count
-                    automatically (
-                    <Link href="/account" className="text-sky">
-                      change
-                    </Link>
-                    ).
-                  </>
-                )}
-              </p>
               {ranging && (
                 <RangeForm
                   onApplied={(marked, kind) => {
