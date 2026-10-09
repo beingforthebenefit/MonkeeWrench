@@ -5,6 +5,10 @@ on:
     branches: ['**']
   pull_request:
     branches: ['**']
+  # The demo's dates (next rehearsal, the gig) are relative to when it's
+  # built: rebuild it every morning so they never go stale
+  schedule:
+    - cron: '0 9 * * *'
 
 # Needed for committing badges and deploying GitHub Pages
 permissions:
@@ -116,7 +120,7 @@ jobs:
   # from a scratch database (scripts/demo.sh). Rebuilt on every push to main,
   # so it always shows the current UI.
   demo:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -150,7 +154,7 @@ jobs:
   # GitHub Pages (bandstand.info): the product page (site/) at the root, the
   # demo beside it (/songs, /setlists, …), this run's coverage under /coverage/
   pages:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'schedule'
     needs: [build-and-test, demo]
     runs-on: ubuntu-latest
     permissions:

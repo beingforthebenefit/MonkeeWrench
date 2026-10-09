@@ -218,7 +218,7 @@ GitHub Actions workflow runs on every push/PR:
 
 - Node 20, `npm ci`, lint, tests with coverage, publish a summary
 - Coverage HTML uploaded as artifact for the run
-- On `main` only: builds the public demo (`demo` job), then publishes GitHub Pages (`pages` job): the product page, the demo and the coverage report, at bandstand.info
+- On `main` and every morning: builds the public demo (`demo` job), then publishes GitHub Pages (`pages` job): the product page, the demo and the coverage report, at bandstand.info
 
 Workflow: `.github/workflows/ci.yml`.
 
@@ -232,7 +232,9 @@ member Sam and saves every page as static HTML, with the PDFs it links to
 product page, so its pages sit at the root (`/songs`, `/setlists`, …).
 
 Because it is rebuilt on every push to `main`, it always shows the current
-UI; nothing needs updating by hand. In the demo build:
+UI; nothing needs updating by hand. It is also rebuilt every morning (CI's
+`schedule`), since its dates (the next rehearsal, the gig) are relative to
+the day it's built. In the demo build:
 
 - Every page loads `scripts/demo/demo.js` first: any change the app tries to
   save gets a refusal and a "nothing you change is saved" notice.

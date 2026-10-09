@@ -52,6 +52,13 @@ K:F
 "F"z2 FA B2 c2- | c8 | "F"z2 FA B2 c2- | "C7"c8 |
 "F"z2 FA B2 c2 | "F"A4 F4 | "C7"A4 G4- | "F"G8 |]
 {end_of_abc}
+{start_of_abc: Bass line}
+% instrument: bass
+M:4/4
+L:1/4
+K:F clef=bass
+"F"F,, A,, C, D, | "F"F, D, C, A,, | "C7"C, E, G, B,, | "F"A,, C, F,, z |]
+{end_of_abc}
 
 {start_of_verse: Verse 1}
 Oh when the [F]saints go marching in
@@ -67,7 +74,11 @@ Oh Lord I [F]want to [F7]be in that [Bb]number
 When the [F]sun re[C7]fuse to [F]shine
 {end_of_verse}
 
-{comment: Horns take a chorus, then everyone}
+{start_of_solo: Horn chorus}
+[F]   [F]   [F]   [C7]
+[F]   [F7]   [Bb]   [Bbm]
+[F]   [C7]   [F]   [F]
+{end_of_solo}
 
 {start_of_verse: Verse 3}
 Oh when the [F]trumpet sounds its call
@@ -75,6 +86,10 @@ Oh when the trumpet sounds its [C7]call
 Oh Lord I [F]want to [F7]be in that [Bb]number
 When the [F]trumpet [C7]sounds its [F]call
 {end_of_verse}
+
+{start_of_outro: Tag}
+When the [F]saints go [C7]marching [F]in   [Bb]   [F]
+{end_of_outro}
 `,
   },
   {
@@ -86,12 +101,15 @@ When the [F]trumpet [C7]sounds its [F]call
     chart: `{title: Oh! Susanna}
 {key: G}
 
+{start_of_intro: Intro}
+[G]   [G]   [D]   [G]
+{end_of_intro}
 {start_of_abc: Riff — guitar}
 % instrument: guitar
 M:4/4
 L:1/8
 K:G
-G,B,DB, G,B,DB, | D,F,A,F, D,F,A,F, |]
+G,B,DB, G,B,DB, | A,DFD A,DFD |]
 {end_of_abc}
 {start_of_abc: Riff — bass}
 % instrument: bass
@@ -99,6 +117,12 @@ M:4/4
 L:1/8
 K:G clef=bass
 G,,2 D,2 G,,2 D,2 | D,2 A,,2 D,2 A,,2 |]
+{end_of_abc}
+{start_of_abc: Fiddle line}
+M:4/4
+L:1/4
+K:G
+"C"c c e2 | "G"d d B G | "D"A A G A | "G"B3 z |]
 {end_of_abc}
 
 {start_of_verse: Verse 1}
@@ -120,6 +144,24 @@ The [G]sun so hot I froze to death, Su[D]sanna don't you [G]cry
 [C]Oh, Susanna, oh [G]don't you cry for [D]me
 For I [G]come from Alabama with a [D]banjo on my [G]knee
 {end_of_chorus}
+
+{start_of_solo: Banjo break}
+[G]   [G]   [D]   [D]   [G]   [G]   [D]   [G]
+{end_of_solo}
+
+{start_of_verse: Verse 3}
+I [G]had a dream the other night when [D]everything was still
+I [G]thought I saw Susanna a-[D]coming down the [G]hill
+{end_of_verse}
+
+{start_of_chorus: Chorus}
+[C]Oh, Susanna, oh [G]don't you cry for [D]me
+For I [G]come from Alabama with a [D]banjo on my [G]knee
+{end_of_chorus}
+
+{start_of_outro: Ending}
+With a [D]banjo on my [G]knee   [D]   [G]
+{end_of_outro}
 `,
   },
   {
@@ -134,11 +176,47 @@ For I [G]come from Alabama with a [D]banjo on my [G]knee
 {start_of_intro: Intro}
 [C]   [C]   [G7]   [C]
 {end_of_intro}
+{start_of_abc: Horn shout}
+M:4/4
+L:1/8
+K:C
+"C"z2 GA c2 c2 | "C"e2 dc- c4 | "G7"z2 GA B2 d2 | "C"c6 z2 |]
+{end_of_abc}
+{start_of_abc: Bass line}
+% instrument: bass
+M:4/4
+L:1/4
+K:C clef=bass
+"C"C, E, G, A, | "C"C, E, G, E, | "G7"G,, B,, D, F, | "C"E, G,, C, z |]
+{end_of_abc}
+{start_of_abc: Guitar fill}
+% instrument: guitar
+M:4/4
+L:1/8
+K:C
+"C"z2 _EE GA c2 | "G7"=B2 AG F2 D2 |]
+{end_of_abc}
 
-{start_of_verse: Verse}
+{comment: Horns stab every "no more" in the choruses}
+
+{start_of_verse: Verse 1}
 Gonna lay down my [C]burden, down by the riverside
 Down by the [G7]riverside, down by the [C]riverside
-Gonna lay down my burden, down by the riverside
+Gonna lay down my burden, down by the [C7]riverside
+And [G7]study war no [C]more
+{end_of_verse}
+
+{start_of_chorus: Chorus}
+I ain't gonna [F]study war no more, ain't gonna [C]study war no more
+Ain't gonna [G7]study war no [C]more   [C7]
+I ain't gonna [F]study war no more, ain't gonna [C]study war no more
+Ain't gonna [G7]study war no [C]more
+{end_of_chorus}
+
+{start_of_verse: Verse 2}
+Gonna lay down my [C]sword and shield, down by the riverside
+Down by the [G7]riverside, down by the [C]riverside
+Gonna lay down my sword and shield, down by the [C7]riverside
 And [G7]study war no [C]more
 {end_of_verse}
 
@@ -150,8 +228,27 @@ Ain't gonna [G7]study war no [C]more
 {end_of_chorus}
 
 {start_of_solo: Piano solo}
-[C]   [C]   [G7]   [C]   [F]   [C]   [G7]   [C]
+[C]   [C]   [G7]   [C]   [C]   [C]   [G7]   [C]
+[F]   [F]   [C]   [C7]   [F]   [C]   [G7]   [C]
 {end_of_solo}
+
+{start_of_verse: Verse 3}
+Gonna put on my [C]long white robe, down by the riverside
+Down by the [G7]riverside, down by the [C]riverside
+Gonna put on my long white robe, down by the [C7]riverside
+And [G7]study war no [C]more
+{end_of_verse}
+
+{start_of_chorus: Last chorus}
+I ain't gonna [F]study war no more, ain't gonna [C]study war no more
+Ain't gonna [G7]study war no [C]more   [C7]
+I ain't gonna [F]study war no more, ain't gonna [C]study war no more
+Ain't gonna [G7]study war no [C]more
+{end_of_chorus}
+
+{start_of_outro: Ending}
+Ain't gonna [G7]study war no [C]more   [F]   [C]   [G7]   [C]
+{end_of_outro}
 `,
   },
   {
@@ -163,6 +260,23 @@ Ain't gonna [G7]study war no [C]more
     chart: `{title: Swing Low, Sweet Chariot}
 {key: D}
 
+{start_of_intro: Intro}
+[D]   [G]   [D]   [A7]
+{end_of_intro}
+{start_of_abc: Horn pads}
+M:4/4
+L:1/4
+K:D
+"D"[DFA]4 | "G"[DGB]2 "D"[DFA]2 | "D"[DFA]4 | "A7"[CEGA]4 |]
+{end_of_abc}
+{start_of_abc: Bass line}
+% instrument: bass
+M:4/4
+L:1/4
+K:D clef=bass
+"D"D, F, A, F, | "G"G,, B,, "D"D, A,, | "D"D, F, A, A,, | "A7"A,, C, E, C, |]
+{end_of_abc}
+
 {start_of_chorus: Chorus}
 [D]Swing low, sweet [G]chari[D]ot
 Coming for to carry me [A7]home
@@ -170,12 +284,39 @@ Coming for to carry me [A7]home
 Coming for to [A7]carry me [D]home
 {end_of_chorus}
 
-{start_of_verse: Verse}
+{start_of_verse: Verse 1}
 I [D]looked over Jordan and [G]what did I [D]see
 Coming for to carry me [A7]home
 A [D]band of angels [G]coming after [D]me
 Coming for to [A7]carry me [D]home
 {end_of_verse}
+
+{start_of_chorus: Chorus}
+[D]Swing low, sweet [G]chari[D]ot
+Coming for to carry me [A7]home
+[D]Swing low, sweet [G]chari[D]ot
+Coming for to [A7]carry me [D]home
+{end_of_chorus}
+
+{comment: Horns hold the pads under verse 2}
+
+{start_of_verse: Verse 2}
+If [D]you get there be[G]fore I [D]do
+Coming for to carry me [A7]home
+Tell [D]all my friends I'm [G]coming too[D]
+Coming for to [A7]carry me [D]home
+{end_of_verse}
+
+{start_of_chorus: Chorus}
+[D]Swing low, sweet [G]chari[D]ot
+Coming for to carry me [A7]home
+[D]Swing low, sweet [G]chari[D]ot
+Coming for to [A7]carry me [D]home
+{end_of_chorus}
+
+{start_of_outro: Tag}
+Coming for to [A7]carry me [D]home   [G]   [D]
+{end_of_outro}
 `,
   },
   {
@@ -183,6 +324,56 @@ Coming for to [A7]carry me [D]home
     writer: 'John Newton',
     leadSinger: 'Sam',
     seconds: 180,
+    status: 'LEARNING',
+    chart: `{title: Amazing Grace}
+{key: G}
+{time: 3/4}
+
+{start_of_abc: Keys intro}
+% instrument: keys
+M:3/4
+L:1/4
+%%staves {RH LH}
+K:G
+V:RH clef=treble
+z2 D | "G"G2 B/G/ | B2 A | "C"G2 E | "G"D2 D | G2 B/G/ | B2 A | "D"d3 |]
+V:LH clef=bass
+z3 | G,, D, G, | G,, D, G, | C, G, E, | G,, D, G, | G,, D, G, | G,, D, G, | D, A, F, |]
+{end_of_abc}
+
+{comment: Rubato — Sam alone on verse 1, band in on verse 2}
+
+{start_of_verse: Verse 1}
+A[G]mazing [G7]grace, how [C]sweet the [G]sound
+That saved a wretch like [D]me   [D7]
+I [G]once was [G7]lost, but [C]now am [G]found
+Was [Em]blind, but [D]now I [G]see
+{end_of_verse}
+
+{start_of_verse: Verse 2}
+'Twas [G]grace that [G7]taught my [C]heart to [G]fear
+And grace my fears re[D]lieved   [D7]
+How [G]precious [G7]did that [C]grace ap[G]pear
+The [Em]hour I [D]first be[G]lieved
+{end_of_verse}
+
+{start_of_verse: Verse 3}
+Through [G]many [G7]dangers, [C]toils and [G]snares
+I have al[D]ready come   [D7]
+'Tis [G]grace hath [G7]brought me [C]safe thus [G]far
+And [Em]grace will [D]lead me [G]home
+{end_of_verse}
+
+{start_of_outro: Ending}
+And [Em]grace will [D]lead me [G]home   [C]   [G]
+{end_of_outro}
+`,
+  },
+  {
+    title: 'Shall We Gather at the River',
+    writer: 'Robert Lowry',
+    leadSinger: 'Lou',
+    seconds: 170,
     status: 'LEARNING',
     chart: null,
   },
@@ -255,7 +446,10 @@ async function main() {
               create: [
                 {
                   number: 1,
-                  source: s.chart.replace(/\n{start_of_abc[\s\S]*$/, '\n'),
+                  source: s.chart.replace(
+                    /{start_of_abc[\s\S]*?{end_of_abc}\n/g,
+                    '',
+                  ),
                   authorId: members[1].id,
                   note: 'First go',
                 },
@@ -290,6 +484,13 @@ async function main() {
         kind: 'ABC',
         text: 'L:1/8\n"F"[FAc]2 z2 [FAc]2 z2 | "Bb"[FBd]2 z2 "F"[FAc]4 |]',
       },
+      {
+        userId: me.id,
+        songId: songs['Down by the Riverside'],
+        anchor: 'ending#1',
+        kind: 'TEXT',
+        text: 'Hold the last C — watch Ray for the cutoff',
+      },
     ],
   })
 
@@ -319,7 +520,12 @@ async function main() {
             key: 'A',
             note: 'Lou sings · up a step',
           },
-          {position: 3, kind: 'SONG', songId: songs['Down by the Riverside']},
+          {
+            position: 3,
+            kind: 'SONG',
+            songId: songs['Down by the Riverside'],
+            note: 'Closes the set · everyone sings the last chorus',
+          },
           {position: 4, kind: 'BREAK', minutes: 15},
           {position: 5, kind: 'SET', label: 'Set 2', minutes: 45},
           {
