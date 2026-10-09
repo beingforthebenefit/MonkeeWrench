@@ -7,6 +7,7 @@ import {ReactNode} from 'react'
 import Dropdown from '@/components/Dropdown'
 import ThemeToggle from '@/components/ThemeToggle'
 import Avatar from '@/components/Avatar'
+import {startTour} from '@/components/tour/Tour'
 
 const TABS = [
   {href: '/songs', label: 'Songs'},
@@ -120,6 +121,16 @@ export default function AppShell({
                 </a>
               )}
               <MenuLink href="/account">Account &amp; settings</MenuLink>
+              <MenuLink href="/help">Help</MenuLink>
+              {band && (
+                <button
+                  type="button"
+                  onClick={startTour}
+                  className="block w-full rounded-lg px-3 py-2.5 text-left hover:bg-line"
+                >
+                  Take the tour
+                </button>
+              )}
               {band?.isAdmin && (
                 <MenuLink href="/members">Band members</MenuLink>
               )}

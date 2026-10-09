@@ -61,6 +61,8 @@ model User {
   shareAvailability     Boolean          @default(true)
   // A rehearsal or gig with one band marks them busy for their other bands
   blockOtherBands       Boolean          @default(true)
+  // Finished or skipped the first-time tour (null: show it on sign-in)
+  tourDoneAt            DateTime?
   memberships           Membership[]
   cues                  Cue[]
   rehearsalsCreated     Rehearsal[]

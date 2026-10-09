@@ -155,6 +155,7 @@ export default function ChartScreen({
           </div>
           <button
             type="button"
+            data-tour="cues"
             aria-pressed={cueMode}
             onClick={() => setCueMode(!cueMode)}
             className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg px-4 ${cueMode ? 'bg-accent font-bold text-on-accent' : 'border border-line-2'}`}
@@ -174,6 +175,7 @@ export default function ChartScreen({
           </Link>
           <button
             type="button"
+            data-tour="pdf"
             onClick={() => setPdfOpen(true)}
             className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-accent px-4 font-bold text-on-accent"
           >
@@ -210,6 +212,7 @@ export default function ChartScreen({
           </span>
         )}
         <Link
+          data-tour="history"
           href={`/songs/${song.id}/history`}
           className="inline-flex min-h-8 items-center rounded-full border border-line-2 px-3 text-text no-underline"
         >
