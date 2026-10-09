@@ -38,6 +38,7 @@ export default function ChartScreen({
   editedAt,
   imported = false,
   cues = [],
+  demo = false,
 }: {
   song: ChartSong
   source: string
@@ -48,6 +49,8 @@ export default function ChartScreen({
   imported?: boolean
   /** Your own cues on this song */
   cues?: Cue[]
+  /** The tour's sample song: everything shows, nothing saves or leaves */
+  demo?: boolean
 }) {
   const [steps, setSteps] = useStoredState(`mw:transpose:${song.id}`, 0)
   const [sizeIdx, setSizeIdx] = useStoredState('mw:text-size', 2)
@@ -157,7 +160,7 @@ export default function ChartScreen({
             type="button"
             data-tour="cues"
             aria-pressed={cueMode}
-            onClick={() => setCueMode(!cueMode)}
+            onClick={() => !demo && setCueMode(!cueMode)}
             className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg px-4 ${cueMode ? 'bg-accent font-bold text-on-accent' : 'border border-line-2'}`}
           >
             {cueMode ? 'Done' : 'My cues'}
@@ -168,7 +171,8 @@ export default function ChartScreen({
             )}
           </button>
           <Link
-            href={`/songs/${song.id}/edit`}
+            href={demo ? '#' : `/songs/${song.id}/edit`}
+            onClick={demo ? (e) => e.preventDefault() : undefined}
             className="inline-flex min-h-11 items-center rounded-lg border border-line-2 px-4 no-underline"
           >
             Edit
@@ -176,7 +180,7 @@ export default function ChartScreen({
           <button
             type="button"
             data-tour="pdf"
-            onClick={() => setPdfOpen(true)}
+            onClick={() => !demo && setPdfOpen(true)}
             className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-accent px-4 font-bold text-on-accent"
           >
             <DownloadIcon /> PDF
@@ -213,7 +217,8 @@ export default function ChartScreen({
         )}
         <Link
           data-tour="history"
-          href={`/songs/${song.id}/history`}
+          href={demo ? '#' : `/songs/${song.id}/history`}
+          onClick={demo ? (e) => e.preventDefault() : undefined}
           className="inline-flex min-h-8 items-center rounded-full border border-line-2 px-3 text-text no-underline"
         >
           History · {versions} version{versions === 1 ? '' : 's'}

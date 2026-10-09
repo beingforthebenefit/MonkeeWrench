@@ -23,7 +23,6 @@ export default async function SongsPage() {
       editedBy: s.latest ? displayName(s.latest.author) : null,
       editedAt: s.latest?.createdAt.toISOString() ?? null,
       imported: isImportNote(s.latest?.note),
-      notation: Boolean(chart?.sections.some((x) => x.abc)),
     }
   })
   return <SongLibrary songs={rows} />

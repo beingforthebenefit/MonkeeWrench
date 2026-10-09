@@ -1,7 +1,10 @@
 /**
  * The first-time tour, in order. A step points at something on the page
- * (`target`, a CSS selector) or stands alone. A step on another page names
- * the link that gets there (`from`, looked up on the page before).
+ * (`target`, a CSS selector) or stands alone. A step on another page says
+ * how to get there: `href`, or the link on the page before (`from`).
+ *
+ * The song and setlist steps use the tour's own samples (/tour/song,
+ * /tour/setlist), so the tour is the same in every band, even a new one.
  */
 export type TourStep = {
   title: string
@@ -14,12 +17,13 @@ export type TourStep = {
   /** The link (on the previous page) that leads to `path`: the first of
    * these that's there */
   from?: string | string[]
+  /** Or go straight to this page */
+  href?: string
 }
 
 const SONGS = /^\/songs$/
-const SONG = /^\/songs\/[^/]+$/
-const SETLISTS = /^\/setlists$/
-const SETLIST = /^\/setlists\/[^/]+$/
+const SONG = /^\/tour\/song$/
+const SETLIST = /^\/tour\/setlist$/
 
 export const STEPS: TourStep[] = [
   {
@@ -41,14 +45,13 @@ export const STEPS: TourStep[] = [
   },
   {
     path: SONGS,
-    // A song with written-out parts, so the notation step has one to show
-    target: ['main ul a[data-notation]', 'main ul a[href^="/songs/"]'],
+    target: 'main ul a[href^="/songs/"]',
     title: 'Open a song',
-    body: 'Tap any song for its chart. Let’s open this one.',
+    body: 'Tap any song for its chart. For the tour, we’ll open a sample song so you can try everything without changing anything.',
   },
   {
     path: SONG,
-    from: ['main ul a[data-notation]', 'main ul a[href^="/songs/"]'],
+    href: '/tour/song',
     target: '[role="group"][aria-label="Key"]',
     title: 'Any key',
     body: 'Move the chart up or down a semitone at a time. Chords and notation move together, and this device remembers the key you chose.',
@@ -90,16 +93,15 @@ export const STEPS: TourStep[] = [
     body: 'A PDF of the chart in any key, ready to print.',
   },
   {
-    path: SETLISTS,
-    from: 'nav[aria-label="Main"] a[href="/setlists"]',
-    target: 'main a[href^="/setlists/"]:not([href$="/edit"])',
+    path: SONG,
+    target: 'nav[aria-label="Main"] a[href="/setlists"]',
     title: 'Setlists',
-    body: 'Each gig’s songs in order, with sets, breaks and start times. Let’s open one.',
+    body: 'Each gig’s songs in order, with sets, breaks and start times. Here’s a sample one.',
   },
   {
     path: SETLIST,
-    from: 'main a[href^="/setlists/"]:not([href$="/edit"])',
-    target: 'main a[href^="/perform/"]',
+    href: '/tour/setlist',
+    target: '[data-tour="perform"]',
     title: 'Perform',
     body: 'Full screen, chart only, the whole set loaded up front. Tap the screen’s edges or swipe to turn — or use a Bluetooth page-turn pedal: anything that sends arrow or page keys works.',
   },

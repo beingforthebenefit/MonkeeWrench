@@ -16,8 +16,6 @@ export type LibrarySong = {
   editedAt: string | null
   /** Latest version came from an import, not someone editing */
   imported?: boolean
-  /** Its chart has written-out parts (the tour opens one of these) */
-  notation?: boolean
 }
 
 /** learning: has a chart, not gig-ready yet */
@@ -102,7 +100,6 @@ export default function SongLibrary({songs}: {songs: LibrarySong[]}) {
           <li key={s.id} className="border-t border-line first:border-t-0">
             <Link
               href={`/songs/${s.id}`}
-              data-notation={s.notation ? '' : undefined}
               className="flex min-h-16 items-center gap-3.5 py-2.5 no-underline"
             >
               <span

@@ -56,12 +56,14 @@ export default function Tour({auto}: {auto: boolean}) {
 
   const finish = useCallback(() => {
     go(null)
+    // Off the sample pages, back to the band's own songs
+    if (window.location.pathname.startsWith('/tour/')) router.push('/songs')
     fetch('/api/account/settings', {
       method: 'PATCH',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({tourDone: true}),
     }).catch(() => {})
-  }, [go])
+  }, [go, router])
 
   const current: TourStep | null = step === null ? null : (STEPS[step] ?? null)
 
@@ -115,6 +117,7 @@ export default function Tour({auto}: {auto: boolean}) {
       n < STEPS.length &&
       STEPS[n].target &&
       !STEPS[n].from &&
+      !STEPS[n].href &&
       (!STEPS[n].path || STEPS[n].path!.test(pathname)) &&
       !visible(STEPS[n].target!)
     )
@@ -122,8 +125,9 @@ export default function Tour({auto}: {auto: boolean}) {
     if (n >= STEPS.length) return finish()
     const to = STEPS[n]
     // The next step is on another page: follow the link it names
-    if (to.path && !to.path.test(pathname) && to.from) {
-      const href = visible(to.from)?.getAttribute('href')
+    if (to.path && !to.path.test(pathname)) {
+      const href =
+        to.href ?? (to.from && visible(to.from)?.getAttribute('href'))
       if (href) router.push(href)
     }
     go(n)
