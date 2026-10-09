@@ -87,8 +87,9 @@ export default function Tour({
       try {
         localStorage.setItem(DEMO_DONE, '1')
       } catch {}
-    // Off the sample pages, back to the band's own songs
-    if (window.location.pathname.startsWith('/tour/')) router.push('/songs')
+    // Back where it started: the band's own songs (not a sample page, or
+    // wherever the last steps were)
+    if (window.location.pathname !== '/songs') router.push('/songs')
     fetch('/api/account/settings', {
       method: 'PATCH',
       headers: {'Content-Type': 'application/json'},

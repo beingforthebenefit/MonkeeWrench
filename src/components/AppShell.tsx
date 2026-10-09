@@ -37,8 +37,16 @@ export type ShellBand = {
 // Screens that take the whole display (performance mode) or stand alone
 const BARE = [/^\/perform\//, /^\/login/]
 
-function isActive(pathname: string, href: string) {
-  return pathname === href || pathname.startsWith(href + '/')
+// The tour's sample pages stand in for these tabs
+const TOUR_TABS: [RegExp, string][] = [
+  [/^\/tour\/(song|edit)$/, '/songs'],
+  [/^\/tour\/setlist$/, '/setlists'],
+]
+
+/** Is this tab the page being shown? */
+export function isActive(pathname: string, href: string) {
+  const p = TOUR_TABS.find(([r]) => r.test(pathname))?.[1] ?? pathname
+  return p === href || p.startsWith(href + '/')
 }
 
 async function switchTo(bandId: string) {

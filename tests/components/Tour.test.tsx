@@ -1,9 +1,10 @@
 import {render, screen, fireEvent, cleanup} from '@testing-library/react'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
+const push = vi.fn()
 vi.mock('next/navigation', () => ({
   usePathname: () => '/songs',
-  useRouter: () => ({push: vi.fn()}),
+  useRouter: () => ({push}),
 }))
 
 async function tour(demo: boolean) {
@@ -18,6 +19,7 @@ describe('Tour', () => {
     sessionStorage.clear()
     window.history.replaceState(null, '', '/songs')
     window.fetch = vi.fn(async () => new Response('{}')) as typeof fetch
+    push.mockClear()
   })
   afterEach(() => {
     cleanup()
@@ -70,5 +72,20 @@ describe('Tour', () => {
     unmount()
     render(<Tour auto features={{scheduling: true}} />)
     expect(screen.getByText(`1 of ${on.length}`)).toBeTruthy()
+  })
+
+  it('ends back on the songs, wherever its last step was', async () => {
+    const Tour = await tour(false)
+    render(<Tour auto />)
+    window.history.replaceState(null, '', '/rehearsals')
+    fireEvent.click(screen.getByText('Skip tour'))
+    expect(push).toHaveBeenCalledWith('/songs')
+  })
+
+  it('stays put when ended on the songs', async () => {
+    const Tour = await tour(false)
+    render(<Tour auto />)
+    fireEvent.click(screen.getByText('Skip tour'))
+    expect(push).not.toHaveBeenCalled()
   })
 })
