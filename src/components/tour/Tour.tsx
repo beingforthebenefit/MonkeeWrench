@@ -77,14 +77,34 @@ export default function Tour({auto}: {auto: boolean}) {
     if (!current.target) return
     let tries = 0
     let el: Element | null = null
+    let follow: ReturnType<typeof setInterval> | undefined
+    let opening: ReturnType<typeof setTimeout> | undefined
     const find = () => visible(current.target!)
-    const measure = () => el && setRect(el.getBoundingClientRect())
+    // The thing, and what it opened (a chord's diagram), lit up together
+    const measure = () => {
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      const extra = current.also ? visible(current.also) : null
+      setRect((old) => {
+        const next = extra ? union(r, extra.getBoundingClientRect()) : r
+        return old && same(old, next) ? old : next
+      })
+    }
     const timer = setInterval(() => {
       el = find()
       if (el) {
         clearInterval(timer)
         el.scrollIntoView({block: 'center', behavior: 'instant'})
         measure()
+        // Show it working: open it once the page has stopped moving (a
+        // scroll puts a chord's diagram away)
+        if (current.open)
+          opening = setTimeout(() => {
+            const o = visible(current.open!)
+            if (o instanceof HTMLElement) o.click()
+          }, 200)
+        // What opens grows as it draws
+        follow = setInterval(measure, 150)
       } else if (++tries > 25) {
         clearInterval(timer)
         setMissing(true)
@@ -94,6 +114,8 @@ export default function Tour({auto}: {auto: boolean}) {
     window.addEventListener('scroll', measure, true)
     return () => {
       clearInterval(timer)
+      clearInterval(follow)
+      clearTimeout(opening)
       window.removeEventListener('resize', measure)
       window.removeEventListener('scroll', measure, true)
     }
@@ -268,6 +290,26 @@ export default function Tour({auto}: {auto: boolean}) {
         </div>
       </div>
     </div>
+  )
+}
+
+function union(a: DOMRect, b: DOMRect) {
+  const left = Math.min(a.left, b.left)
+  const top = Math.min(a.top, b.top)
+  return new DOMRect(
+    left,
+    top,
+    Math.max(a.right, b.right) - left,
+    Math.max(a.bottom, b.bottom) - top,
+  )
+}
+
+function same(a: DOMRect, b: DOMRect) {
+  return (
+    a.left === b.left &&
+    a.top === b.top &&
+    a.width === b.width &&
+    a.height === b.height
   )
 }
 

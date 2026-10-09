@@ -19,6 +19,10 @@ export type TourStep = {
   from?: string | string[]
   /** Or go straight to this page */
   href?: string
+  /** Click this when the step shows (open what it's about), if it's there */
+  open?: string
+  /** Light this up too: what `open` opened */
+  also?: string
 }
 
 const SONGS = /^\/songs$/
@@ -65,14 +69,24 @@ export const STEPS: TourStep[] = [
   {
     path: SONG,
     target: '.chart-chord:not(.chart-note):not(:empty)',
+    open: '.chart-chord:not(.chart-note):not(:empty)',
+    also: '[role="dialog"][aria-label$=" chord"]',
     title: 'Tap a chord',
-    body: 'Any chord shows its notes on a keyboard and how to play it on guitar, with other fingerings a swipe away.',
+    body: 'Any chord shows its notes on a keyboard and how to play it on guitar, with other fingerings a swipe away. Tap anywhere else to put it away.',
   },
   {
     path: SONG,
-    target: '.chart-keep > button[aria-expanded]',
+    target: '[data-notation="horn line"]',
+    open: '[data-notation="horn line"] > button[aria-expanded="false"]',
     title: 'Riffs and horn lines',
-    body: 'Written-out parts fold away so the chart stays easy to read on stage. Tap to open; guitar and bass parts can show as tab.',
+    body: 'Written-out parts fold away so the chart stays easy to read on stage. Tap one to open it; the notes follow the key you’ve chosen.',
+  },
+  {
+    path: SONG,
+    target: '[data-notation="bass line"]',
+    open: '[data-notation="bass line"] > button[aria-expanded="false"]',
+    title: 'Tab for guitar and bass',
+    body: 'Guitar and bass parts open as tab. ♪ Notes switches to notation, and this device remembers which you like.',
   },
   {
     path: SONG,

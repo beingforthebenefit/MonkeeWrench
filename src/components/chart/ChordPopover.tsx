@@ -49,6 +49,8 @@ export default function ChordPopover() {
     // A mouse resting on a chord shows it; moving off hides it
     const onOver = (e: PointerEvent) => {
       if (e.pointerType !== 'mouse') return
+      // Over the tour, which is showing this chord off
+      if ((e.target as Element).closest?.('[aria-label="Tour"]')) return
       clearTimeout(hoverTimer.current)
       const hit = chordAt(e.target)
       if (hit) hoverTimer.current = setTimeout(() => setShown(hit), 250)

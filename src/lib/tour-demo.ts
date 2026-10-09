@@ -33,6 +33,13 @@ K:F
 "F"z2 FA B2 c2- | c8 | "F"z2 FA B2 c2- | "C7"c8 |
 "F"z2 FA B2 c2 | "F"A4 F4 | "C7"A4 G4- | "F"G8 |]
 {end_of_abc}
+{start_of_abc: Bass line}
+% instrument: bass
+M:4/4
+L:1/4
+K:F clef=bass
+"F"F,, A,, C, A,, | "F"F,, A,, C, A,, | "C7"C, E, G, E, | "F"F,, C, F,, z |]
+{end_of_abc}
 
 {start_of_verse: Verse 1}
 Oh when the [F]saints go marching in

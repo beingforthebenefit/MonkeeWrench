@@ -31,7 +31,7 @@ export default function NotationBlock({
 }) {
   const [open, setOpen] = useState(startOpen)
   return (
-    <div className="chart-keep">
+    <div className="chart-keep" data-notation={label.toLowerCase()}>
       <button
         type="button"
         aria-expanded={open}
