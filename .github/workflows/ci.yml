@@ -185,3 +185,32 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  # The hosted service (app.bandstand.info): once the tests pass, the server
+  # pulls and rebuilds. Its key can only run deploy/ci-deploy.sh, which
+  # deploys only the branch the server runs. docs/hosting.md, "Deploys".
+  deploy-hosted:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/hosted')
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    # One at a time, in order; a push during a deploy waits its turn
+    concurrency:
+      group: deploy-hosted
+      cancel-in-progress: false
+    steps:
+      - name: Deploy
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          if [ -z "$KEY" ]; then echo "No DEPLOY_SSH_KEY secret: nothing to deploy to"; exit 0; fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          # Pinned: CI only ever talks to this server
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o ServerAliveInterval=30 "deploy@$HOST" "$GITHUB_REF_NAME"

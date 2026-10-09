@@ -220,6 +220,7 @@ GitHub Actions workflow runs on every push/PR:
 
 - Node 20, `npm ci`, lint, tests with coverage, publish a summary
 - Coverage HTML uploaded as artifact for the run
+- On `main` and `hosted`, after the tests: deploys the hosted service (`deploy-hosted` job; it deploys only the branch the server runs, see [docs/hosting.md](docs/hosting.md))
 - On `main` and every morning: builds the public demo (`demo` job), then publishes GitHub Pages (`pages` job): the product page, the demo and the coverage report, at bandstand.info
 
 Workflow: `.github/workflows/ci.yml`.

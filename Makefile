@@ -88,8 +88,9 @@ deploy: ## Build & (re)start production, then wait for it to report healthy
 	done; echo "Not healthy after 90s: docker logs monkeewrench-app"; exit 1
 
 # The hosted service, app.bandstand.info, on its own server (docs/hosting.md).
-# Run there, from the repo. Compose doesn't recreate a container when only an
-# inline config changed, so the backup container is always recreated.
+# Run there, from the repo (or by CI: deploy/ci-deploy.sh). Compose doesn't
+# recreate a container when only an inline config changed, so the backup
+# container is always recreated; Caddy is told to re-read its Caddyfile.
 COMPOSE_HOSTED ?= $(COMPOSE) -f docker-compose.hosted.yml --env-file .env.hosted
 
 .PHONY: hosted-deploy
@@ -98,6 +99,8 @@ hosted-deploy: ## Pull, rebuild and restart the hosted service; wait for health
 	git pull --ff-only
 	$(COMPOSE_HOSTED) up -d --build
 	$(COMPOSE_HOSTED) up -d --force-recreate --no-deps backup
+	# Caddy only reads its Caddyfile at start or on reload
+	$(COMPOSE_HOSTED) exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
 	@echo "Waiting for /api/health..."
 	@for i in $$(seq 1 45); do \
 	  $(COMPOSE_HOSTED) exec -T app curl -fsS http://localhost:3000/api/health 2>/dev/null | grep -q '"ok":true' && { echo healthy; exit 0; }; \

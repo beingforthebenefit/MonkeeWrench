@@ -265,10 +265,38 @@ weeks. Then retire it as the 76flix Change-Checklist describes: the Traefik
 routes on the macmini, the Uptime Kuma monitors, backups, Homepage and the
 wiki.
 
+## Deploys
+
+Automatic. When CI's tests pass on a push, the `deploy-hosted` job connects
+to the server and it updates itself. That's `make hosted-deploy`: pull,
+rebuild, restart, re-read the Caddyfile, wait for `/api/health`. It only
+deploys the branch the server runs (`git -C ~/Bandstand branch` there); a
+push to any other branch is a no-op. A failed deploy fails the CI run, and
+GitHub emails you.
+
+What makes it safe:
+
+- **The key.** CI uses its own SSH key (GitHub secret `DEPLOY_SSH_KEY`).
+  `~/.ssh/authorized_keys` on the server restricts it to
+  `command="/home/deploy/ci-deploy",restrict`. With that key, the server runs
+  `~/ci-deploy` and nothing else: no shell, no tunnels. Tested: a command, a
+  shell and a tunnel were all refused.
+- **The script.** `~/ci-deploy` is a copy of `deploy/ci-deploy.sh`, outside
+  the repo, so a commit can't change what the key may run. After editing
+  `deploy/ci-deploy.sh`, copy it over yourself:
+  `scp deploy/ci-deploy.sh deploy@204.168.168.2:ci-deploy`.
+- **The server.** Its host key is pinned (`DEPLOY_KNOWN_HOSTS`), so CI talks
+  to this server and no other.
+
+To revoke: delete the `github-deploy@bandstand` line from
+`~/.ssh/authorized_keys` on the server. To replace the key: make a new one
+and store it with
+`gh secret set DEPLOY_SSH_KEY < key`, then put its `.pub` on that line.
+
 ## Running it
 
-- **Update:** `make hosted-deploy` on the server (pulls `main`, rebuilds,
-  restarts, waits for health).
+- **Update:** automatic on every push that passes CI (see Deploys). By hand:
+  `make hosted-deploy` on the server.
 - **Logs:** `make hosted-logs`. **Database:** `make hosted-psql`.
 - **Waive a band:** `docker exec bandstand-app npx tsx scripts/comp-band.ts <slug>`
   makes it free for good; add a date (`YYYY-MM-DD`) to make it free until then.
@@ -288,6 +316,11 @@ wiki.
 - Compose doesn't recreate a container when only an inline `configs:` changes,
   so a plain `up -d` keeps the old backup script. `make hosted-deploy` always
   recreates the backup container.
+- Caddy gets the `deploy/` folder, not the Caddyfile alone: `git pull`
+  replaces the file, and a single-file mount keeps showing the old one. It
+  also only reads the file at start or on `caddy reload`, which
+  `make hosted-deploy` runs. Both bit on 2026-10-09: a Caddyfile change
+  deployed but never took effect.
 - The app keeps live updates and the push-notification queue in memory: run
   exactly one app container.
 - Polar may deliver webhooks late or out of order. `applySubscription` only

@@ -97,7 +97,9 @@ services:
       APP_HOST: ${APP_HOST:-app.bandstand.info}
       ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env.hosted}
     volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # The folder, not the file: git replaces the file on every pull, and a
+      # single-file mount keeps showing the old one
+      - ./deploy:/etc/caddy:ro
       - caddy_data:/data
       - caddy_config:/config
 
