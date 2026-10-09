@@ -115,6 +115,9 @@
   padding-right: 0.5em;
   min-height: 1.15em;
 }
+.chart-chord:not(.chart-note):not(:empty) {
+  cursor: pointer;
+}
 .chart-chord.chart-gap {
   padding-right: 1.5em;
 }

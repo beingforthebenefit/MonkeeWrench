@@ -18,6 +18,7 @@ import {
   transposeChart,
 } from '@/lib/chordpro'
 import ChartBody from '@/components/chart/ChartBody'
+import ChordPopover from '@/components/chart/ChordPopover'
 import {useStoredState} from '@/components/useStoredState'
 import {TEXT_SIZES} from '@/components/ChartScreen'
 import {readOnlyCueSlots} from '@/components/cues/useCueSlots'
@@ -179,7 +180,12 @@ export default function Perform({
   // anywhere (including sideways through tab) never changes song.
   const onClick = (e: React.MouseEvent) => {
     if (!scroll) return
-    if ((e.target as Element).closest('a,button,summary,input,select,textarea'))
+    // A chord's tap shows the chord, it doesn't change song
+    if (
+      (e.target as Element).closest(
+        'a,button,summary,input,select,textarea,.chart-chord',
+      )
+    )
       return
     const x = e.clientX / window.innerWidth
     if (x > 0.75) toSong(1)
@@ -378,6 +384,7 @@ export default function Perform({
           />
         </>
       )}
+      <ChordPopover />
     </main>
   )
 }

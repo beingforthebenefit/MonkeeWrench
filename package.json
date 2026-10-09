@@ -25,6 +25,7 @@
     "@mui/icons-material": "^5.11.16",
     "@mui/material": "^5.15.14",
     "@prisma/client": "^5.16.2",
+    "@tombatossals/chords-db": "^0.5.1",
     "abcjs": "^6.7.1",
     "diff": "^8.0.4",
     "jose": "^5.2.3",

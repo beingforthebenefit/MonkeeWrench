@@ -6,6 +6,7 @@ import {detectKey, parseChordPro, transposeChart} from '@/lib/chordpro'
 import {shortDate} from '@/lib/dates'
 import {formatLength} from '@/lib/gig'
 import ChartBody from '@/components/chart/ChartBody'
+import ChordPopover from '@/components/chart/ChordPopover'
 import PdfDialog from '@/components/PdfDialog'
 import {useStoredState} from '@/components/useStoredState'
 import {useCueSlots} from '@/components/cues/useCueSlots'
@@ -231,6 +232,7 @@ export default function ChartScreen({
       )}
       <div className="mt-5" style={{fontSize: size}}>
         <ChartBody chart={chart} top={slots.top} extra={slots.extra} />
+        <ChordPopover />
       </div>
 
       {pdfOpen && (
