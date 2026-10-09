@@ -215,14 +215,17 @@ export default function ChartScreen({
             )}
           </span>
         )}
-        <Link
-          data-tour="history"
-          href={demo ? '#' : `/songs/${song.id}/history`}
-          onClick={demo ? (e) => e.preventDefault() : undefined}
-          className="inline-flex min-h-8 items-center rounded-full border border-line-2 px-3 text-text no-underline"
-        >
-          History · {versions} version{versions === 1 ? '' : 's'}
-        </Link>
+        {/* A song with no chart yet has no history to show */}
+        {versions > 0 && (
+          <Link
+            data-tour="history"
+            href={demo ? '#' : `/songs/${song.id}/history`}
+            onClick={demo ? (e) => e.preventDefault() : undefined}
+            className="inline-flex min-h-8 items-center rounded-full border border-line-2 px-3 text-text no-underline"
+          >
+            History · {versions} version{versions === 1 ? '' : 's'}
+          </Link>
+        )}
       </div>
 
       {song.notes && (
