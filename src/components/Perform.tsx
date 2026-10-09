@@ -222,7 +222,7 @@ export default function Perform({
       onClick={onClick}
     >
       <header
-        className={`flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 ${scroll ? 'sticky top-0 z-10 -mx-4 bg-stage/95 px-4 pb-2 pt-[max(env(safe-area-inset-top),12px)] backdrop-blur' : ''}`}
+        className={`flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 sm:gap-x-4 ${scroll ? 'sticky top-0 z-10 -mx-4 bg-stage/95 px-4 pb-2 pt-[max(env(safe-area-inset-top),12px)] backdrop-blur' : ''}`}
       >
         <span className="font-mono text-muted">
           {song.set ? (
@@ -269,7 +269,7 @@ export default function Perform({
                 ? setSizeIdx(Math.max(0, sizeIdx - 1))
                 : setFitStep(Math.max(-3, fitStep - 1))
             }
-            className="h-11 w-10 text-sm font-semibold text-muted"
+            className="h-11 w-9 text-sm font-semibold text-muted sm:w-10"
           >
             A
           </button>
@@ -281,7 +281,7 @@ export default function Perform({
                 ? setSizeIdx(Math.min(TEXT_SIZES.length - 1, sizeIdx + 1))
                 : setFitStep(Math.min(5, fitStep + 1))
             }
-            className="h-11 w-10 text-xl font-semibold text-muted"
+            className="h-11 w-9 text-xl font-semibold text-muted sm:w-10"
           >
             A
           </button>
