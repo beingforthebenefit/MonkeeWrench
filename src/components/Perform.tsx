@@ -88,7 +88,9 @@ export default function Perform({
     'auto',
   )
   const scroll = modePref === 'auto' ? narrow : modePref === 'scroll'
-  const [sizeIdx] = useStoredState('mw:text-size', 2)
+  const [sizeIdx, setSizeIdx] = useStoredState('mw:text-size', 2)
+  // Pages: steps up or down from the size that fits the screen
+  const [fitStep, setFitStep] = useStoredState('mw:perform-fit-step', 0)
   const scrollSize =
     TEXT_SIZES[Math.min(Math.max(sizeIdx, 0), TEXT_SIZES.length - 1)]
 
@@ -175,21 +177,19 @@ export default function Perform({
     touch.current = {x: e.touches[0].clientX, y: e.touches[0].clientY}
   }
 
-  // Scroll mode: a tap on the left or right quarter changes song. Read from the
-  // click, which browsers don't fire after a scroll or drag, so scrolling
-  // anywhere (including sideways through tab) never changes song.
+  // A tap on the left or right quarter of the chart turns back or on: in
+  // pages mode a page (then the song), in scroll mode the song. Read from
+  // the click, which browsers don't fire after a scroll or drag. Anything
+  // tappable under the finger (a notation heading, a chord, a button) gets
+  // the tap instead
   const onClick = (e: React.MouseEvent) => {
-    if (!scroll) return
-    // A chord's tap shows the chord, it doesn't change song
-    if (
-      (e.target as Element).closest(
-        'a,button,summary,input,select,textarea,.chart-chord',
-      )
-    )
-      return
+    const t = e.target as Element
+    if (t.closest('a,button,summary,input,select,textarea,.chart-chord')) return
+    // The header's own words and buttons aren't page-turners
+    if (t.closest('header')) return
     const x = e.clientX / window.innerWidth
-    if (x > 0.75) toSong(1)
-    else if (x < 0.25) toSong(-1)
+    if (x > 0.75) (scroll ? toSong : go)(1)
+    else if (x < 0.25) (scroll ? toSong : go)(-1)
   }
   const onTouchEnd = (e: React.TouchEvent) => {
     if (!touch.current) return
@@ -237,11 +237,55 @@ export default function Perform({
               {i + 1} / {songs.length}
             </>
           )}
+          {!scroll && page.pages > 1 && (
+            <span className="ml-2 rounded-full border border-line px-2 py-0.5 text-sm">
+              page {page.page + 1}/{page.pages}
+            </span>
+          )}
         </span>
-        <h1 className="order-last w-full text-2xl font-extrabold leading-tight sm:order-none sm:w-auto sm:min-w-0 sm:flex-1 sm:truncate md:text-[34px]">
-          {song.title}
-        </h1>
+        {/* The song and its key read together; the buttons sit apart */}
+        <div className="order-last flex w-full min-w-0 items-baseline gap-3 sm:order-none sm:w-auto sm:flex-1">
+          <h1 className="min-w-0 text-2xl font-extrabold leading-tight sm:truncate md:text-[34px]">
+            {song.title}
+          </h1>
+          <span
+            className="shrink-0 font-mono text-2xl font-bold text-amber md:text-[28px]"
+            aria-label={`Key ${detectKey(chart) ?? 'unknown'}`}
+          >
+            {detectKey(chart)}
+          </span>
+        </div>
         <span className="flex-1 sm:hidden" />
+        <div
+          role="group"
+          aria-label="Text size"
+          className="flex items-center rounded-lg border border-line"
+        >
+          <button
+            type="button"
+            aria-label="Smaller text"
+            onClick={() =>
+              scroll
+                ? setSizeIdx(Math.max(0, sizeIdx - 1))
+                : setFitStep(Math.max(-3, fitStep - 1))
+            }
+            className="h-11 w-10 text-sm font-semibold text-muted"
+          >
+            A
+          </button>
+          <button
+            type="button"
+            aria-label="Larger text"
+            onClick={() =>
+              scroll
+                ? setSizeIdx(Math.min(TEXT_SIZES.length - 1, sizeIdx + 1))
+                : setFitStep(Math.min(5, fitStep + 1))
+            }
+            className="h-11 w-10 text-xl font-semibold text-muted"
+          >
+            A
+          </button>
+        </div>
         <button
           type="button"
           onClick={() => setModePref(scroll ? 'pages' : 'scroll')}
@@ -250,14 +294,6 @@ export default function Perform({
         >
           {scroll ? 'Pages' : 'Scroll'}
         </button>
-        {!scroll && page.pages > 1 && (
-          <span className="rounded-full border border-line px-2.5 py-1 font-mono text-sm text-muted">
-            page {page.page + 1}/{page.pages}
-          </span>
-        )}
-        <span className="font-mono text-2xl font-bold text-amber md:text-[28px]">
-          {detectKey(chart)}
-        </span>
         <Link
           href={`/setlists/${setId}`}
           className="flex min-h-11 items-center rounded-lg border border-line px-3.5 text-sm text-muted no-underline"
@@ -299,6 +335,7 @@ export default function Perform({
           ref={chartRef}
           chart={chart}
           cues={cues}
+          scale={1.12 ** fitStep}
           onPage={setPage}
         />
       )}
@@ -364,26 +401,6 @@ export default function Perform({
         )}
       </footer>
 
-      {/* Pages mode: invisible tap zones on the screen edges turn the page
-          (scroll mode uses onClick above so the chart can scroll freely) */}
-      {!scroll && (
-        <>
-          <button
-            type="button"
-            aria-label="Previous song"
-            onClick={() => go(-1)}
-            className="fixed bottom-16 left-0 top-28 w-1/4 max-w-28 opacity-0 sm:w-[12vw]"
-            tabIndex={-1}
-          />
-          <button
-            type="button"
-            aria-label="Next song"
-            onClick={() => go(1)}
-            className="fixed bottom-16 right-0 top-28 w-1/4 max-w-28 opacity-0 sm:w-[12vw]"
-            tabIndex={-1}
-          />
-        </>
-      )}
       <ChordPopover />
     </main>
   )
@@ -404,9 +421,11 @@ const FittedChart = forwardRef<
   {
     chart: ReturnType<typeof parseChordPro>
     cues: ReturnType<typeof readOnlyCueSlots>
+    /** The reader's own size, against the size that fits (1: as fitted) */
+    scale: number
     onPage: (p: {page: number; pages: number}) => void
   }
->(function FittedChart({chart, cues, onPage}, ref) {
+>(function FittedChart({chart, cues, scale, onPage}, ref) {
   const box = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState(READABLE)
   const [pages, setPages] = useState(1)
@@ -435,6 +454,8 @@ const FittedChart = forwardRef<
       }
       best = Math.floor(lo * 2) / 2
     }
+    // Bigger than fits spills onto more pages; smaller leaves room
+    best = Math.max(10, Math.round(best * scale * 2) / 2)
     el.style.fontSize = `${best}px`
     const gap = best * GAP_EM
     const n = Math.max(
@@ -445,7 +466,7 @@ const FittedChart = forwardRef<
     setSize(best)
     setPages(n)
     setPageState(0)
-  }, [])
+  }, [scale])
 
   useLayoutEffect(() => {
     fit()
