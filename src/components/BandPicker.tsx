@@ -1,5 +1,6 @@
 'use client'
 
+import {clearSaved} from '@/components/pwa/pwa'
 import Link from 'next/link'
 import {useState} from 'react'
 
@@ -22,6 +23,7 @@ export default function BandPicker({
   const [busy, setBusy] = useState<string | null>(null)
   async function pick(id: string) {
     setBusy(id)
+    await clearSaved()
     const r = await fetch('/api/bands/current', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},

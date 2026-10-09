@@ -8,6 +8,8 @@ import Dropdown from '@/components/Dropdown'
 import ThemeToggle from '@/components/ThemeToggle'
 import Avatar from '@/components/Avatar'
 import {startTour} from '@/components/tour/Tour'
+import {OfflineBadge} from '@/components/pwa/PwaSetup'
+import {clearSaved} from '@/components/pwa/pwa'
 
 const TABS = [
   {href: '/songs', label: 'Songs'},
@@ -40,6 +42,8 @@ function isActive(pathname: string, href: string) {
 }
 
 async function switchTo(bandId: string) {
+  // Pages saved for offline belong to the band they came from
+  await clearSaved()
   const r = await fetch('/api/bands/current', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -94,6 +98,7 @@ export default function AppShell({
             })}
           </nav>
           <span className="flex-1 md:hidden" />
+          <OfflineBadge />
           <ThemeToggle />
           {session?.user && (
             <Dropdown
@@ -157,7 +162,11 @@ export default function AppShell({
               )}
               <button
                 type="button"
-                onClick={() => signOut({callbackUrl: '/login'})}
+                onClick={async () => {
+                  // Nothing saved on this device outlives signing out
+                  await clearSaved()
+                  signOut({callbackUrl: '/login'})
+                }}
                 className="block w-full rounded-lg px-3 py-2.5 text-left hover:bg-line"
               >
                 Sign out

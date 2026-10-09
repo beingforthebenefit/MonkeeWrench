@@ -28,13 +28,18 @@ export const GET = async () => {
       description: band
         ? `Charts, setlists and rehearsals for ${band.name}`
         : 'Charts, setlists and rehearsals for bands',
+      // One app per address, whichever page it was installed from
+      id: '/songs',
       start_url: '/songs',
       scope: '/',
       display: 'standalone',
       background_color: THEME_COLORS.dark,
       theme_color: THEME_COLORS.dark,
       icons: band?.iconAt
-        ? [{src: iconUrl(band), sizes: '512x512', type: 'image/png'}]
+        ? [
+            {src: iconUrl(band), sizes: '192x192', type: 'image/png'},
+            {src: iconUrl(band), sizes: '512x512', type: 'image/png'},
+          ]
         : [
             {
               src: '/icons/default-192.png',

@@ -1,3 +1,4 @@
+import {queueActivity} from './push'
 import type {Prisma, PrismaClient} from '@prisma/client'
 import {prisma} from './db'
 
@@ -21,7 +22,9 @@ export async function logActivity(
     summary: string
   },
 ) {
-  await tx.activity.create({data})
+  const a = await tx.activity.create({data})
+  // Tell the band's phones (once the change has had a moment to settle)
+  queueActivity(a)
 }
 
 async function latestNumber(tx: Tx, songId: string) {

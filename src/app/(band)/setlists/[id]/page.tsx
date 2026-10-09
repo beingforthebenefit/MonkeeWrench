@@ -7,6 +7,7 @@ import {detectKey, parseChordPro} from '@/lib/chordpro'
 import {displayName} from '@/lib/songs'
 import {shortDate} from '@/lib/dates'
 import SetlistPdfButton from '@/components/SetlistPdfButton'
+import SaveOffline from '@/components/pwa/SaveOffline'
 import {
   formatClock,
   parseClock,
@@ -79,6 +80,16 @@ export default async function SetlistView({params}: {params: {id: string}}) {
           ▶ Perform
         </Link>
         <SetlistPdfButton id={set.id} name={set.name} count={songs} />
+        <SaveOffline
+          urls={[
+            `/perform/${set.id}`,
+            ...new Set(
+              set.items.flatMap((i) =>
+                i.songId ? [`/songs/${i.songId}`] : [],
+              ),
+            ),
+          ]}
+        />
         <Link
           href={`/setlists/${set.id}/edit`}
           className="inline-flex min-h-11 items-center rounded-lg border border-line-2 px-4 no-underline"

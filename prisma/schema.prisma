@@ -25,50 +25,57 @@ enum AuditAction {
 }
 
 model User {
-  id                    String           @id @default(cuid())
+  id                    String             @id @default(cuid())
   name                  String?
-  email                 String?          @unique
+  email                 String?            @unique
   emailVerified         DateTime?
   image                 String?
   // Runs this install: creates bands and connects web addresses to them.
   // Being an admin of a band is per band (Membership.isAdmin).
-  isOwner               Boolean          @default(false)
+  isOwner               Boolean            @default(false)
   // What the band calls them ("Ken", "Ed"); shown instead of the full name
   displayName           String?
   // scrypt hash; null = no password yet, so they cannot sign in
   passwordHash          String?
   passwordSetAt         DateTime?
   // Bumped on every password change or reset: older sessions stop working
-  sessionVersion        Int              @default(0)
+  sessionVersion        Int                @default(0)
   // Secret in this person's calendar-feed URL (calendar apps can't sign in)
-  calendarToken         String?          @unique
+  calendarToken         String?            @unique
   // When their photo was last set; also versions its URL so browsers can
   // cache it forever. Null = no photo (their initial is shown instead).
   avatarAt              DateTime?
   avatar                Avatar?
   accounts              Account[]
   sessions              Session[]
-  proposals             Proposal[]       @relation("Proposer")
+  proposals             Proposal[]         @relation("Proposer")
   votes                 Vote[]
   chartVersions         ChartVersion[]
-  songsEdited           Song[]           @relation("SongEditor")
-  setlistsEdited        Setlist[]        @relation("SetlistEditor")
+  songsEdited           Song[]             @relation("SongEditor")
+  setlistsEdited        Setlist[]          @relation("SetlistEditor")
   unavailability        Unavailability[]
   // Set the first time someone marks their days, so "hasn't answered" can be
   // told apart from "free every day" (no rows means free)
   availabilityUpdatedAt DateTime?
   // One set of days off for all their bands (the default), or one per band
-  shareAvailability     Boolean          @default(true)
+  shareAvailability     Boolean            @default(true)
   // A rehearsal or gig with one band marks them busy for their other bands
-  blockOtherBands       Boolean          @default(true)
+  blockOtherBands       Boolean            @default(true)
   // Finished or skipped the first-time tour (null: show it on sign-in)
   tourDoneAt            DateTime?
+  // What their phones are told about (push notifications); each device
+  // turns notifications on for itself (PushSubscription)
+  notifyCharts          Boolean            @default(true)
+  notifySetlists        Boolean            @default(true)
+  notifyRehearsals      Boolean            @default(true)
+  notifyProposals       Boolean            @default(true)
+  pushSubscriptions     PushSubscription[]
   memberships           Membership[]
   cues                  Cue[]
   rehearsalsCreated     Rehearsal[]
   activities            Activity[]
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
 }
 
 // Profile photo: a 256px square JPEG/PNG/WebP, resized in the browser before
@@ -422,4 +429,22 @@ model CueImage {
   width  Int
   height Int
   data   Bytes
+}
+
+// One device that has notifications on: where to send them (the browser's
+// push service) and the keys to encrypt them with. Removed when the push
+// service says the device is gone.
+model PushSubscription {
+  id         String    @id @default(cuid())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  endpoint   String    @unique
+  p256dh     String
+  auth       String
+  // "iPhone", "Android", "Mac": so Account can say which devices are on
+  device     String?
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+
+  @@index([userId])
 }

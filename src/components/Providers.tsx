@@ -4,6 +4,7 @@ import {ReactNode} from 'react'
 import {SessionProvider} from 'next-auth/react'
 import type {Session} from 'next-auth'
 import ThemeWatcher from '@/components/ThemeWatcher'
+import PwaSetup from '@/components/pwa/PwaSetup'
 
 export default function Providers({
   children,
@@ -15,6 +16,7 @@ export default function Providers({
   return (
     <SessionProvider session={session}>
       <ThemeWatcher />
+      <PwaSetup />
       {children}
     </SessionProvider>
   )

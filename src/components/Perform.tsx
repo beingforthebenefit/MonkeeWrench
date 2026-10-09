@@ -19,6 +19,7 @@ import {
 } from '@/lib/chordpro'
 import ChartBody from '@/components/chart/ChartBody'
 import ChordPopover from '@/components/chart/ChordPopover'
+import {OfflineBadge} from '@/components/pwa/PwaSetup'
 import {useStoredState} from '@/components/useStoredState'
 import {TEXT_SIZES} from '@/components/ChartScreen'
 import {readOnlyCueSlots} from '@/components/cues/useCueSlots'
@@ -237,6 +238,7 @@ export default function Perform({
               {i + 1} / {songs.length}
             </>
           )}
+          <OfflineBadge className="ml-2" />
           {!scroll && page.pages > 1 && (
             <span className="ml-2 rounded-full border border-line px-2 py-0.5 text-sm">
               page {page.page + 1}/{page.pages}
