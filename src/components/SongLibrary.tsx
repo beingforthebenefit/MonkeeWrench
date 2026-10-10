@@ -60,7 +60,7 @@ export default function SongLibrary({
             {needs > 0 && ` · ${needs} need charts`}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex shrink-0 gap-1 whitespace-nowrap">
           {canImport && (
             <Link
               href="/import"
