@@ -11,7 +11,10 @@ vi.mock('next/font/google', () => ({
   Archivo: () => ({variable: 'font-archivo'}),
   JetBrains_Mono: () => ({variable: 'font-jetbrains'}),
 }))
-vi.mock('next/navigation', () => ({usePathname: () => '/songs'}))
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/songs',
+  useRouter: () => ({refresh: vi.fn(), push: vi.fn()}),
+}))
 vi.mock('@/lib/db', () => ({
   prisma: {user: {findUnique: async () => ({id: 'u1', isOwner: false})}},
 }))

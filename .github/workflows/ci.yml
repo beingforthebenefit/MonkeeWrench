@@ -38,6 +38,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Product site copy (no em dashes)
+        run: node scripts/check-site-copy.mjs
+
       - name: Type check
         run: npx prisma generate && npm run typecheck
 
@@ -172,6 +175,10 @@ jobs:
       - name: Add the product page
         run: |
           cp -r site/. _site/
+          # Pages lets browsers keep files for 10 minutes: name this deploy's
+          # stylesheet after its commit, so a new page never gets an old one
+          sed -i "s/href=\"site.css\"/href=\"site.css?v=${GITHUB_SHA::7}\"/" _site/*.html
+          grep -q "site.css?v=" _site/index.html
           test -f _site/index.html && test -f _site/songs.html && test -d _site/_next/static
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

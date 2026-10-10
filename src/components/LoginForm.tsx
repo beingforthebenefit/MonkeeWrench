@@ -4,11 +4,7 @@ import Link from 'next/link'
 import {useRouter, useSearchParams} from 'next/navigation'
 import {getProviders, signIn} from 'next-auth/react'
 import {useEffect, useState} from 'react'
-
-// Only same-site paths, so the sign-in link can't bounce people elsewhere
-function safeCallback(raw: string | null) {
-  return raw && raw.startsWith('/') && !raw.startsWith('//') ? raw : '/songs'
-}
+import {safeCallback} from '@/lib/url'
 
 /** Branded for the band this web address belongs to, if any. */
 export default function LoginForm({

@@ -153,3 +153,18 @@
   column-width: 22em;
   column-gap: 2.5em;
 }
+
+/* The loading placeholder ((band)/loading.tsx) waits a moment before it
+   shows, so a page that arrives quickly never flashes it */
+@keyframes loading-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.loading-in {
+  opacity: 0;
+  animation: loading-in 0.2s ease-out 0.15s forwards;
+}

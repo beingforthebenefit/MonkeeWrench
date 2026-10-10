@@ -10,6 +10,8 @@ import Avatar from '@/components/Avatar'
 import {startTour} from '@/components/tour/Tour'
 import {OfflineBadge} from '@/components/pwa/PwaSetup'
 import {clearSaved} from '@/components/pwa/pwa'
+import RefreshOnReturn from '@/components/RefreshOnReturn'
+import {DEMO} from '@/lib/demo'
 
 const TABS = [
   {href: '/songs', label: 'Songs'},
@@ -85,6 +87,7 @@ export default function AppShell({
   const tabs = TABS
   return (
     <div className="flex min-h-dvh flex-col">
+      {band && !DEMO && <RefreshOnReturn />}
       <div className="sticky top-0 z-30 border-b border-line bg-ink/95 backdrop-blur">
         <header className="flex items-center gap-4 px-4 py-2">
           <Link
@@ -103,6 +106,9 @@ export default function AppShell({
                 <Link
                   key={t.href}
                   href={t.href}
+                  // The whole page ahead of time, so the first tap is instant
+                  // too (the static demo has no server to ask)
+                  prefetch={DEMO ? undefined : true}
                   aria-current={on ? 'page' : undefined}
                   className={`rounded-lg px-3.5 py-2.5 no-underline ${on ? 'bg-text font-semibold text-ink' : 'text-muted hover:text-text'}`}
                 >
@@ -223,6 +229,7 @@ export default function AppShell({
                 <Link
                   key={t.href}
                   href={t.href}
+                  prefetch={DEMO ? undefined : true}
                   aria-current={on ? 'page' : undefined}
                   className={`flex min-h-11 items-center justify-center rounded-lg text-[13px] font-semibold no-underline ${on ? 'bg-text text-ink' : 'text-muted'}`}
                 >

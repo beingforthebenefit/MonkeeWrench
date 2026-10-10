@@ -121,3 +121,12 @@ export function suggestHttpUrls(input: string, limit = 5): string[] {
   const valid = Array.from(candidates).filter((c) => isHttpUrl(c))
   return valid.slice(0, limit)
 }
+
+/**
+ * Where to go after signing in: a path on this site only, so a sign-in
+ * link can't bounce people elsewhere ("//evil.example" and "/\evil.example"
+ * are other sites to a browser).
+ */
+export function safeCallback(raw: string | null | undefined) {
+  return raw && raw.startsWith('/') && !/^\/[/\\]/.test(raw) ? raw : '/songs'
+}

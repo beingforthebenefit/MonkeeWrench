@@ -12,6 +12,14 @@ const nextConfig = {
     return config
   },
   experimental: {
+    // How long a page already fetched in this tab is shown again without
+    // asking the server (default: 30s for dynamic pages). Every page here is
+    // dynamic, the server is a 180ms round trip from the Bay Area, and
+    // people stay on a tab longer than 30s, so going back to Songs waited on
+    // the network every time. Your own edits still refresh at once
+    // (router.refresh clears this), and RefreshOnReturn catches up after
+    // the app has been in the background.
+    staleTimes: {dynamic: 300, static: 300},
     // pdfkit reads its built-in font metrics from its own directory at
     // runtime; bundling it breaks those paths.
     serverComponentsExternalPackages: [
