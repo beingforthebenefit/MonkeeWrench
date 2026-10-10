@@ -17,6 +17,9 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
+      // The app's own code. Not build output (.next*, demo-out), scratch
+      // scripts (data/, tmp-preview/) or config files
+      include: ['src/**/*.{ts,tsx}'],
       exclude: [
         'node_modules/**',
         '.next/**',
