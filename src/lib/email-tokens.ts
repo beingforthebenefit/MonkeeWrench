@@ -3,6 +3,7 @@ import type {EmailTokenKind} from '@prisma/client'
 import {prisma} from './db'
 import {sendMail} from './mail'
 import {PRODUCT} from './band'
+import {renderEmail} from './email-layout'
 
 /**
  * Emailed links to set a password. Starting a band, being invited and
@@ -59,45 +60,73 @@ export function setPasswordUrl(origin: string, token: string) {
   return `${origin}/set-password?token=${encodeURIComponent(token)}`
 }
 
-/** The email for each kind of link. */
+/** The email for each kind of link: subject, HTML and plain text. */
 export function emailFor(
   kind: EmailTokenKind,
   {
     url,
+    origin,
     bandName,
     by,
-  }: {url: string; bandName?: string | null; by?: string | null},
+  }: {
+    url: string
+    origin: string
+    bandName?: string | null
+    by?: string | null
+  },
 ) {
   switch (kind) {
     case 'WELCOME':
       return {
-        subject: `Your band on ${PRODUCT}: set your password`,
-        text: `${bandName ?? 'Your band'} is ready on ${PRODUCT}.
-
-Choose your password to sign in:
-${url}
-
-Then add your bandmates on Members, and your songs on Songs. The link works once, for 7 days.
-
-If you didn't start a band, ignore this email and nothing happens.`,
+        subject: `${bandName ?? 'Your band'} is ready on ${PRODUCT}`,
+        ...renderEmail(
+          {
+            heading: `${bandName ?? 'Your band'} is ready`,
+            paragraphs: [
+              'Choose a password and you’re in. Two sample songs are waiting so you can try things out: change the key, tap a chord, open the horn line.',
+              'Then add your bandmates on Members (each gets an email like this one), and your own songs on Songs.',
+            ],
+            button: {label: 'Choose your password', url},
+            after: ['The link works once, for 7 days.'],
+            footer: `You started a band on ${PRODUCT}. If that wasn’t you, ignore this email and nothing happens.`,
+          },
+          origin,
+        ),
       }
     case 'INVITE':
       return {
         subject: `${by ?? 'Your band'} added you to ${bandName ?? 'a band'} on ${PRODUCT}`,
-        text: `${by ?? 'An admin'} added you to ${bandName ?? 'their band'} on ${PRODUCT}: the band's charts, setlists and rehearsals, on your phone.
-
-Choose your password to sign in:
-${url}
-
-The link works once, for 7 days. After that, use "Forgot your password?" on the sign-in page.`,
+        ...renderEmail(
+          {
+            heading: `You’re in ${bandName ?? 'the band'}`,
+            paragraphs: [
+              `${by ?? 'An admin'} added you to ${bandName ?? 'their band'} on ${PRODUCT}: the band’s charts in any key, the setlists, and when rehearsals are, on your phone.`,
+            ],
+            button: {label: 'Choose your password', url},
+            after: [
+              'The link works once, for 7 days. After that, use “Forgot your password?” on the sign-in page.',
+            ],
+            footer: `${by ?? 'A band admin'} added this address to ${bandName ?? 'a band'} on ${PRODUCT}.`,
+          },
+          origin,
+        ),
       }
     case 'RESET':
       return {
         subject: `Reset your ${PRODUCT} password`,
-        text: `Choose a new password:
-${url}
-
-The link works once, for an hour. If you didn't ask for this, ignore this email; your password stays as it is.`,
+        ...renderEmail(
+          {
+            heading: 'Choose a new password',
+            paragraphs: [
+              'Someone, probably you, asked to reset your password.',
+            ],
+            button: {label: 'Choose a new password', url},
+            after: ['The link works once, for an hour.'],
+            footer:
+              'If you didn’t ask for this, ignore this email; your password stays as it is.',
+          },
+          origin,
+        ),
       }
   }
 }

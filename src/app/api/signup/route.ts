@@ -13,6 +13,7 @@ import {mailConfigured, sendMail} from '@/lib/mail'
 import {sendPasswordLink} from '@/lib/email-tokens'
 import {allow, clientIp} from '@/lib/rate-limit'
 import {SAMPLE_NOTE, SAMPLE_SONGS} from '@/lib/sample-songs'
+import {renderEmail} from '@/lib/email-layout'
 
 const Body = z.object({
   bandName: z.string().trim().min(1).max(80),
@@ -126,14 +127,18 @@ export const POST = route(async (req: Request) => {
     await sendMail({
       to: email,
       subject: `Starting ${bandName} on Bandstand`,
-      text: `Someone, probably you, asked to start ${bandName} on Bandstand with this address, which already has an account.
-
-Sign in, then start it from the same page:
-${origin}/start
-
-Forgotten your password? ${origin}/forgot
-
-If this wasn't you, ignore this email.`,
+      ...renderEmail(
+        {
+          heading: 'You already have an account',
+          paragraphs: [
+            `Someone, probably you, asked to start ${bandName} on Bandstand with this address. It already has an account, so sign in and start the band from the same page.`,
+          ],
+          button: {label: 'Sign in and start it', url: `${origin}/start`},
+          after: [`Forgotten your password? ${origin}/forgot`],
+          footer: 'If this wasn’t you, ignore this email.',
+        },
+        origin,
+      ),
     }).catch((e) => console.error('[signup] email failed', e))
     return Response.json({ok: true})
   }

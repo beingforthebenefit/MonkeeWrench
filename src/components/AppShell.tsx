@@ -174,9 +174,7 @@ export default function AppShell({
               )}
               <MenuSection title="You">
                 <MenuLink href="/account">Account &amp; settings</MenuLink>
-                {ctx.isOwner && (
-                  <MenuLink href="/bands/manage">All bands (owner)</MenuLink>
-                )}
+                {ctx.isOwner && <MenuLink href="/owner">Owner</MenuLink>}
               </MenuSection>
               <MenuSection title="Help">
                 {band && (

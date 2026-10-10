@@ -377,6 +377,11 @@ section {
   border-radius: 10px;
   padding: 4px 12px;
 }
+/* Small A, big A: the app's text-size buttons */
+.pt-small {
+  font-size: 0.62em;
+  margin-right: 0.12em;
+}
 @media (max-width: 760px) {
   .points {
     grid-template-columns: minmax(0, 1fr);

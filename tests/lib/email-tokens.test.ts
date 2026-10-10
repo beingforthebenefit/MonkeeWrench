@@ -76,9 +76,34 @@ describe('emailed password links', () => {
   it('writes the link and the email for each kind', () => {
     const url = setPasswordUrl('https://app.test', 'a/b')
     expect(url).toBe('https://app.test/set-password?token=a%2Fb')
-    const invite = emailFor('INVITE', {url, bandName: 'The Reeds', by: 'Ana'})
+    const invite = emailFor('INVITE', {
+      url,
+      origin: 'https://app.test',
+      bandName: 'The Reeds',
+      by: 'Ana',
+    })
     expect(invite.subject).toBe('Ana added you to The Reeds on Bandstand')
     expect(invite.text).toContain(url)
-    expect(emailFor('RESET', {url}).text).toContain('an hour')
+    // HTML: the logo from the app, the link as a button
+    expect(invite.html).toContain(
+      'src="https://app.test/icons/default-192.png"',
+    )
+    expect(invite.html).toContain(`href="${url}"`)
+    expect(invite.html).toContain('Choose your password')
+    const reset = emailFor('RESET', {url, origin: 'https://app.test'})
+    expect(reset.text).toContain('an hour')
+    expect(reset.html).toContain('an hour')
+  })
+
+  it('never lets a band’s or person’s name become HTML', () => {
+    const mail = emailFor('INVITE', {
+      url: 'https://app.test/x',
+      origin: 'https://app.test',
+      bandName: '<script>alert(1)</script>',
+      by: 'Ana & "Bo"',
+    })
+    expect(mail.html).not.toContain('<script>')
+    expect(mail.html).toContain('&lt;script&gt;')
+    expect(mail.html).toContain('Ana &amp; &quot;Bo&quot;')
   })
 })

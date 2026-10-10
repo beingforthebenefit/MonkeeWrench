@@ -12,7 +12,7 @@ import nodemailer, {type Transporter} from 'nodemailer'
  * prints messages to the server log instead of sending them (development).
  */
 
-export type Mail = {to: string; subject: string; text: string}
+export type Mail = {to: string; subject: string; text: string; html?: string}
 
 export function mailConfigured() {
   return Boolean(process.env.SMTP_HOST) || process.env.MAIL_LOG === '1'
@@ -47,5 +47,6 @@ export async function sendMail(mail: Mail) {
     to: mail.to,
     subject: mail.subject,
     text: mail.text,
+    html: mail.html,
   })
 }
