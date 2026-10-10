@@ -67,6 +67,7 @@ export function resourceLinks(html) {
  * for them by that name); photos stay as they are, which images don't mind.
  */
 export function apiFile(path) {
+  if (path === '/api/export') return 'api/export.json'
   const ext = path.match(/\/(pdf|ics)$/)
   return path.slice(1) + (ext ? `.${ext[1]}` : '')
 }

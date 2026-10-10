@@ -71,8 +71,8 @@ make format
 # Build options:
 # - Next.js production build (one-off container):
 make build
-# - Deploy the live site (popos only):
-make deploy
+# - The self-hosting image (what CI publishes to ghcr.io): docker build .
+docker build -t bandstand .
 # - Local (no Docker): see README "Running Locally (no Docker)"
 ```
 

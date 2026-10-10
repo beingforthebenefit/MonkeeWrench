@@ -4,7 +4,7 @@
 [![Tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/Bandstand/badges/badges/tests.json)](https://github.com/beingforthebenefit/Bandstand/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/beingforthebenefit/Bandstand/badges/badges/coverage.json)](https://bandstand.info/coverage/)
 
-**Bandstand**: a self-hosted hub for bands — chord charts with full version history, setlists, a stage performance mode, rehearsal availability, and song proposals. One install serves several bands; each can have its own name, icon and web address. Built with Next.js, NextAuth, Prisma/Postgres and Vitest. It started as Monkee Wrench, the hub for **Monkee Business** (still its name there), live at <https://members.monkeebusinessband.com>.
+**Bandstand**: a self-hosted hub for bands — chord charts with full version history, setlists, a stage performance mode, rehearsal availability, and song proposals. One install serves several bands; each can have its own name, icon and web address. Built with Next.js, NextAuth, Prisma/Postgres and Vitest. Run it yourself from one Docker image, or use the hosted service at <https://app.bandstand.info>.
 
 Product page: <https://bandstand.info> (from `site/`; its screenshots come from `scripts/site-shots.mjs`). Live demo: <https://bandstand.info/songs>. CI publishes both with each push to `main`; see [Public demo](#public-demo).
 
@@ -14,9 +14,8 @@ Product page: <https://bandstand.info> (from `site/`; its screenshots come from 
 - [Stack](#stack)
 - [AI Agents](#ai-agents)
 - [Quick Start (Docker)](#quick-start-docker)
-- [Production (Docker)](#production-docker)
-- [Importing a band (OnSong, spreadsheets, JSON)](#importing-a-band-onsong-spreadsheets-json)
-- [Importing charts from Google Drive](#importing-charts-from-google-drive)
+- [Self-hosting (Docker)](#self-hosting-docker)
+- [Importing and exporting](#importing-and-exporting)
 - [Writing charts (ChordPro)](#writing-charts-chordpro)
 - [Dev notes](#dev-notes)
 - [Make Targets](#make-targets)
@@ -78,57 +77,54 @@ Product page: <https://bandstand.info> (from `site/`; its screenshots come from 
 - `make dev` (hot‑reload) or `make dev-d` (detached)
 - App: http://localhost:3002 (mapped from container 3000)
 - Postgres data persists in the `pgdata` volume
-- The dev stack is Compose project `monkeewrench-dev`, separate from the live stack (`monkeewrench`), so dev targets (`make test`, `make down`, `make psql`, ...) can never touch production
+- The dev stack is its own Compose project, so dev targets (`make test`, `make down`, `make psql`, ...) can never touch a production stack on the same machine
 
 3. Give yourself an account
 
-- `make app-sh`, then `npx tsx scripts/create-band.ts "Band" you@example.com "Your Name"` (or `npx tsx scripts/import-members.ts <band-slug> data/members.json`)
+- An empty database opens on the setup page. The dev seed adds a demo band, so with it: `make app-sh`, then `npx tsx scripts/create-band.ts "Band" you@example.com "Your Name"` (or `npx tsx scripts/import-members.ts <band-slug> data/members.json`)
 - `npx tsx scripts/set-password.ts you@example.com` prints a password once; sign in at `/login`
 
 Useful: `make logs`, `make app-sh`, `make db-sh`, `make psql`.
 
-## Production (Docker)
+## Self-hosting (Docker)
 
-Production runs on the `popos` server from `docker-compose.server.yml`, a standalone stack (project `monkeewrench`, port **7120**) that can run beside the dev stack. Traefik on another host terminates TLS for `members.monkeebusinessband.com` and forwards to it.
+The image is `ghcr.io/beingforthebenefit/bandstand` (x86 and ARM, so a Raspberry Pi or an Apple Silicon Mac works too), published by CI with every push to `main` as `latest` and `sha-<commit>`. `selfhost/compose.yml` runs the whole install: Postgres, the app, a nightly database dump and, optionally, HTTPS.
 
-1. Create `.env.production` (gitignored; `.dockerignore` keeps every `.env*` out of images) with `POSTGRES_PASSWORD`, `NEXTAUTH_SECRET` and optional `VOTE_THRESHOLD`.
-2. Build and start (also the update command):
+```bash
+mkdir bandstand && cd bandstand
+curl -fsSLO https://raw.githubusercontent.com/beingforthebenefit/Bandstand/main/selfhost/compose.yml
+echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)" > .env
+docker compose up -d
+```
 
-   ```bash
-   make deploy
-   # = docker compose -f docker-compose.server.yml --env-file .env.production up -d --build
-   ```
+Open <http://localhost:3000> (or the machine's address). A fresh install shows **Set up Bandstand**: your band's name, your name, email and a password. That account runs the install (the owner page, more bands); everyone else is added from **Band members**.
 
-   The live stack (project `monkeewrench`, port 7120) and the dev stack (project `monkeewrench-dev`, port 3002) share no containers, volumes, networks or ports, so both can run at once. The dev server polls for file changes and uses about a core and 1 GB of RAM: start it when working on the app and `make down` afterwards.
+- **The address people use**: `APP_URL=https://band.example.com` in `.env` (sign-in, calendar feeds and emails use it). Port: `PORT=3000`.
+- **HTTPS on your own domain**: point its DNS at the machine, open ports 80 and 443, set `DOMAIN=band.example.com` and `APP_URL=https://band.example.com`, then `docker compose --profile https up -d`. Caddy gets and renews the certificate.
+- **Email** (invites, password resets): `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`. Without it, admins make passwords on Band members and send them themselves.
+- **Secrets**: the session secret and push-notification keys are made on first start and kept in the `appdata` volume. Set `NEXTAUTH_SECRET` / `VAPID_*` only to use your own.
+- **Upgrading**: `docker compose pull && docker compose up -d`; migrations run on start. Pin a version with `BANDSTAND_VERSION=sha-<commit>`.
+- **Backups**: a `pg_dump` every night at 03:30 UTC into `./backups`, two weeks kept. Restore one with `docker compose exec -T db pg_restore -U bandstand -d bandstand --clean < backups/<file>`.
+- `GET /api/health` is public and queries the database (`{"ok":true,"songs":N,"version":"<commit>"}`); the container healthcheck uses it.
 
-The entrypoint applies migrations on start. The first band and admin: `npx tsx scripts/create-band.ts "Band Name" you@example.com "Your Name"` inside the app container (the first admin also becomes the install owner), then `npx tsx scripts/set-password.ts you@example.com` prints a password once; everyone else's comes from `/members`, and further bands are started from the app. Serving several web addresses needs `AUTH_TRUST_HOST=true` (sign-in URLs follow the address used) and, for Google sign-in, each address's `/api/auth/callback/google` in the OAuth client. Demo seed data is created only when `APP_ENV=development`. `GET /api/health` is public and queries the database (`{"ok":true,"songs":N}`); the container healthcheck and the server's monitoring use it.
+Serving several web addresses needs `AUTH_TRUST_HOST=true` (set in the compose file: sign-in URLs follow the address used) and, for Google sign-in, each address's `/api/auth/callback/google` in the OAuth client. To build from source instead, `docker build .` (the `Dockerfile`'s final stage is the published image; `base` is the dev stack's).
 
-## Importing a band (OnSong, spreadsheets, JSON)
+## Importing and exporting
 
-`scripts/import-band.ts` loads a band's songs, charts, personal cues,
-setlists (with sets and breaks) and rehearsals from one JSON file; its
-header documents the format. Charts can be ChordPro, or OnSong text as it
-comes out of an OnSong backup (`OnSong.sqlite3`, table `Song`, column
-`content`): the title, artist and `Key:` lines are dropped, each paragraph
-becomes a section (named when it says what it is: `Chorus:`, `intro- sax
-solo`, `piano solo`), chords above the words are merged in, and a player's
-notes on top (`Piano - Light and airy`) become that player's personal cue
-instead of part of everyone's chart. Re-running it adds nothing twice.
+**Import** (menu → Import songs, admins) brings a band's songs and setlists in from:
 
-    npx tsx scripts/import-band.ts band.json   # inside the app container
+- **OnSong**: its `.backup` file. The page lists the sets (newest first), the books and every song; choosing a set chooses its songs, and the set comes in as a setlist with its keys. Chords on their own line are merged into the words, each paragraph becomes a section (named when it says what it is: `Chorus:`, `intro- sax solo`), and a player's notes on top (`Piano - Light and airy`) become that player's personal cue instead of part of everyone's chart.
+- **Google Docs**: Drive's Download of the charts or their folder (Word files, zipped). Chords-over-lyrics with `[Verse 1]` or `INTRO: C F Bb F (x4)` / `#1.` headers and guitar tab are understood; the file's name is the title.
+- **ChordPro, OnSong and text files**, singly or zipped.
+- **A spreadsheet** as CSV: a Song/Title column, optionally Artist, Singer, Length, YouTube, Notes, Status. These come in without charts.
+- **A pasted setlist**: one song a line, `Set 1` / `Encore` / `Break 15`, a key in brackets.
+- **A Bandstand export** from any install.
 
-The band must exist first (menu → All bands). The JSON holds lyrics: keep it
-in the gitignored `data/` and delete it afterwards.
+Files are read in the browser (`src/lib/import/`; SQLite via sql.js, served by the app); only the chosen songs are sent, a hundred at a time, to `POST /api/import`. An import only adds: a song whose title the band already has is left alone, cues and setlists aren't added twice, so importing again (or after a batch failed) is safe. The format is `src/lib/band-import-schema.ts`; the work is `importBand()` in `src/lib/band-import.ts`.
 
-## Importing charts from Google Drive
+**Export** (Admin → Download everything, `GET /api/export`) is the same format: every song with its current chart, every setlist and rehearsal, and the exporting person's own cues. It imports into any Bandstand, hosted or self-hosted.
 
-The band's old charts were Google Docs in chords-over-lyrics format (`[Verse 1]` or `INTRO: C F Bb F (x4)` / `#1.` headers, guitar tab). To import them:
-
-1. In Drive, download the `Original Documents` folder (a zip of `.docx`) and the song spreadsheet as `.xlsx`. Unzip into `data/` — **gitignored**, because the charts are copyrighted.
-2. `python3 -I scripts/drive-export-to-json.py "data/docs/Original Documents" "data/Your Band.xlsx" data/import.json`
-3. `make import BAND=<band-slug> FILE=data/import.json AS=you@example.com` (dev). For production, `docker cp` the JSON into `monkeewrench-app` and run `npx tsx scripts/import-songs.ts <band-slug> /tmp/import.json you@example.com` there, then delete it.
-
-Re-running is safe: unchanged charts are skipped, changed Docs become a new version, and a chart edited in the app since the last import is never overwritten (it's reported instead).
+From the command line, `npx tsx scripts/import-band.ts band.json` (inside the app container) imports a file in that format plus `"band": "<slug>"` and `"as": "<member email>"`. `scripts/drive-export-to-json.py` and `scripts/import-songs.ts` keep a band's charts in step with a Drive folder of Docs and its spreadsheet: unchanged charts are skipped, changed Docs become a new version, and a chart edited in the app since is never overwritten. Exports hold lyrics: keep them in the gitignored `data/` and delete them afterwards.
 
 ## Writing charts (ChordPro)
 
@@ -154,7 +150,7 @@ The editor also converts pasted chords-above-lyrics text with one button.
 ## Make Targets
 
 - `dev`/`dev-d`/`dev-up`/`dev-up-d`: run dev stack with/without rebuild, fg/bg
-- `deploy`: build and (re)start the live stack on popos, then wait for `/api/health`
+- `deploy`: build and (re)start a from-source stack (`docker-compose.server.yml`, `.env.production`), then wait for `/api/health`
 - `build`: Next.js production build in a one-off container (checks it compiles)
 - `demo`: build the static public demo into `demo-out/` (see [Public demo](#public-demo))
 - `hosted-deploy`/`hosted-logs`/`hosted-psql`: the hosted service, on its own server (see [docs/hosting.md](docs/hosting.md))
@@ -220,7 +216,8 @@ GitHub Actions workflow runs on every push/PR:
 
 - Node 20, `npm ci`, lint, tests with coverage, publish a summary
 - Coverage HTML uploaded as artifact for the run
-- On `main` and `hosted`, after the tests: deploys the hosted service (`deploy-hosted` job; it deploys only the branch the server runs, see [docs/hosting.md](docs/hosting.md))
+- On `main`, after the tests: builds the Docker image natively for x86 and ARM and publishes it to `ghcr.io/beingforthebenefit/bandstand` as `latest` and `sha-<commit>` (`image` and `image-tag` jobs)
+- On `main` and `hosted`, after the tests (and the image): deploys the hosted service, which pulls that image (`deploy-hosted` job; it deploys only the branch the server runs, see [docs/hosting.md](docs/hosting.md))
 - On `main` and every morning: builds the public demo (`demo` job), then publishes GitHub Pages (`pages` job): the product page, the demo and the coverage report, at bandstand.info
 
 Workflow: `.github/workflows/ci.yml`.
@@ -284,7 +281,8 @@ it with the product page, copy `site/` into a folder together with
 - CI: `.github/workflows/ci.yml`
 - Prisma: `prisma/schema.prisma`, `prisma/migrations/`, `prisma/seed.mjs`
 - Charts: `src/lib/chordpro.ts` (parse/transpose/import), `src/lib/pdf.ts`, `src/lib/chart-diff.ts`, `src/components/chart/ChartBody.tsx`
-- Import: `scripts/drive-export-to-json.py`, `scripts/import-songs.ts`
+- Import and export: `src/lib/import/` (reading files, in the browser), `src/lib/band-import{,-schema}.ts`, `src/lib/band-export.ts`, `src/components/import/Importer.tsx`, `scripts/import-band.ts`, `scripts/drive-export-to-json.py`, `scripts/import-songs.ts`
+- Self-hosting: `Dockerfile`, `selfhost/compose.yml`, `scripts/entrypoint.sh`, `/setup` (`src/app/setup`, `src/app/api/setup`)
 - Product page and demo: `site/`, `scripts/demo.sh`, `scripts/demo/`, `src/lib/demo.ts`
 - Hosted service: `docker-compose.hosted.yml`, `deploy/Caddyfile`, `src/lib/{hosted,billing,mail,email-tokens}.ts`, `scripts/comp-band.ts`, `docs/hosting.md`
 - App: `src/app/(band)/*` (signed-in pages), `src/app/perform/*`, `src/app/api/*`, `src/components/*`, `src/lib/*`, `src/middleware.ts`

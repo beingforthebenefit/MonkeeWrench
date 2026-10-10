@@ -44,12 +44,17 @@ export default async function AdminPage({
       title: 'Add a song',
       body: `${songs} songs, ${versions} chart versions so far.`,
     },
+    {
+      href: '/import',
+      title: 'Import songs',
+      body: 'From OnSong, Google Docs, ChordPro files or a spreadsheet, with setlists.',
+    },
   ]
   return (
     <main className="mx-auto max-w-3xl px-4 pb-12 pt-5">
       <h1 className="text-3xl font-extrabold">Admin</h1>
       <p className="mt-1 text-muted">{band.name}</p>
-      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
         {cards.map((c) => (
           <Link
             key={c.href}
@@ -105,6 +110,26 @@ export default async function AdminPage({
         </h2>
         <VoteThreshold initial={band.voteThreshold} max={members || 6} />
       </section>
+      <section aria-labelledby="export-h" className="mt-8">
+        <h2
+          id="export-h"
+          className="text-xs font-bold uppercase tracking-widest text-muted"
+        >
+          Your band’s data
+        </h2>
+        <p className="mt-2 text-sm text-muted">
+          Every song with its current chart, every setlist and rehearsal, and
+          your own cues, in one file. Keep it as a copy, or import it into
+          another Bandstand, hosted or your own.
+        </p>
+        <a
+          href="/api/export"
+          download
+          className="mt-3 inline-flex min-h-11 items-center rounded-lg border border-line-2 px-4 font-semibold no-underline hover:border-text"
+        >
+          Download everything
+        </a>
+      </section>
       {user.isOwner && (
         <p className="mt-8 text-sm">
           <Link href="/bands/manage" className="text-sky">
@@ -117,7 +142,7 @@ export default async function AdminPage({
         confirmText={band.name}
         confirmLabel="Type the band’s name to confirm"
         endpoint="/api/band"
-        explain={`Every song and chart version, setlist, rehearsal and proposal in ${band.name} goes, for everyone, and can’t be brought back. Its people keep their accounts.${HOSTED ? ' A running subscription has to be cancelled first.' : ''}`}
+        explain={`Every song and chart version, setlist, rehearsal and proposal in ${band.name} goes, for everyone, and can’t be brought back (download everything above first, to keep a copy). Its people keep their accounts.${HOSTED ? ' A running subscription has to be cancelled first.' : ''}`}
       />
     </main>
   )

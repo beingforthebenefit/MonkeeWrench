@@ -15,6 +15,8 @@ const PUBLIC_API = [
   // Starting a band, and setting a password from an emailed link
   /^\/api\/signup$/,
   /^\/api\/password\/(forgot|set)$/,
+  // A fresh install's first account (only while it has none)
+  /^\/api\/setup$/,
   // Polar's webhooks: signed, checked in the route
   /^\/api\/billing\/webhook$/,
   // Caddy, asking whether to get a certificate for a band's web address

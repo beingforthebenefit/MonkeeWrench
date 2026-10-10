@@ -494,6 +494,16 @@ export default function HelpPage() {
             tool.
           </li>
           <li>
+            <b>Import songs</b> (menu): bring songs and setlists in from an
+            OnSong backup, Google Docs (Drive’s Download gives Word files),
+            ChordPro or text files, a spreadsheet saved as CSV, or a pasted
+            list. Choose what comes in; nothing already in the band changes.
+          </li>
+          <li>
+            <b>Download everything</b> (Admin): every song, setlist and
+            rehearsal in one file, to keep or to import into another Bandstand.
+          </li>
+          <li>
             Admins can delete songs and setlists, and put back an old version of
             a chart.
           </li>

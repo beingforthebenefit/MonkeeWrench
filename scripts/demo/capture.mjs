@@ -71,7 +71,13 @@ await signIn()
 
 const seen = new Set()
 const queue = [...SEEDS]
-const resources = new Set(['/api/auth/session'])
+// Import reads files in the browser with SQLite (the wasm), and Admin's
+// "Download everything" is the demo band's own export
+const resources = new Set([
+  '/api/auth/session',
+  '/api/import/sqlite',
+  '/api/export',
+])
 const missing = []
 let pages = 0
 while (queue.length) {

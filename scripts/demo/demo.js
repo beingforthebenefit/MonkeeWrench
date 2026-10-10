@@ -45,6 +45,7 @@
   // PDFs and calendar files were saved with their extension (so they open
   // as what they are); the app links to them without one
   function captured(p) {
+    if (p === '/api/export') return '/api/export.json'
     return /^\/api\/.+\/(pdf|ics)$/.test(p)
       ? p + '.' + p.split('/').pop()
       : null

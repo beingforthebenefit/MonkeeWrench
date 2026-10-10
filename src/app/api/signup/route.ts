@@ -5,14 +5,12 @@ import {getServerSession} from 'next-auth'
 import {authOptions} from '@/lib/auth'
 import {prisma} from '@/lib/db'
 import {requestOrigin} from '@/lib/band'
-import {slugify} from '@/lib/band-fields'
-import {logActivity} from '@/lib/songs'
 import {route} from '@/lib/route'
-import {HOSTED, trialEnd} from '@/lib/hosted'
+import {HOSTED} from '@/lib/hosted'
+import {startBand} from '@/lib/new-band'
 import {mailConfigured, sendMail} from '@/lib/mail'
 import {sendPasswordLink} from '@/lib/email-tokens'
 import {allow, clientIp} from '@/lib/rate-limit'
-import {SAMPLE_NOTE, SAMPLE_SONGS} from '@/lib/sample-songs'
 import {renderEmail} from '@/lib/email-layout'
 
 const Body = z.object({
@@ -24,49 +22,6 @@ const Body = z.object({
 })
 
 const HOUR = 60 * 60 * 1000
-
-async function newBand(name: string, userId: string) {
-  const base = slugify(name)
-  let slug = base
-  for (let n = 2; await prisma.band.findUnique({where: {slug}}); n++)
-    slug = `${base}-${n}`
-  return prisma.$transaction(async (tx) => {
-    const band = await tx.band.create({
-      data: {name, slug, paidUntil: trialEnd(), trialStartedAt: new Date()},
-    })
-    await tx.membership.create({data: {userId, bandId: band.id, isAdmin: true}})
-    // Something to open straight away, and for the tour to show
-    for (const song of SAMPLE_SONGS)
-      await tx.song.create({
-        data: {
-          bandId: band.id,
-          title: song.title,
-          writer: song.writer,
-          seconds: song.seconds,
-          status: 'READY',
-          notes: SAMPLE_NOTE,
-          updatedById: userId,
-          chartVersions: {
-            create: {
-              number: 1,
-              source: song.chart,
-              authorId: userId,
-              note: 'Sample song',
-            },
-          },
-        },
-      })
-    await logActivity(tx, {
-      bandId: band.id,
-      userId,
-      action: 'band.create',
-      targetType: 'band',
-      targetId: band.id,
-      summary: `started ${band.name}`,
-    })
-    return band
-  })
-}
 
 /**
  * Start a band on the hosted service: free for the trial, then $12 a year.
@@ -95,7 +50,7 @@ export const POST = route(async (req: Request) => {
         {error: 'That’s a lot of new bands for one day. Try tomorrow.'},
         {status: 429},
       )
-    const band = await newBand(bandName, user.id)
+    const band = await startBand(bandName, user.id, {trial: true})
     return Response.json({bandId: band.id}, {status: 201})
   }
 
@@ -146,7 +101,7 @@ export const POST = route(async (req: Request) => {
   const user = await prisma.user.create({
     data: {email, name, displayName: name.split(' ')[0]},
   })
-  const band = await newBand(bandName, user.id)
+  const band = await startBand(bandName, user.id, {trial: true})
   try {
     await sendPasswordLink({
       userId: user.id,

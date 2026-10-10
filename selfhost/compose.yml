@@ -1,0 +1,144 @@
+# Bandstand on your own computer or server: the whole install.
+#
+#   curl -fsSLO https://raw.githubusercontent.com/beingforthebenefit/Bandstand/main/selfhost/compose.yml
+#   echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)" > .env
+#   docker compose up -d
+#
+# Then open http://localhost:3000 (or this machine's address) and set up
+# your band. The settings below are all optional; put them in .env.
+#
+#   APP_URL=https://band.example.com  the address people use (sign-in links,
+#                                     calendar feeds, emails)
+#   PORT=3000                         where the app answers on this machine
+#   DOMAIN=band.example.com           with `docker compose --profile https up -d`
+#                                     (and APP_URL=https://band.example.com),
+#                                     Caddy answers on 80/443 for that name and
+#                                     gets its HTTPS certificate itself
+#   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_FROM
+#                                     email: invites and password resets
+#   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET   "Sign in with Google"
+#   BANDSTAND_VERSION=latest          or a release, e.g. sha-42ba3e1
+#
+# Upgrading: `docker compose pull && docker compose up -d`. The database is
+# migrated when the app starts. A dump is made every night in ./backups.
+name: bandstand
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '3'
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      POSTGRES_USER: bandstand
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: bandstand
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U bandstand -d bandstand']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  app:
+    image: ghcr.io/beingforthebenefit/bandstand:${BANDSTAND_VERSION:-latest}
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '${PORT:-3000}:3000'
+    environment:
+      NODE_ENV: production
+      NEXTAUTH_URL: ${APP_URL:-http://localhost:3000}
+      # Sign-in follows whichever address a page was opened on
+      AUTH_TRUST_HOST: 'true'
+      DATABASE_URL: postgresql://bandstand:${POSTGRES_PASSWORD}@db:5432/bandstand?schema=public
+      # The session secret and push keys are made on first start and kept
+      # in the appdata volume; set them here only to use your own
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+    volumes:
+      - appdata:/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'curl -fsS http://localhost:3000/api/health | grep -q ''"ok":true'' || exit 1',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Optional: HTTPS on your own domain (point its DNS here, open 80 and 443)
+  caddy:
+    image: caddy:2
+    profiles: [https]
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on: [app]
+    command:
+      [
+        'caddy',
+        'reverse-proxy',
+        '--from',
+        '${DOMAIN:-localhost}',
+        '--to',
+        'app:3000',
+      ]
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - caddy_data:/data
+
+  # A dump every night at 03:30 UTC, two weeks kept, in ./backups.
+  # Restore: docker compose exec -T db pg_restore -U bandstand -d bandstand --clean < backups/<file>
+  backup:
+    image: postgres:16
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: bandstand
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: bandstand
+    volumes:
+      - ./backups:/backups
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        while :; do
+          sleep $$(( (86400 + 12600 - $$(date +%s) % 86400) % 86400 + 1 ))
+          f=/backups/bandstand-$$(date +%F).dump
+          pg_dump -Fc -f "$$f.tmp" && mv "$$f.tmp" "$$f" && echo "backup: $$f"
+          find /backups -name 'bandstand-*.dump' -mtime +14 -delete
+        done
+
+volumes:
+  pgdata:
+  appdata:
+  caddy_data:

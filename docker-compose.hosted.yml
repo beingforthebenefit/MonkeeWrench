@@ -2,7 +2,7 @@
 # docs/hosting.md has the whole setup). Not on popos: paying bands get a
 # server that isn't on a home connection.
 #
-#   make hosted-deploy        (on that server)
+#   make hosted-deploy        (on that server; CI runs it on every push)
 #
 # Caddy answers on 80/443 and gets the HTTPS certificate itself. The
 # database is dumped every night to ./backups, which the server's own daily
@@ -41,7 +41,9 @@ services:
         NEXTAUTH_URL: https://${APP_HOST:-app.bandstand.info}
         # Shown by /api/health (make hosted-deploy sets it)
         GIT_SHA: ${GIT_SHA:-}
-    image: bandstand:latest
+    # CI's image for this commit (make hosted-deploy pulls it); the build
+    # above is the fallback when there isn't one
+    image: ghcr.io/beingforthebenefit/bandstand:${BANDSTAND_TAG:-latest}
     container_name: bandstand-app
     restart: unless-stopped
     logging: *default-logging

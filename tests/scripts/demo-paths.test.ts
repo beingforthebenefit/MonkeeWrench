@@ -53,6 +53,7 @@ describe('demo capture paths', () => {
   it('gives PDFs and calendar files their extension, and nothing else', () => {
     expect(apiFile('/api/songs/s1/pdf')).toBe('api/songs/s1/pdf.pdf')
     expect(apiFile('/api/rehearsals/r1/ics')).toBe('api/rehearsals/r1/ics.ics')
+    expect(apiFile('/api/export')).toBe('api/export.json')
     expect(apiFile('/api/avatars/u1')).toBe('api/avatars/u1')
     expect(apiFile('/favicon.ico')).toBe('favicon.ico')
   })

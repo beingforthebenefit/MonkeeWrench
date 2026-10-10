@@ -173,13 +173,12 @@ point at the server.
 
 ### 6. You, as the install's owner
 
-```bash
-docker exec bandstand-app npx tsx scripts/create-band.ts "Bandstand HQ" you@example.com "Your Name"
-docker exec bandstand-app npx tsx scripts/set-password.ts you@example.com
-```
-
-The first person created this way owns the install: they see every band under
-Admin → All bands. Bands started this way are never billed.
+Open `https://app.bandstand.info`: a fresh install shows **Set up
+Bandstand**. Your band, name, email and password; you're signed straight in.
+That first account owns the install: it sees every band under Admin → All
+bands and on `/owner`. The band started there is never billed. (From the
+command line instead: `scripts/create-band.ts`, then
+`scripts/set-password.ts`, inside the app container.)
 
 ### 7. Try it end to end (sandbox)
 
@@ -213,9 +212,15 @@ Admin → All bands. Bands started this way are never billed.
 
 ## Deploys
 
-Automatic. When CI's tests pass on a push, the `deploy-hosted` job connects
-to the server and it updates itself. That's `make hosted-deploy`: pull,
-rebuild, restart, wait for `/api/health`. It only
+Automatic. When CI's tests pass on a push to `main`, CI builds and
+publishes the image (`ghcr.io/beingforthebenefit/bandstand:sha-<commit>`),
+then the `deploy-hosted` job connects to the server and it updates itself.
+That's `make hosted-deploy`: pull the code, pull that commit's image (or
+build one, if there's none: a branch CI doesn't publish, or GitHub down),
+restart, keep the three newest images for going back, wait for
+`/api/health`. Going back a version by hand: `BANDSTAND_TAG=sha-<older>
+docker compose -f docker-compose.hosted.yml --env-file .env.hosted up -d
+app`. It only
 deploys the branch the server runs (`git -C ~/Bandstand branch` there); a
 push to any other branch is a no-op. A failed deploy fails the CI run, and
 GitHub emails you.

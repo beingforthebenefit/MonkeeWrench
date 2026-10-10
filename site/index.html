@@ -561,35 +561,33 @@
           <p class="kicker">Self-hosted · open source</p>
           <h2 class="display-2">Yours.</h2>
           <p class="sub">
-            Bandstand runs on your own server in Docker: Next.js and Postgres,
-            nothing else. Your charts stay with you, and the code is free under
-            the AGPL.
+            Bandstand runs on your own server, a Raspberry Pi or a spare Mac in
+            Docker: one image and Postgres, nothing else. Your charts stay with
+            you, and the code is free under the AGPL.
           </p>
         </div>
         <pre
           class="code reveal"
           aria-label="Install commands"
-        ><code><span class="c"># clone it</span>
-git clone https://github.com/beingforthebenefit/Bandstand.git
-cd Bandstand
+        ><code><span class="c"># one file, one password</span>
+curl -fsSLO https://raw.githubusercontent.com/beingforthebenefit/Bandstand/main/selfhost/compose.yml
+echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)" &gt; .env
+docker compose up -d
 
-<span class="c"># .env.production: POSTGRES_PASSWORD, NEXTAUTH_SECRET</span>
-make deploy
-
-<span class="c"># your band, you as its admin, and your password</span>
-dc="docker compose -f docker-compose.server.yml --env-file .env.production"
-$dc exec app npx tsx scripts/create-band.ts "Your Band" you@example.com "You"
-$dc exec app npx tsx scripts/set-password.ts you@example.com</code></pre>
+<span class="c"># then open http://localhost:3000 and set up your band</span></code></pre>
         <ul class="facts reveal">
           <li>
             <b>Brings your book with you</b
-            ><span>Imports OnSong backups, spreadsheets and ChordPro.</span>
+            ><span
+              >Imports OnSong backups with their sets, Google Docs, ChordPro and
+              spreadsheets.</span
+            >
           </li>
           <li>
             <b>Never locked in</b
             ><span
-              >Charts are plain-text ChordPro, versioned in your own
-              Postgres.</span
+              >Charts are plain-text ChordPro, and one click downloads the whole
+              band to take anywhere.</span
             >
           </li>
           <li>

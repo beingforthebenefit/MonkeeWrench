@@ -1,9 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Secrets nobody should have to make by hand. Given in the environment,
+# they're used as they are; otherwise they're made once and kept in
+# $BANDSTAND_DATA (a volume in selfhost/compose.yml), so sessions and push
+# subscriptions survive a restart or an upgrade. Only on a volume: keys made
+# in the container itself would change with every new container.
+STATE="${BANDSTAND_DATA:-/data}"
+if [[ -z "${NEXTAUTH_SECRET:-}" || -z "${VAPID_PUBLIC_KEY:-}" ]] &&
+  grep -qs " $STATE " /proc/mounts && [[ -w "$STATE" ]]; then
+  if [[ -z "${NEXTAUTH_SECRET:-}" ]]; then
+    [[ -s "$STATE/session-secret" ]] ||
+      (umask 077 && node -e 'process.stdout.write(require("crypto").randomBytes(32).toString("hex"))' >"$STATE/session-secret")
+    NEXTAUTH_SECRET=$(cat "$STATE/session-secret")
+    export NEXTAUTH_SECRET
+  fi
+  if [[ -z "${VAPID_PUBLIC_KEY:-}" ]]; then
+    [[ -s "$STATE/push-keys" ]] ||
+      (umask 077 && node -e 'const k=require("web-push").generateVAPIDKeys();process.stdout.write(k.publicKey+"\n"+k.privateKey+"\n")' >"$STATE/push-keys")
+    VAPID_PUBLIC_KEY=$(sed -n 1p "$STATE/push-keys")
+    VAPID_PRIVATE_KEY=$(sed -n 2p "$STATE/push-keys")
+    export VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY
+  fi
+fi
+
 # Fail fast without the session secret (sign-in is email + password)
 if [[ -z "${NEXTAUTH_SECRET:-}" ]]; then
-  echo "ERROR: NEXTAUTH_SECRET is required." >&2
+  echo "ERROR: NEXTAUTH_SECRET is required (or a writable $STATE to keep one in)." >&2
   exit 1
 fi
 

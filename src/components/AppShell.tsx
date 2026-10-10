@@ -37,7 +37,11 @@ export type ShellBand = {
 }
 
 // Screens that take the whole display (performance mode) or stand alone
-const BARE = [/^\/perform\//, /^\/login/, /^\/(start|forgot|set-password)$/]
+const BARE = [
+  /^\/perform\//,
+  /^\/login/,
+  /^\/(start|forgot|set-password|setup)$/,
+]
 
 // The tour's sample pages stand in for these tabs
 const TOUR_TABS: [RegExp, string][] = [
@@ -139,6 +143,9 @@ export default function AppShell({
                   )}
                   {band.isAdmin && (
                     <MenuLink href="/members">Band members</MenuLink>
+                  )}
+                  {band.isAdmin && (
+                    <MenuLink href="/import">Import songs</MenuLink>
                   )}
                   {band.isAdmin && (
                     <MenuLink href="/admin">
