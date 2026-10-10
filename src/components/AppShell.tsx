@@ -10,7 +10,7 @@ import Avatar from '@/components/Avatar'
 import {startTour} from '@/components/tour/Tour'
 import {OfflineBadge} from '@/components/pwa/PwaSetup'
 import {clearSaved} from '@/components/pwa/pwa'
-import RefreshOnReturn from '@/components/RefreshOnReturn'
+import KeepFresh from '@/components/KeepFresh'
 import {DEMO} from '@/lib/demo'
 
 const TABS = [
@@ -30,6 +30,8 @@ export type ShellBand = {
     name: string
     chat: {url: string; label: string} | null
     isAdmin: boolean
+    /** Where the band was up to when this was drawn (lib/changes) */
+    stamp?: string
   } | null
   /** Every band they're in, for switching */
   bands: {id: string; name: string}[]
@@ -87,7 +89,7 @@ export default function AppShell({
   const tabs = TABS
   return (
     <div className="flex min-h-dvh flex-col">
-      {band && !DEMO && <RefreshOnReturn />}
+      {band && !DEMO && <KeepFresh stamp={band.stamp ?? ''} />}
       <div className="sticky top-0 z-30 border-b border-line bg-ink/95 backdrop-blur">
         <header className="flex items-center gap-4 px-4 py-2">
           <Link

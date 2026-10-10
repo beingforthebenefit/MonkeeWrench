@@ -9,6 +9,7 @@ import {brandForRequest, currentBand, iconUrl, PRODUCT} from '@/lib/band'
 import {chatLabel} from '@/lib/band-fields'
 import Providers from '@/components/Providers'
 import AppShell, {type ShellBand} from '@/components/AppShell'
+import {bandStamp} from '@/lib/changes'
 import {DEMO} from '@/lib/demo'
 import {HOSTED} from '@/lib/hosted'
 import {THEME_COLORS, themeScript} from '@/lib/theme'
@@ -71,6 +72,7 @@ export default async function RootLayout({children}: {children: ReactNode}) {
             ? {url: band.chatUrl, label: chatLabel(band.chatUrl)}
             : null,
           isAdmin: band.isAdmin || Boolean(user?.isOwner),
+          stamp: DEMO ? '' : await bandStamp(band.id),
         }
       : null,
     bands: bands.map((b) => ({id: b.id, name: b.name})),

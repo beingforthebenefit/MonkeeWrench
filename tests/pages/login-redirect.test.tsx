@@ -78,32 +78,6 @@ describe('safeCallback', () => {
   })
 })
 
-describe('RefreshOnReturn', () => {
-  it('fetches the page again after more than five minutes away, not after a glance away', async () => {
-    const RefreshOnReturn = (await import('@/components/RefreshOnReturn'))
-      .default
-    render(<RefreshOnReturn />)
-    let state = 'visible'
-    Object.defineProperty(document, 'visibilityState', {
-      configurable: true,
-      get: () => state,
-    })
-    const now = vi.spyOn(Date, 'now')
-    const flip = (to: string, at: number) => {
-      state = to
-      now.mockReturnValue(at)
-      document.dispatchEvent(new Event('visibilitychange'))
-    }
-    flip('hidden', 0)
-    flip('visible', 60_000)
-    expect(refresh).not.toHaveBeenCalled()
-    flip('hidden', 100_000)
-    flip('visible', 100_000 + 5 * 60_000 + 1)
-    expect(refresh).toHaveBeenCalledTimes(1)
-    now.mockRestore()
-  })
-})
-
 describe('the loading placeholder', () => {
   it('says it’s busy', async () => {
     const Loading = (await import('@/app/(band)/loading')).default

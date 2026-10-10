@@ -82,10 +82,12 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url)
   if (url.origin !== self.location.origin) return
   const path = url.pathname
-  // Never saved: sign-in, calendar feeds, PDFs, the service worker itself
+  // Never saved: sign-in, calendar feeds, the "anything new?" check, PDFs,
+  // the service worker itself
   if (
     path.startsWith('/api/auth') ||
     path.startsWith('/api/calendar') ||
+    path === '/api/changes' ||
     path.endsWith('/pdf') ||
     path === '/sw.js' ||
     path.startsWith('/_next/webpack-hmr')

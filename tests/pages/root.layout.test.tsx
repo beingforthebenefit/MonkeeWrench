@@ -16,7 +16,10 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({refresh: vi.fn(), push: vi.fn()}),
 }))
 vi.mock('@/lib/db', () => ({
-  prisma: {user: {findUnique: async () => ({id: 'u1', isOwner: false})}},
+  prisma: {
+    user: {findUnique: async () => ({id: 'u1', isOwner: false})},
+    activity: {findFirst: async () => ({id: 'a1'})},
+  },
 }))
 vi.mock('@/lib/band', async (orig) => {
   const actual: any = await orig()
