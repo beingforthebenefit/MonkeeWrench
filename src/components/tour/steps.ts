@@ -6,7 +6,7 @@
  * The song and setlist steps use the tour's own samples (/tour/song,
  * /tour/setlist), so the tour is the same in every band, even a new one.
  * Steps about a tool a band can switch off (`needs`) are left out of the
- * tour in bands that have.
+ * tour in bands that have, and admin-only ones for everyone else.
  */
 export type TourStep = {
   title: string
@@ -25,15 +25,19 @@ export type TourStep = {
   open?: string
   /** Light this up too: what `open` opened */
   also?: string
-  /** Only in bands with this tool switched on (Admin), or only in the
-   * public demo */
-  needs?: 'scheduling' | 'demo'
+  /** Only in bands with this tool switched on (Admin), only for the band's
+   * admins, or only in the public demo */
+  needs?: 'scheduling' | 'admin' | 'demo'
   /** A link button on the card (the demo's last step: start a band) */
   cta?: {label: string; href: string}
 }
 
 /** The band's switchable tools, as the tour needs to know them */
-export type TourFeatures = {scheduling: boolean; demo?: boolean}
+export type TourFeatures = {
+  scheduling: boolean
+  admin?: boolean
+  demo?: boolean
+}
 
 /** The tour for a band: without the steps about tools it has switched off */
 export function stepsFor(features: TourFeatures) {
@@ -63,6 +67,13 @@ export const STEPS: TourStep[] = [
     target: '[role="group"][aria-label="Filter"]',
     title: 'Find a song',
     body: 'Search by title, singer or writer. Gig-ready songs have a green dot; Learning shows the ones we’re still working up.',
+  },
+  {
+    path: SONGS,
+    target: '[data-tour="import"]',
+    needs: 'admin',
+    title: 'Bring your songs in',
+    body: 'Already have charts somewhere? Import takes an OnSong backup (with its setlists), Google Docs, ChordPro files or a spreadsheet. You pick what comes in, and nothing already here changes.',
   },
   {
     path: SONGS,

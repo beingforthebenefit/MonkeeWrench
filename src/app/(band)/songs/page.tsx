@@ -8,7 +8,7 @@ import SongLibrary, {type LibrarySong} from '@/components/SongLibrary'
 export const metadata = {title: 'Songs'}
 
 export default async function SongsPage() {
-  const {band} = await pageSession()
+  const {band, isAdmin} = await pageSession()
   const songs = await listSongs(band.id)
   const rows: LibrarySong[] = songs.map((s) => {
     const chart = s.latest ? parseChordPro(s.latest.source) : null
@@ -25,5 +25,5 @@ export default async function SongsPage() {
       imported: isImportNote(s.latest?.note),
     }
   })
-  return <SongLibrary songs={rows} />
+  return <SongLibrary songs={rows} canImport={isAdmin} />
 }

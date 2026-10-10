@@ -45,7 +45,7 @@ export default async function BandLayout({children}: {children: ReactNode}) {
       {/* The first-time tour, until they finish or skip it */}
       <Tour
         auto={!user.tourDoneAt}
-        features={{scheduling: band.scheduling, demo: DEMO}}
+        features={{scheduling: band.scheduling, admin: isAdmin, demo: DEMO}}
       />
     </>
   )

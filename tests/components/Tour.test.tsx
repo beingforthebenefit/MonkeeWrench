@@ -74,6 +74,18 @@ describe('Tour', () => {
     expect(screen.getByText(`1 of ${on.length}`)).toBeTruthy()
   })
 
+  it('shows admins where Import is; members never see that step', async () => {
+    const {stepsFor} = await import('@/components/tour/steps')
+    const member = stepsFor({scheduling: true})
+    const admin = stepsFor({scheduling: true, admin: true})
+    expect(admin.length - member.length).toBe(1)
+    const step = admin.find((s) => s.needs === 'admin')!
+    expect(step.target).toBe('[data-tour="import"]')
+    // Right after finding a song, while still on the songs page
+    expect(admin[admin.indexOf(step) - 1].title).toBe('Find a song')
+    expect(member.some((s) => s.needs === 'admin')).toBe(false)
+  })
+
   it('ends back on the songs, wherever its last step was', async () => {
     const Tour = await tour(false)
     render(<Tour auto />)

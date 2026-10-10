@@ -21,7 +21,14 @@ export type LibrarySong = {
 /** learning: has a chart, not gig-ready yet */
 type Filter = 'all' | 'ready' | 'learning' | 'needs'
 
-export default function SongLibrary({songs}: {songs: LibrarySong[]}) {
+export default function SongLibrary({
+  songs,
+  canImport = false,
+}: {
+  songs: LibrarySong[]
+  /** An admin: Import is next to Add song */
+  canImport?: boolean
+}) {
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
 
@@ -53,12 +60,23 @@ export default function SongLibrary({songs}: {songs: LibrarySong[]}) {
             {needs > 0 && ` · ${needs} need charts`}
           </p>
         </div>
-        <Link
-          href="/songs/new"
-          className="inline-flex min-h-11 items-center rounded-lg border border-line-2 px-4 font-semibold no-underline hover:border-text"
-        >
-          Add song
-        </Link>
+        <div className="flex gap-2">
+          {canImport && (
+            <Link
+              href="/import"
+              data-tour="import"
+              className="inline-flex min-h-11 items-center rounded-lg px-3 font-semibold text-muted no-underline hover:text-text"
+            >
+              Import
+            </Link>
+          )}
+          <Link
+            href="/songs/new"
+            className="inline-flex min-h-11 items-center rounded-lg border border-line-2 px-4 font-semibold no-underline hover:border-text"
+          >
+            Add song
+          </Link>
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">

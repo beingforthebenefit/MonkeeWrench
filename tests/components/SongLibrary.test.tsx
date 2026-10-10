@@ -24,6 +24,16 @@ const songs = [
 ]
 
 describe('SongLibrary', () => {
+  it('offers Import beside Add song to admins only', () => {
+    const {rerender} = render(<SongLibrary songs={songs} />)
+    expect(screen.queryByRole('link', {name: 'Import'})).not.toBeInTheDocument()
+    rerender(<SongLibrary songs={songs} canImport />)
+    expect(screen.getByRole('link', {name: 'Import'})).toHaveAttribute(
+      'href',
+      '/import',
+    )
+  })
+
   it('filters by search text across title and singer', async () => {
     render(<SongLibrary songs={songs} />)
     await userEvent.type(screen.getByLabelText('Search songs'), 'davy')
