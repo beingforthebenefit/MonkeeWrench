@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+# The test coverage report is for developers
+Disallow: /coverage/
+
+Sitemap: https://bandstand.info/sitemap.xml

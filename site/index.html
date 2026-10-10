@@ -3,20 +3,105 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Bandstand — the band book, on every stand</title>
+    <title>Bandstand — chord charts, setlists and rehearsals for bands</title>
     <meta
       name="description"
-      content="Self-hosted chord charts, setlists, a stage performance mode and rehearsal scheduling for working bands. Any key, any device, no signal needed."
+      content="The band book on every phone, tablet and laptop: chord charts in any key, setlists, a stage performance mode that works offline, and rehearsal scheduling. Free for 30 days, then $12 a year for the whole band."
     />
+    <link rel="canonical" href="https://bandstand.info/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Bandstand" />
+    <meta property="og:url" content="https://bandstand.info/" />
     <meta
       property="og:title"
       content="Bandstand — the band book, on every stand"
     />
     <meta
       property="og:description"
-      content="Chord charts, setlists, performance mode and rehearsals for the whole band. Self-hosted and open source."
+      content="Chord charts in any key, setlists, performance mode and rehearsals for the whole band. Free for 30 days, then $12 a year per band."
     />
-    <meta property="og:image" content="img/perform-ipad.webp" />
+    <meta property="og:image" content="https://bandstand.info/img/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Bandstand's performance mode on an iPad: a chord chart with a cue on top"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://bandstand.info/#org",
+            "name": "Bandstand",
+            "url": "https://bandstand.info/",
+            "logo": "https://bandstand.info/apple-touch-icon.png",
+            "email": "hello@bandstand.info"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://bandstand.info/#site",
+            "name": "Bandstand",
+            "url": "https://bandstand.info/",
+            "publisher": {"@id": "https://bandstand.info/#org"}
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://bandstand.info/#app",
+            "name": "Bandstand",
+            "url": "https://app.bandstand.info/",
+            "description": "Chord charts in any key, setlists, a stage performance mode that works offline, and rehearsal scheduling, for the whole band on every phone, tablet and laptop.",
+            "applicationCategory": "MultimediaApplication",
+            "operatingSystem": "Any (web browser); installs on iPhone, iPad and Android",
+            "browserRequirements": "A current web browser",
+            "image": "https://bandstand.info/img/og.png",
+            "screenshot": [
+              "https://bandstand.info/img/perform-ipad.webp",
+              "https://bandstand.info/img/chart.webp",
+              "https://bandstand.info/img/setlist-phone.webp"
+            ],
+            "featureList": [
+              "Chord charts in any key, with chord diagrams",
+              "Horn lines and riffs in notation, guitar and bass tab",
+              "Setlists and a full-screen performance mode with page-turn pedal support",
+              "Works offline",
+              "Rehearsal scheduling from everyone's days off",
+              "Song proposals and votes",
+              "Personal cues on any chart, and every chart version kept"
+            ],
+            "publisher": {"@id": "https://bandstand.info/#org"},
+            "license": "https://www.gnu.org/licenses/agpl-3.0.html",
+            "offers": [
+              {
+                "@type": "Offer",
+                "name": "Hosted: one band, a year",
+                "price": "12.00",
+                "priceCurrency": "USD",
+                "url": "https://app.bandstand.info/start",
+                "description": "30 days free, no card needed. Everyone in the band included.",
+                "priceSpecification": {
+                  "@type": "UnitPriceSpecification",
+                  "price": "12.00",
+                  "priceCurrency": "USD",
+                  "billingDuration": "P1Y",
+                  "unitText": "band"
+                }
+              },
+              {
+                "@type": "Offer",
+                "name": "Self-hosted",
+                "price": "0",
+                "priceCurrency": "USD",
+                "url": "https://github.com/beingforthebenefit/Bandstand"
+              }
+            ]
+          }
+        ]
+      }
+    </script>
     <meta name="theme-color" content="#000000" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
