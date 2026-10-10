@@ -1,7 +1,7 @@
 """Turn a Google Drive export of the band's old setup into import JSON.
 
 Usage:
-  python3 -I scripts/drive-export-to-json.py "<Original Documents dir>" "<Monkee Business.xlsx>" data/import.json
+  python3 -I scripts/drive-export-to-json.py "<Original Documents dir>" "<Your Band.xlsx>" data/import.json
 
 Reads the chart .docx files (Drive's Download of the "Original Documents"
 folder) and the "Songs" tab of the spreadsheet (File > Download > .xlsx).

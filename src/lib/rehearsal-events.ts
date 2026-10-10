@@ -23,7 +23,7 @@ export function rehearsalEvent(
   return {
     // The suffix predates multi-band; changing it would duplicate events
     // already in people's calendars
-    uid: `rehearsal-${r.id}@monkeewrench`,
+    uid: `rehearsal-${r.id}@bandstand`,
     date: keyOf(r.date),
     time: r.time,
     title: `${band.name} rehearsal`,

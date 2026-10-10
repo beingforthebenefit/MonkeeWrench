@@ -1,4 +1,4 @@
-# Monkee Wrench — AGENTS.md
+# Bandstand — AGENTS.md
 
 Authoritative guidelines for AI coding assistants (Copilot, Codex, Claude, etc.) and human contributors. Follow these rules when reading, generating, or modifying code in this repository.
 

@@ -20,7 +20,7 @@ const TABS = [
 
 /** What the header needs to know, worked out on the server per request. */
 export type ShellBand = {
-  /** "Monkee Wrench" for Monkee Business; Bandstand by default */
+  /** The band's own name for the app (Admin); Bandstand by default */
   appName: string
   /** The band on screen; null when none is chosen yet (or signed out) */
   band: {

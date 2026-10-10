@@ -211,60 +211,6 @@ Admin → All bands. Bands started this way are never billed.
 4. Add an Uptime Kuma monitor (on the macmini): HTTP(s) keyword,
    `https://app.bandstand.info/api/health`, keyword `"ok":true`.
 
-## Moving a self-hosted install onto it
-
-How the popos install (Monkee Business and Satchmo's Ghost) moves to the
-hosted server. Everyone keeps their account, password and sign-in, and the
-bands keep their own addresses and every song, chart version, setlist, cue
-and photo. Rehearsed on 2026-10-09 with a copy of the live data: every table
-count matched, the chart text checksum was identical, and the hosted
-migration applied cleanly on top.
-
-1. **Google** (Google Cloud console → APIs & Services → Credentials → the
-   OAuth client popos uses): add `https://app.bandstand.info` to Authorized
-   JavaScript origins, and
-   `https://app.bandstand.info/api/auth/callback/google` to Authorized
-   redirect URIs. The bands' own addresses are already there.
-2. **The move** (on popos, from the repo; about 5 minutes of downtime starts
-   here):
-
-   ```bash
-   scripts/move-to-hosted.sh deploy@204.168.168.2
-   ```
-
-   This:
-   - copies the settings both installs must share (sign-in secret, push
-     keys, Google) into `.env.hosted`, then updates the server;
-   - stops the popos app;
-   - dumps, copies and restores the database;
-   - compares every table and the chart text. It ends with "Everything
-     matches", or stops and says how to go back.
-
-3. **DNS** (Cloudflare). For `members.monkeebusinessband.com` (zone
-   monkeebusinessband.com) and `satchmo.gtodd.dev` (zone gtodd.dev):
-   - edit the record to type **A**, content `204.168.168.2`;
-   - set **Proxy status: DNS only** (grey cloud);
-   - optionally add an **AAAA** record, `2a01:4f9:c014:6b98::1`, also DNS
-     only.
-
-   DNS only, because the server gets its own certificate for each address
-   (Caddy, on the first visit, after the app confirms the address is a
-   band's), and it can't while Cloudflare's proxy is in the way.
-
-4. **Check:** open `https://members.monkeebusinessband.com`. It should still
-   be signed in, with Sign in with Google on the sign-in page. Do the same
-   for `https://satchmo.gtodd.dev`.
-
-**Going back** (if anything is wrong before people start using the hosted
-copy): put both DNS records back as they were (proxied), then on popos run
-`docker start monkeewrench-app`. The popos database is never touched by the
-move.
-
-**Afterwards:** leave the popos stack stopped, not deleted, for a couple of
-weeks. Then retire it as the 76flix Change-Checklist describes: the Traefik
-routes on the macmini, the Uptime Kuma monitors, backups, Homepage and the
-wiki.
-
 ## Deploys
 
 Automatic. When CI's tests pass on a push, the `deploy-hosted` job connects

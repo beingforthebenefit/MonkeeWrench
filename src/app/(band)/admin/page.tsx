@@ -7,6 +7,7 @@ import {iconUrl} from '@/lib/band'
 import VoteThreshold from '@/components/VoteThreshold'
 import BandSettings from '@/components/BandSettings'
 import BillingPanel from '@/components/BillingPanel'
+import DangerDelete from '@/components/DangerDelete'
 import {HOSTED, PRICE} from '@/lib/hosted'
 import {bandBilling} from '@/lib/billing'
 
@@ -111,6 +112,13 @@ export default async function AdminPage({
           </Link>
         </p>
       )}
+      <DangerDelete
+        what="this band"
+        confirmText={band.name}
+        confirmLabel="Type the band’s name to confirm"
+        endpoint="/api/band"
+        explain={`Every song and chart version, setlist, rehearsal and proposal in ${band.name} goes, for everyone, and can’t be brought back. Its people keep their accounts.${HOSTED ? ' A running subscription has to be cancelled first.' : ''}`}
+      />
     </main>
   )
 }

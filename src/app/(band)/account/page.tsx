@@ -9,6 +9,7 @@ import AppSettings from '@/components/pwa/AppSettings'
 import {pushReady} from '@/lib/push'
 import {avatarUrl} from '@/lib/avatars'
 import {displayName} from '@/lib/songs'
+import DangerDelete from '@/components/DangerDelete'
 
 export const metadata = {title: 'Account'}
 
@@ -49,6 +50,16 @@ export default async function AccountPage() {
             shareAvailability: user.shareAvailability,
             blockOtherBands: user.blockOtherBands,
           }}
+        />
+      )}
+      {!user.isOwner && user.email && (
+        <DangerDelete
+          what="your account"
+          confirmText={user.email}
+          confirmLabel="Type your email to confirm"
+          endpoint="/api/account"
+          signOutAfter
+          explain="You leave every band you’re in, and can’t sign in again. Chart versions you wrote stay (without your name); your proposals, votes, cues and photo go. A band you’re the only one in is deleted too."
         />
       )}
     </main>

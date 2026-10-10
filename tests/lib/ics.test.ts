@@ -17,7 +17,7 @@ describe('parseTimes', () => {
 })
 
 const ev = {
-  uid: 'r1@monkeewrench',
+  uid: 'r1@bandstand',
   date: '2026-10-24',
   time: '3:00–6:00 PM',
   title: 'Monkee Business rehearsal',

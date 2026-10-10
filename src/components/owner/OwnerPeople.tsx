@@ -185,21 +185,40 @@ function PersonEditor({
       </form>
       <div className="flex flex-col gap-2">
         {emails && (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() =>
-              call(
-                `/api/owner/users/${person.id}/reset`,
-                'POST',
-                null,
-                `Emailed ${person.email} a link to choose a password.`,
-              )
-            }
-            className={btn}
-          >
-            Email a password link
-          </button>
+          <>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() =>
+                call(
+                  `/api/owner/users/${person.id}/reset`,
+                  'POST',
+                  {kind: 'invite'},
+                  `Emailed ${person.email} an invite to ${person.bands[0] ?? 'Bandstand'}.`,
+                )
+              }
+              className={btn}
+            >
+              Email an invite
+            </button>
+            {person.hasPassword && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() =>
+                  call(
+                    `/api/owner/users/${person.id}/reset`,
+                    'POST',
+                    {kind: 'reset'},
+                    `Emailed ${person.email} a password-reset link.`,
+                  )
+                }
+                className={btn}
+              >
+                Email a password-reset link
+              </button>
+            )}
+          </>
         )}
         {!self && !person.isOwner && (
           <>

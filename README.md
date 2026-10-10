@@ -125,7 +125,7 @@ in the gitignored `data/` and delete it afterwards.
 The band's old charts were Google Docs in chords-over-lyrics format (`[Verse 1]` or `INTRO: C F Bb F (x4)` / `#1.` headers, guitar tab). To import them:
 
 1. In Drive, download the `Original Documents` folder (a zip of `.docx`) and the song spreadsheet as `.xlsx`. Unzip into `data/` — **gitignored**, because the charts are copyrighted.
-2. `python3 -I scripts/drive-export-to-json.py "data/docs/Original Documents" "data/Monkee Business.xlsx" data/import.json`
+2. `python3 -I scripts/drive-export-to-json.py "data/docs/Original Documents" "data/Your Band.xlsx" data/import.json`
 3. `make import BAND=<band-slug> FILE=data/import.json AS=you@example.com` (dev). For production, `docker cp` the JSON into `monkeewrench-app` and run `npx tsx scripts/import-songs.ts <band-slug> /tmp/import.json you@example.com` there, then delete it.
 
 Re-running is safe: unchanged charts are skipped, changed Docs become a new version, and a chart edited in the app since the last import is never overwritten (it's reported instead).

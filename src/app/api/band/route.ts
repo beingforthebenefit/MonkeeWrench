@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic'
 
+import {z} from 'zod'
 import {prisma} from '@/lib/db'
 import {requireAdmin, requireSession} from '@/lib/guard'
 import {BandFields} from '@/lib/band-fields'
@@ -44,5 +45,42 @@ export const PATCH = route(async (req: Request) => {
       summary: `changed ${changed.map(([k]) => LABELS[k]).join(', ')}`,
     })
   })
+  return new Response(null, {status: 204})
+})
+
+const Del = z.object({confirm: z.string()})
+
+/**
+ * An admin deletes the band: every song, chart, setlist and rehearsal in
+ * it. The request carries the band's exact name. A subscription still
+ * running must be cancelled first, so nobody is charged for a band that's
+ * gone. Its people keep their accounts (they may be in other bands).
+ */
+export const DELETE = route(async (req: Request) => {
+  const {band} = await requireAdmin({allowLapsed: true})
+  const parsed = Del.safeParse(await req.json().catch(() => null))
+  if (!parsed.success || parsed.data.confirm.trim() !== band.name)
+    return Response.json(
+      {error: 'Type the band’s name exactly to delete it.'},
+      {status: 400},
+    )
+  const billing = await prisma.band.findUnique({
+    where: {id: band.id},
+    select: {polarSubscriptionId: true, subscriptionStatus: true},
+  })
+  if (
+    billing?.polarSubscriptionId &&
+    ['active', 'trialing', 'past_due'].includes(
+      billing.subscriptionStatus ?? '',
+    )
+  )
+    return Response.json(
+      {
+        error:
+          'Cancel the subscription first (Admin → Card, receipts and cancelling), so you aren’t charged again.',
+      },
+      {status: 409},
+    )
+  await prisma.band.delete({where: {id: band.id}})
   return new Response(null, {status: 204})
 })

@@ -1,4 +1,4 @@
-# Monkee Wrench — Makefile
+# Bandstand — Makefile
 # Quick commands for dev, deploy, Prisma, logs, DB, lint/tests.
 
 SHELL := /bin/bash

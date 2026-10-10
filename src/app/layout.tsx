@@ -89,6 +89,17 @@ export default async function RootLayout({children}: {children: ReactNode}) {
         {/* Before anything can save: see scripts/demo/demo.js */}
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         {DEMO && <script src="/demo.js" />}
+        {/* The public demo is counted like the product page (cookieless);
+            the app itself has no analytics */}
+        {DEMO && (
+          // A module script: deferred by the browser, never blocking
+          // eslint-disable-next-line @next/next/no-sync-scripts
+          <script
+            type="module"
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            data-cf-beacon='{"token": "8b7f3d2b71fe45aa88c2f947f0b24327"}'
+          />
+        )}
       </head>
       <body>
         <Providers session={session}>
