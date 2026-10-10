@@ -431,6 +431,39 @@ section {
   max-width: 520px;
 }
 
+/* ----------------------------------------------------------- import */
+
+.from {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.from b {
+  display: block;
+  font-size: 17px;
+}
+.from span {
+  color: var(--muted);
+  font-size: 16px;
+}
+.fine {
+  margin-top: 24px;
+  color: var(--muted);
+  font-size: 15px;
+}
+.shot-import {
+  flex: 1 1 360px;
+  max-width: 520px;
+}
+.browser.night {
+  background: #1b1f23;
+}
+.browser.night .browser-bar i {
+  background: #3a4148;
+}
+
 /* ------------------------------------------------------------ parts */
 
 .parts {

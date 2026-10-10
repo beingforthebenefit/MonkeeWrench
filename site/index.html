@@ -70,7 +70,10 @@
               "Works offline",
               "Rehearsal scheduling from everyone's days off",
               "Song proposals and votes",
-              "Personal cues on any chart, and every chart version kept"
+              "Personal cues on any chart, and every chart version kept",
+              "Import from OnSong backups (with sets), Google Docs, ChordPro and spreadsheets",
+              "Export the whole band in one file",
+              "Self-host with one Docker image, x86 or ARM"
             ],
             "publisher": {"@id": "https://bandstand.info/#org"},
             "license": "https://www.gnu.org/licenses/agpl-3.0.html",
@@ -155,6 +158,7 @@
           <a href="#charts">Charts</a>
           <a href="#perform">Perform</a>
           <a href="#together">Together</a>
+          <a href="#import">Import</a>
           <a href="#pricing">Pricing</a>
           <a href="#host">Self-host</a>
         </nav>
@@ -167,7 +171,7 @@
       <!-- Hero -->
       <section class="hero dark">
         <p class="eyebrow reveal">For working bands</p>
-        <h1 class="display reveal">The band book,<br />on every stand.</h1>
+        <h1 class="display reveal">The band book, <br />on every stand.</h1>
         <p class="lede reveal">
           Charts, setlists and rehearsals for the whole band — on every phone,
           tablet and laptop. In any key. Even with no signal.
@@ -207,7 +211,7 @@
       <section id="charts" class="light chapter">
         <div class="head reveal">
           <p class="kicker">Charts</p>
-          <h2 class="title">Chords right where<br />you sing them.</h2>
+          <h2 class="title">Chords right where <br />you sing them.</h2>
           <p class="sub">
             Every song is a clean chord chart, every section written out in
             full. Move it to any key with a tap — chords and notation move
@@ -256,7 +260,7 @@
       <section class="dark split">
         <div class="split-text reveal">
           <p class="kicker">Chord diagrams</p>
-          <h2 class="title">Tap a chord.<br />See how it’s played.</h2>
+          <h2 class="title">Tap a chord. <br />See how it’s played.</h2>
           <p class="sub">
             Every chord opens its notes on a keyboard and a fingering for
             guitar, with other voicings a swipe away. The sub who learned the
@@ -278,7 +282,7 @@
       <section class="light chapter">
         <div class="head reveal">
           <p class="kicker">Written-out parts</p>
-          <h2 class="title">The horn line, right there<br />in the chart.</h2>
+          <h2 class="title">The horn line, right there <br />in the chart.</h2>
           <p class="sub">
             Riffs and horn lines fold away, so the chart stays easy to read on
             stage. Open one while you’re learning it: notation for horns and
@@ -393,7 +397,7 @@
         <div class="head reveal">
           <p class="kicker">The whole band</p>
           <h2 class="title">
-            Everything that gets lost<br />in the group chat.
+            Everything that gets lost <br />in the group chat.
           </h2>
         </div>
         <div class="bento">
@@ -515,6 +519,58 @@
             </div>
           </article>
         </div>
+      </section>
+
+      <!-- Import -->
+      <section id="import" class="dark split">
+        <div class="split-text reveal">
+          <p class="kicker">Switching</p>
+          <h2 class="title">Bring your <br />whole book.</h2>
+          <p class="sub">
+            Drop in your OnSong backup and tick the sets you play. Their songs
+            come along, in the keys you play them. Nothing already in the band
+            is touched, so run it twice if you like.
+          </p>
+          <ul class="from">
+            <li>
+              <b>OnSong</b
+              ><span>The backup file, with its sets and books.</span>
+            </li>
+            <li>
+              <b>Google Docs</b
+              ><span>Download the folder from Drive, drop in the zip.</span>
+            </li>
+            <li>
+              <b>ChordPro and text files</b
+              ><span>A hundred at once, or a zip of them.</span>
+            </li>
+            <li>
+              <b>A spreadsheet</b
+              ><span>Your song list as CSV. Charts can come later.</span>
+            </li>
+            <li>
+              <b>A setlist from the group chat</b
+              ><span>Paste it. Sets, breaks and keys understood.</span>
+            </li>
+          </ul>
+          <p class="fine">
+            Files are read on your device; only the songs you pick are sent. And
+            one click downloads the whole band again, to keep or to take
+            anywhere.
+          </p>
+        </div>
+        <figure class="browser night shot-import rise">
+          <div class="browser-bar" aria-hidden="true">
+            <i></i><i></i><i></i>
+          </div>
+          <img
+            src="img/import.webp"
+            width="1632"
+            height="1952"
+            loading="lazy"
+            alt="The Import page after dropping in an OnSong backup: three sets listed newest first with Riverside Festival ticked, an OnSong book, and the songs with eleven of sixteen chosen. Down by the Riverside is marked as already in the band, left as it is."
+          />
+        </figure>
       </section>
 
       <!-- Self-host -->
