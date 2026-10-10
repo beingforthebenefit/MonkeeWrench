@@ -9,7 +9,7 @@ import {pageSession} from '@/lib/guard'
 export const metadata = {title: 'Edit'}
 
 export default async function EditSongPage({params}: {params: {id: string}}) {
-  const {band} = await pageSession()
+  const {band, isAdmin} = await pageSession()
   const song = await getSong(params.id, band.id)
   if (!song) notFound()
   return (
@@ -30,6 +30,7 @@ export default async function EditSongPage({params}: {params: {id: string}}) {
       }}
       initialSource={song.latest?.source ?? ''}
       baseNumber={song.latest?.number ?? 0}
+      canDelete={isAdmin}
     />
   )
 }

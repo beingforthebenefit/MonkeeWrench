@@ -32,6 +32,8 @@ export type ShellBand = {
   /** Every band they're in, for switching */
   bands: {id: string; name: string}[]
   isOwner: boolean
+  /** The hosted service: anyone can start another band */
+  hosted?: boolean
 }
 
 // Screens that take the whole display (performance mode) or stand alone
@@ -116,46 +118,39 @@ export default function AppShell({
                 <Avatar name={name} src={session.user.image} size={36} />
               }
             >
-              <p className="px-3 py-2 text-sm text-muted">
-                {name}
-                {band && ctx.bands.length > 1 && (
-                  <span className="block text-xs text-faint">{band.name}</span>
+              <div className="px-3 pb-2 pt-1">
+                <p className="font-semibold">{name}</p>
+                {session.user.email && session.user.email !== name && (
+                  <p className="text-xs text-faint">{session.user.email}</p>
                 )}
-              </p>
-              {band && <MenuLink href="/activity">Recent changes</MenuLink>}
-              {band?.chat && (
-                <a
-                  href={band.chat.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block rounded-lg px-3 py-2.5 no-underline hover:bg-line"
-                >
-                  {band.chat.label} ↗
-                </a>
-              )}
-              <MenuLink href="/account">Account &amp; settings</MenuLink>
-              <MenuLink href="/help">Help</MenuLink>
+              </div>
               {band && (
-                <button
-                  type="button"
-                  onClick={startTour}
-                  className="block w-full rounded-lg px-3 py-2.5 text-left hover:bg-line"
+                <MenuSection title={band.name}>
+                  <MenuLink href="/activity">Recent changes</MenuLink>
+                  {band.chat && (
+                    <a
+                      href={band.chat.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block rounded-lg px-3 py-2.5 no-underline hover:bg-line"
+                    >
+                      {band.chat.label} ↗
+                    </a>
+                  )}
+                  {band.isAdmin && (
+                    <MenuLink href="/members">Band members</MenuLink>
+                  )}
+                  {band.isAdmin && (
+                    <MenuLink href="/admin">
+                      {ctx.hosted ? 'Admin & subscription' : 'Admin'}
+                    </MenuLink>
+                  )}
+                </MenuSection>
+              )}
+              {(others.length > 0 || ctx.hosted) && (
+                <MenuSection
+                  title={others.length ? 'Your other bands' : 'Bands'}
                 >
-                  Take the tour
-                </button>
-              )}
-              {band?.isAdmin && (
-                <MenuLink href="/members">Band members</MenuLink>
-              )}
-              {band?.isAdmin && <MenuLink href="/admin">Admin</MenuLink>}
-              {ctx.isOwner && (
-                <MenuLink href="/bands/manage">All bands</MenuLink>
-              )}
-              {others.length > 0 && (
-                <div className="mt-1 border-t border-line pt-1">
-                  <p className="px-3 pb-1 pt-2 text-xs font-bold uppercase tracking-widest text-faint">
-                    Switch band
-                  </p>
                   {others.map((b) => (
                     <button
                       key={b.id}
@@ -166,19 +161,48 @@ export default function AppShell({
                       {b.name}
                     </button>
                   ))}
-                </div>
+                  {ctx.hosted && (
+                    // Its own page, outside the band: a full load
+                    <a
+                      href="/start"
+                      className="block rounded-lg px-3 py-2.5 text-sky no-underline hover:bg-line"
+                    >
+                      + Start another band
+                    </a>
+                  )}
+                </MenuSection>
               )}
-              <button
-                type="button"
-                onClick={async () => {
-                  // Nothing saved on this device outlives signing out
-                  await clearSaved()
-                  signOut({callbackUrl: '/login'})
-                }}
-                className="block w-full rounded-lg px-3 py-2.5 text-left hover:bg-line"
-              >
-                Sign out
-              </button>
+              <MenuSection title="You">
+                <MenuLink href="/account">Account &amp; settings</MenuLink>
+                {ctx.isOwner && (
+                  <MenuLink href="/bands/manage">All bands (owner)</MenuLink>
+                )}
+              </MenuSection>
+              <MenuSection title="Help">
+                {band && (
+                  <button
+                    type="button"
+                    onClick={startTour}
+                    className="block w-full rounded-lg px-3 py-2.5 text-left hover:bg-line"
+                  >
+                    Take the tour
+                  </button>
+                )}
+                <MenuLink href="/help">Help</MenuLink>
+              </MenuSection>
+              <div className="mt-1 border-t border-line pt-1">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    // Nothing saved on this device outlives signing out
+                    await clearSaved()
+                    signOut({callbackUrl: '/login'})
+                  }}
+                  className="block w-full rounded-lg px-3 py-2.5 text-left text-muted hover:bg-line"
+                >
+                  Sign out
+                </button>
+              </div>
             </Dropdown>
           )}
         </header>
@@ -206,6 +230,18 @@ export default function AppShell({
       </div>
 
       <div className="flex-1">{children}</div>
+    </div>
+  )
+}
+
+/** A titled group in the account menu */
+function MenuSection({title, children}: {title: string; children: ReactNode}) {
+  return (
+    <div className="mt-1 border-t border-line pt-1">
+      <p className="truncate px-3 pb-1 pt-2 text-xs font-bold uppercase tracking-widest text-faint">
+        {title}
+      </p>
+      {children}
     </div>
   )
 }

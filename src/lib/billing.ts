@@ -43,6 +43,9 @@ export async function startCheckout(opts: {
     customer_name: opts.name ?? undefined,
     // Comes back on the subscription, to say which band it pays for
     metadata: {band_id: opts.bandId},
+    // The trial is ours (30 days, no card): never Polar's on top of it,
+    // even if the product in Polar has one set
+    allow_trial: false,
     success_url: `${opts.origin}/admin?billing=thanks`,
   })
   await prisma.band.update({
@@ -129,7 +132,15 @@ export async function applySubscription(
     data: {
       polarSubscriptionId: sub.id,
       polarCustomerId: sub.customer_id,
-      ...(sub.status === 'incomplete' ? {} : {subscriptionStatus: sub.status}),
+      // "canceling": cancelled for the end of the period, still paid until then
+      ...(sub.status === 'incomplete'
+        ? {}
+        : {
+            subscriptionStatus:
+              sub.cancel_at_period_end && sub.status !== 'canceled'
+                ? 'canceling'
+                : sub.status,
+          }),
       ...(until ? {paidUntil: until} : {}),
     },
   })

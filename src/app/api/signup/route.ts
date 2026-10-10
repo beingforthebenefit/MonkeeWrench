@@ -12,6 +12,7 @@ import {HOSTED, trialEnd} from '@/lib/hosted'
 import {mailConfigured, sendMail} from '@/lib/mail'
 import {sendPasswordLink} from '@/lib/email-tokens'
 import {allow, clientIp} from '@/lib/rate-limit'
+import {SAMPLE_NOTE, SAMPLE_SONGS} from '@/lib/sample-songs'
 
 const Body = z.object({
   bandName: z.string().trim().min(1).max(80),
@@ -33,6 +34,27 @@ async function newBand(name: string, userId: string) {
       data: {name, slug, paidUntil: trialEnd()},
     })
     await tx.membership.create({data: {userId, bandId: band.id, isAdmin: true}})
+    // Something to open straight away, and for the tour to show
+    for (const song of SAMPLE_SONGS)
+      await tx.song.create({
+        data: {
+          bandId: band.id,
+          title: song.title,
+          writer: song.writer,
+          seconds: song.seconds,
+          status: 'READY',
+          notes: SAMPLE_NOTE,
+          updatedById: userId,
+          chartVersions: {
+            create: {
+              number: 1,
+              source: song.chart,
+              authorId: userId,
+              note: 'Sample song',
+            },
+          },
+        },
+      })
     await logActivity(tx, {
       bandId: band.id,
       userId,

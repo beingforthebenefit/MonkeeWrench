@@ -352,7 +352,8 @@ model Band {
   // make changes until this; after it, read-only until someone renews.
   // Null: never billed (every self-hosted band; bands the owner comps).
   paidUntil           DateTime?
-  // Polar's subscription status, as last reported ("active", "canceled"…)
+  // Polar's subscription status, as last reported ("active", "past_due",
+  // "canceled"…), or "canceling": cancelled, paid until the period ends
   subscriptionStatus  String?
   polarCustomerId     String?
   polarSubscriptionId String?      @unique

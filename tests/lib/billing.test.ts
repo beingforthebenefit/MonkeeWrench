@@ -103,6 +103,17 @@ describe('recording a subscription', () => {
     expect(prisma.band.update).not.toHaveBeenCalled()
   })
 
+  it('records a cancellation for the end of the period as canceling', async () => {
+    await applySubscription(
+      sub({cancel_at_period_end: true, ends_at: '2027-10-09T12:00:00Z'}),
+      now,
+    )
+    expect(prisma.band.update.mock.calls[0][0].data).toMatchObject({
+      subscriptionStatus: 'canceling',
+      paidUntil: new Date('2027-10-09T12:00:00Z'),
+    })
+  })
+
   it('leaves the date and status alone while a checkout is unpaid', async () => {
     await applySubscription(sub({status: 'incomplete'}), now)
     expect(prisma.band.update.mock.calls[0][0].data).toEqual({

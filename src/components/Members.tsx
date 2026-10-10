@@ -1,7 +1,7 @@
 'use client'
 
 import {useRouter} from 'next/navigation'
-import {useState} from 'react'
+import {useEffect, useState} from 'react'
 import AvatarEditor from '@/components/AvatarEditor'
 
 type Member = {
@@ -34,6 +34,8 @@ export default function Members({
 }) {
   const router = useRouter()
   const [members, setMembers] = useState(initial)
+  // After adding someone the page refreshes with them in it: show that
+  useEffect(() => setMembers(initial), [initial])
   // The one moment a password is visible: right after it is generated
   const [shown, setShown] = useState<{id: string; password: string} | null>(
     null,
@@ -119,16 +121,27 @@ export default function Members({
               existing && !invited
                 ? 'They already had an account from another band here, so they’re in with the same email and password.'
                 : invited
-                  ? 'Added. We emailed them a link to choose their password.'
-                  : null,
+                  ? '✓ Added, and emailed a link to choose their password. They’re in the list below.'
+                  : '✓ Added. Use “Create password” on their row below, and send it to them.',
             )
             router.refresh()
           }}
         />
       )}
       {notice && (
-        <p role="status" className="mt-3 text-muted">
-          {notice}
+        <p
+          role="status"
+          className="mt-3 flex items-start gap-3 rounded-lg bg-good-bg px-4 py-3 text-good-fg"
+        >
+          <span className="flex-1">{notice}</span>
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            aria-label="Dismiss"
+            className="-my-1 min-h-8 px-1 font-bold"
+          >
+            ✕
+          </button>
         </p>
       )}
       {error && (

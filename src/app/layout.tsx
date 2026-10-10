@@ -10,6 +10,7 @@ import {chatLabel} from '@/lib/band-fields'
 import Providers from '@/components/Providers'
 import AppShell, {type ShellBand} from '@/components/AppShell'
 import {DEMO} from '@/lib/demo'
+import {HOSTED} from '@/lib/hosted'
 import {THEME_COLORS, themeScript} from '@/lib/theme'
 
 const archivo = Archivo({subsets: ['latin'], variable: '--font-archivo'})
@@ -74,6 +75,7 @@ export default async function RootLayout({children}: {children: ReactNode}) {
       : null,
     bands: bands.map((b) => ({id: b.id, name: b.name})),
     isOwner: Boolean(user?.isOwner),
+    hosted: HOSTED,
   }
   return (
     // data-theme is set by themeScript before React hydrates

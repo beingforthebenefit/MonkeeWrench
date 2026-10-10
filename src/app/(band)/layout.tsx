@@ -12,6 +12,8 @@ import {DEMO} from '@/lib/demo'
 import {HOSTED} from '@/lib/hosted'
 import {bandBilling} from '@/lib/billing'
 import BillingStrip from '@/components/BillingStrip'
+import InviteNudge from '@/components/InviteNudge'
+import {mailConfigured} from '@/lib/mail'
 
 // Everything here holds copyrighted charts: band members only, and only the
 // band they're looking at.
@@ -28,18 +30,23 @@ export default async function BandLayout({children}: {children: ReactNode}) {
   // In several bands and none picked on this device yet
   if (!band) redirect('/bands?next=' + encodeURIComponent(path))
   const billing = HOSTED ? await bandBilling(band.id) : null
+  const isAdmin = band.isAdmin || user.isOwner
+  // Just its first member: the nudge to add the rest
+  const alone =
+    isAdmin &&
+    !DEMO &&
+    (await prisma.membership.count({where: {bandId: band.id}})) === 1
   return (
     <>
       {DEMO && <DemoStrip />}
-      {billing && (
-        <BillingStrip
-          billing={billing}
-          isAdmin={band.isAdmin || user.isOwner}
-        />
-      )}
+      {billing && <BillingStrip billing={billing} isAdmin={isAdmin} />}
+      {alone && <InviteNudge bandId={band.id} emails={mailConfigured()} />}
       {children}
       {/* The first-time tour, until they finish or skip it */}
-      <Tour auto={!user.tourDoneAt} features={{scheduling: band.scheduling}} />
+      <Tour
+        auto={!user.tourDoneAt}
+        features={{scheduling: band.scheduling, demo: DEMO}}
+      />
     </>
   )
 }

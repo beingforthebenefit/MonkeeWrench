@@ -25,12 +25,15 @@ export type TourStep = {
   open?: string
   /** Light this up too: what `open` opened */
   also?: string
-  /** Only in bands with this tool switched on (Admin) */
-  needs?: 'scheduling'
+  /** Only in bands with this tool switched on (Admin), or only in the
+   * public demo */
+  needs?: 'scheduling' | 'demo'
+  /** A link button on the card (the demo's last step: start a band) */
+  cta?: {label: string; href: string}
 }
 
 /** The band's switchable tools, as the tour needs to know them */
-export type TourFeatures = {scheduling: boolean}
+export type TourFeatures = {scheduling: boolean; demo?: boolean}
 
 /** The tour for a band: without the steps about tools it has switched off */
 export function stepsFor(features: TourFeatures) {
@@ -158,5 +161,14 @@ export const STEPS: TourStep[] = [
     target: '[aria-label="Account menu"]',
     title: 'Everything else',
     body: 'Account (your photo, password, installing the app and notifications), switching bands, Recent changes, and Help — with every feature explained and this tour again.',
+  },
+  {
+    needs: 'demo',
+    title: 'That’s Bandstand',
+    body: 'Everything here works in your own band’s book, with your songs, and saves for everyone. Free for 30 days, no card needed; then $12 a year for the whole band.',
+    cta: {
+      label: 'Start your band',
+      href: 'https://app.bandstand.info/start',
+    },
   },
 ]

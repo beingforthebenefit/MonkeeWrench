@@ -20,7 +20,7 @@ const fields = {
   notes: '',
 }
 
-function editor(demo: boolean) {
+function editor(demo: boolean, canDelete = false) {
   window.fetch = vi.fn(async () => new Response('{}')) as typeof fetch
   render(
     <ChartEditor
@@ -29,6 +29,7 @@ function editor(demo: boolean) {
       initialSource="[C]Hello"
       baseNumber={1}
       demo={demo}
+      canDelete={canDelete}
     />,
   )
   fireEvent.change(screen.getByLabelText('Chart (ChordPro)'), {
@@ -65,5 +66,23 @@ describe('ChartEditor', () => {
       'href',
       '/tour/song',
     )
+  })
+
+  it('lets an admin delete the song, after asking', async () => {
+    editor(false, true)
+    fireEvent.click(screen.getByText('Delete this song…'))
+    expect(window.fetch).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByText('Delete it'))
+    expect(window.fetch).toHaveBeenCalledWith('/api/songs/s1', {
+      method: 'DELETE',
+    })
+  })
+
+  it('offers no delete to anyone else, or in the tour', () => {
+    editor(false)
+    expect(screen.queryByText('Delete this song…')).toBeNull()
+    cleanup()
+    editor(true, true)
+    expect(screen.queryByText('Delete this song…')).toBeNull()
   })
 })

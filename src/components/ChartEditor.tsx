@@ -52,6 +52,7 @@ export default function ChartEditor({
   initialSource,
   baseNumber,
   demo = false,
+  canDelete = false,
 }: {
   songId: string
   initialFields: SongFormValues
@@ -59,6 +60,8 @@ export default function ChartEditor({
   baseNumber: number
   /** The tour's sample song: everything works but Save */
   demo?: boolean
+  /** An admin: offer to delete the song */
+  canDelete?: boolean
 }) {
   const back = demo ? '/tour/song' : `/songs/${songId}`
   const router = useRouter()
@@ -68,6 +71,22 @@ export default function ChartEditor({
   const [tab, setTab] = useState<'edit' | 'preview'>('edit')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  async function deleteSong() {
+    setSaving(true)
+    const r = await fetch(`/api/songs/${songId}`, {method: 'DELETE'})
+    if (r.ok) {
+      router.push('/songs')
+      router.refresh()
+      return
+    }
+    setSaving(false)
+    setConfirmDelete(false)
+    setError(
+      (await r.json().catch(() => ({}))).error ?? 'Could not delete the song.',
+    )
+  }
 
   const chart = useMemo(() => parseChordPro(source), [source])
   const chartChanged = source !== initialSource
@@ -341,6 +360,42 @@ export default function ChartEditor({
           </p>
         )}
       </div>
+      {canDelete && !demo && (
+        <section className="mt-10 border-t border-line pt-5">
+          {confirmDelete ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="min-w-0 flex-1 text-sm">
+                Delete <strong>{initialFields.title}</strong> for everyone, with
+                every version of its chart and everyone’s cues on it? It’s also
+                taken out of setlists.
+              </p>
+              <button
+                type="button"
+                onClick={deleteSong}
+                disabled={saving}
+                className="min-h-11 rounded-lg bg-bad px-4 font-bold text-ink disabled:opacity-50"
+              >
+                Delete it
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                className="min-h-11 px-3 text-muted"
+              >
+                Keep it
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="min-h-11 text-sm text-bad underline"
+            >
+              Delete this song…
+            </button>
+          )}
+        </section>
+      )}
     </main>
   )
 }

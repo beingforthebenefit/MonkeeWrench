@@ -37,14 +37,14 @@ export default function BillingPanel({
   const {kind, until, daysLeft, status} = billing
   const line =
     kind === 'trial'
-      ? `Free trial: ${daysLeft} day${daysLeft === 1 ? '' : 's'} left (until ${day(until!)}). Then ${price} for the whole band.`
+      ? `Free trial: ${daysLeft} day${daysLeft === 1 ? '' : 's'} left (until ${day(until!)}). Then ${price} for the whole band; the year starts the day you subscribe.`
       : kind === 'lapsed'
         ? `The subscription ended on ${day(until!)}, so the band is read-only. Everything is still here; renewing turns editing back on.`
         : kind === 'paid'
           ? status === 'past_due'
             ? `The last payment didn’t go through. Update the card before ${day(until!)} to keep editing.`
-            : status === 'canceled'
-              ? `Cancelled: paid until ${day(until!)}, then read-only.`
+            : status === 'canceled' || status === 'canceling'
+              ? `Cancelled: paid until ${day(until!)}, then read-only. Subscribe again any time.`
               : `Subscribed: ${price}. Paid until ${day(until!)}.`
           : 'Free.'
 
@@ -60,7 +60,11 @@ export default function BillingPanel({
       </p>
       {billing.ready && kind !== 'free' && (
         <div className="mt-3 flex flex-wrap gap-2">
-          {(kind === 'trial' || kind === 'lapsed' || !billing.hasCustomer) && (
+          {(kind === 'trial' ||
+            kind === 'lapsed' ||
+            !billing.hasCustomer ||
+            status === 'canceled' ||
+            status === 'canceling') && (
             <button
               type="button"
               disabled={busy}

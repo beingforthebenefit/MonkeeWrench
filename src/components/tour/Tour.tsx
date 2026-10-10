@@ -336,13 +336,23 @@ export default function Tour({
               Back
             </button>
           )}
-          <button
-            type="button"
-            onClick={next}
-            className="min-h-11 rounded-lg bg-accent px-5 font-bold text-on-accent"
-          >
-            {step + 1 === STEPS.length ? 'Done' : 'Next'}
-          </button>
+          {current.cta ? (
+            <a
+              href={current.cta.href}
+              onClick={finish}
+              className="inline-flex min-h-11 items-center rounded-lg bg-accent px-5 font-bold text-on-accent no-underline"
+            >
+              {current.cta.label}
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={next}
+              className="min-h-11 rounded-lg bg-accent px-5 font-bold text-on-accent"
+            >
+              {step + 1 === STEPS.length ? 'Done' : 'Next'}
+            </button>
+          )}
         </div>
       </div>
     </div>

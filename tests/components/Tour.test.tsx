@@ -88,4 +88,24 @@ describe('Tour', () => {
     fireEvent.click(screen.getByText('Skip tour'))
     expect(push).not.toHaveBeenCalled()
   })
+
+  it('ends the public demo with a way to start a real band', async () => {
+    const {stepsFor} = await import('@/components/tour/steps')
+    const app = stepsFor({scheduling: true})
+    const demo = stepsFor({scheduling: true, demo: true})
+    expect(demo.length - app.length).toBe(1)
+    expect(app.some((s) => s.cta)).toBe(false)
+    const last = demo[demo.length - 1]
+    expect(last.cta?.href).toBe('https://app.bandstand.info/start')
+
+    // On the card: a link, where Done would be
+    sessionStorage.setItem('ms:tour-step', String(demo.length - 1))
+    const Tour = await tour(true)
+    render(<Tour auto={false} features={{scheduling: true, demo: true}} />)
+    expect(screen.getByRole('link', {name: 'Start your band'})).toHaveAttribute(
+      'href',
+      'https://app.bandstand.info/start',
+    )
+    expect(screen.queryByText('Done')).toBeNull()
+  })
 })

@@ -48,6 +48,7 @@ describe('POST /api/signup', () => {
         create: vi.fn(async ({data}: any) => ({id: 'b9', ...data})),
       },
       membership: {create: vi.fn(async () => ({}))},
+      song: {create: vi.fn(async () => ({}))},
     }
     prisma = {
       tx,
@@ -81,6 +82,17 @@ describe('POST /api/signup', () => {
       data: {userId: 'u9', bandId: 'b9', isAdmin: true},
     })
     expect(JSON.stringify(prisma.user.create.mock.calls)).not.toMatch(/isOwner/)
+    // Two sample songs, so the book isn't empty
+    const songs = prisma.tx.song.create.mock.calls.map((c: any) => c[0].data)
+    expect(songs.map((s: any) => s.title)).toEqual([
+      'When the Saints Go Marching In',
+      'Down by the Riverside',
+    ])
+    expect(songs[0]).toMatchObject({
+      bandId: 'b9',
+      notes: expect.stringMatching(/sample/i),
+    })
+    expect(songs[0].chartVersions.create.source).toMatch(/start_of_abc/)
     expect(sendPasswordLink).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'u9',
