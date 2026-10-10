@@ -108,6 +108,17 @@ ul {
 .nav nav a:hover {
   color: var(--text);
 }
+.nav-login {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  padding: 12px 0;
+  margin-right: -12px;
+}
+.nav-login:hover {
+  color: var(--amber);
+}
 .nav-cta {
   font-size: 14px;
   font-weight: 700;
@@ -121,7 +132,7 @@ ul {
   .nav nav {
     display: none;
   }
-  .nav-cta {
+  .nav-login {
     margin-left: auto;
   }
 }
