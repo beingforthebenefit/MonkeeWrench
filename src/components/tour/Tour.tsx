@@ -90,7 +90,7 @@ export default function Tour({
     // Back where it started: the band's own songs (not a sample page, or
     // wherever the last steps were)
     if (window.location.pathname !== '/songs') router.push('/songs')
-    // The app offers to go on the home screen (IosInstall)
+    // The app offers to go on the home screen (InstallHelp)
     window.dispatchEvent(new Event('ms:tour-done'))
     fetch('/api/account/settings', {
       method: 'PATCH',

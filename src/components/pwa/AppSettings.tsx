@@ -9,11 +9,11 @@ import {
   onInstallOffer,
   platform,
   pushSupported,
+  showInstallHelp,
   turnOff,
   turnOn,
   type Platform,
 } from './pwa'
-import {showInstallHelp} from './IosInstall'
 
 type Kind =
   | 'notifyCharts'

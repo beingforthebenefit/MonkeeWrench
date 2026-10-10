@@ -138,6 +138,13 @@ export function onInstallOffer(l: () => void) {
   }
 }
 
+/** InstallHelp listens for this: show how to install (Account's "Show me how"). */
+export const INSTALL_HELP = 'ms:install-help'
+
+export function showInstallHelp() {
+  window.dispatchEvent(new Event(INSTALL_HELP))
+}
+
 export async function install() {
   if (!offer) return false
   await offer.prompt()

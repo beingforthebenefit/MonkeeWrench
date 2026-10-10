@@ -11,10 +11,8 @@ import {
 
 vi.mock('@khmyznikov/pwa-install', () => ({}))
 
-import IosInstall, {
-  needsInstallHelp,
-  showInstallHelp,
-} from '@/components/pwa/IosInstall'
+import InstallHelp, {needsInstallHelp} from '@/components/pwa/InstallHelp'
+import {showInstallHelp, watchInstallOffer} from '@/components/pwa/pwa'
 
 const shown = vi.fn()
 beforeAll(() => {
@@ -40,9 +38,11 @@ function device(ua: string, standalone = false) {
   })
 }
 
+const ANDROID = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) Chrome/129 Mobile'
+
 // Mount, and let the library's (mocked) import land
 async function mount(tourDone = true) {
-  const r = render(<IosInstall tourDone={tourDone} />)
+  const r = render(<InstallHelp tourDone={tourDone} />)
   await act(async () => {
     await vi.dynamicImportSettled()
   })
@@ -60,10 +60,12 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('IosInstall', () => {
-  it('is only for an iPhone or iPad outside the installed app', () => {
-    device('Mozilla/5.0 (Linux; Android 14; Pixel 8) Chrome/129 Mobile')
+describe('InstallHelp on an iPhone', () => {
+  it('is for a phone or tablet outside the installed app', () => {
+    device('Mozilla/5.0 (Windows NT 10.0) Chrome/129')
     expect(needsInstallHelp()).toBe(false)
+    device(ANDROID)
+    expect(needsInstallHelp()).toBe(true)
     device(IPHONE, true)
     expect(needsInstallHelp()).toBe(false)
     device(IPHONE)
@@ -128,5 +130,61 @@ describe('IosInstall', () => {
     await mount()
     act(() => showInstallHelp())
     expect(shown).toHaveBeenCalledWith(true)
+  })
+})
+
+describe('InstallHelp on Android', () => {
+  // Chrome's install offer, as pwa.ts catches it
+  function chromeOffers(outcome = 'accepted') {
+    const prompt = vi.fn(async () => {})
+    const e = Object.assign(new Event('beforeinstallprompt'), {
+      prompt,
+      userChoice: Promise.resolve({outcome}),
+    })
+    act(() => {
+      window.dispatchEvent(e)
+    })
+    return prompt
+  }
+  beforeAll(() => watchInstallOffer())
+
+  it('offers Chrome’s install dialog after a while, and closes once installed', async () => {
+    device(ANDROID)
+    const prompt = chromeOffers()
+    const r = await mount()
+    expect(r.queryByRole('dialog')).toBeNull()
+    await act(() => vi.advanceTimersByTimeAsync(4000))
+    expect(r.getByRole('dialog')).toHaveTextContent(
+      'Add the app to your home screen',
+    )
+    await act(async () => {
+      r.getByRole('button', {name: 'Install'}).click()
+    })
+    expect(prompt).toHaveBeenCalled()
+    expect(r.queryByRole('dialog')).toBeNull()
+  })
+
+  it('without Chrome’s offer (another browser), shows the steps', async () => {
+    device(ANDROID)
+    // A previous install used up the offer
+    const r = await mount()
+    act(() => showInstallHelp())
+    expect(r.getByRole('dialog')).toHaveTextContent('Install app')
+    expect(r.queryByRole('button', {name: 'Install'})).toBeNull()
+    act(() => r.getByRole('button', {name: 'Close'}).click())
+    expect(r.queryByRole('dialog')).toBeNull()
+  })
+
+  it('“Not now” puts it away, and it isn’t offered again for a week', async () => {
+    device(ANDROID)
+    chromeOffers()
+    const r = await mount()
+    await act(() => vi.advanceTimersByTimeAsync(4000))
+    act(() => r.getByRole('button', {name: 'Not now'}).click())
+    expect(r.queryByRole('dialog')).toBeNull()
+    r.unmount()
+    const again = await mount()
+    await act(() => vi.advanceTimersByTimeAsync(5000))
+    expect(again.queryByRole('dialog')).toBeNull()
   })
 })
