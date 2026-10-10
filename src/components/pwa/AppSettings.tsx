@@ -13,6 +13,7 @@ import {
   turnOn,
   type Platform,
 } from './pwa'
+import {showInstallHelp} from './IosInstall'
 
 type Kind =
   | 'notifyCharts'
@@ -157,6 +158,17 @@ export default function AppSettings({
             >
               Install app
             </button>
+          ) : plat === 'ios' ? (
+            <>
+              <button
+                type="button"
+                onClick={showInstallHelp}
+                className="mt-2 min-h-11 rounded-lg bg-accent px-4 font-bold text-on-accent"
+              >
+                Show me how
+              </button>
+              <InstallSteps plat={plat} />
+            </>
           ) : (
             <InstallSteps plat={plat} />
           )}
@@ -262,10 +274,12 @@ export function InstallSteps({plat}: {plat: Platform}) {
       <ol className="mt-2 list-decimal pl-5 text-sm">
         <li>
           In Safari, tap <b>Share</b>{' '}
-          <span aria-hidden>(the square with an arrow ↑)</span>.
+          <span aria-hidden>(the square with an arrow ↑)</span>. On iOS 26 it’s
+          in the <b>···</b> menu beside the address.
         </li>
         <li>
-          Choose <b>Add to Home Screen</b>, then <b>Add</b>.
+          Choose <b>Add to Home Screen</b> (under <b>View More</b> on iOS 26),
+          then <b>Add</b>.
         </li>
         <li>Open it from your home screen from now on.</li>
       </ol>

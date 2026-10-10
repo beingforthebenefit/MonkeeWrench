@@ -7,6 +7,7 @@ import {authOptions} from '@/lib/auth'
 import {prisma} from '@/lib/db'
 import {currentBand} from '@/lib/band'
 import Tour from '@/components/tour/Tour'
+import IosInstall from '@/components/pwa/IosInstall'
 import DemoStrip from '@/components/DemoStrip'
 import {DEMO} from '@/lib/demo'
 import {HOSTED} from '@/lib/hosted'
@@ -47,6 +48,8 @@ export default async function BandLayout({children}: {children: ReactNode}) {
         auto={!user.tourDoneAt}
         features={{scheduling: band.scheduling, admin: isAdmin, demo: DEMO}}
       />
+      {/* iPhone and iPad: how to put it on the home screen */}
+      <IosInstall tourDone={Boolean(user.tourDoneAt)} />
     </>
   )
 }

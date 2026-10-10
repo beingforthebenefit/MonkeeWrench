@@ -410,8 +410,10 @@ export default function HelpPage() {
           </li>
           <li>
             <b>iPhone or iPad:</b> open it in <b>Safari</b>, tap <b>Share</b>{' '}
-            (the square with an arrow), then <b>Add to Home Screen</b> →{' '}
-            <b>Add</b>. From then on, open it from the home screen.
+            (the square with an arrow; on iOS 26 it’s in the <b>···</b> menu),
+            then <b>Add to Home Screen</b> → <b>Add</b>. From then on, open it
+            from the home screen. Account → <b>Show me how</b> walks you through
+            it.
           </li>
           <li>
             <b>Android:</b> in Chrome, the <b>⋮</b> menu → <b>Install app</b>{' '}

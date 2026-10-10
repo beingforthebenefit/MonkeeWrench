@@ -22,6 +22,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
+    "@khmyznikov/pwa-install": "^0.7.0",
     "@mui/icons-material": "^5.11.16",
     "@mui/material": "^5.15.14",
     "@polar-sh/sdk": "^1.0.2",
