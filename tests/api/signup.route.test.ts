@@ -78,6 +78,7 @@ describe('POST /api/signup', () => {
     const band = prisma.tx.band.create.mock.calls[0][0].data
     expect(band.name).toBe('The Hollow Reeds')
     expect(band.paidUntil.getTime()).toBeGreaterThan(Date.now() + 29 * 86400000)
+    expect(band.trialStartedAt).toBeInstanceOf(Date)
     expect(prisma.tx.membership.create).toHaveBeenCalledWith({
       data: {userId: 'u9', bandId: 'b9', isAdmin: true},
     })

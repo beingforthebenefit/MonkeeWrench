@@ -293,6 +293,24 @@ To revoke: delete the `github-deploy@bandstand` line from
 and store it with
 `gh secret set DEPLOY_SSH_KEY < key`, then put its `.pub` on that line.
 
+## The owner page
+
+`/owner` (Owner, in the account menu), for the install's owner only:
+
+- **Numbers:** bands by standing, yearly revenue before and after Polar
+  against the running costs (`src/lib/owner-stats.ts` holds the costs and
+  fee figures), trial conversion, churn, renewals due, bands active in the
+  last 30 days, and sign-ups a week.
+- **Bands:** rename, make free or set a paid-until date, delete (type the
+  name).
+- **People:** find, correct name or email, email a password link, delete,
+  and add someone to any band.
+- **Test emails:** one of each email, to the owner only.
+
+It shows names and counts, never a band's charts. Polar remains the record
+of actual money; the page links to it. History (what Polar reported, when)
+accumulates in `BillingEvent` from the webhooks.
+
 ## Running it
 
 - **Update:** automatic on every push that passes CI (see Deploys). By hand:

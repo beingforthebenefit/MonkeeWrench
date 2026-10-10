@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic'
 
+import {prisma} from '@/lib/db'
 import {
   applySubscription,
   readWebhook,
@@ -22,9 +23,17 @@ export async function POST(req: Request) {
     return new Response('Invalid signature', {status: 403})
   }
   if (event.type.startsWith('subscription.')) {
-    const bandId = await applySubscription(
-      (event as {data: PolarSubscription}).data,
-    )
+    const sub = (event as {data: PolarSubscription}).data
+    const bandId = await applySubscription(sub)
+    // The owner's history: what happened, when
+    await prisma.billingEvent.create({
+      data: {
+        bandId,
+        type: event.type,
+        status: sub.cancel_at_period_end ? 'canceling' : sub.status,
+        subscriptionId: sub.id,
+      },
+    })
     // A subscription for no band here (another app on the same Polar
     // account, or a deleted band): nothing to do, and no point retrying
     if (!bandId)

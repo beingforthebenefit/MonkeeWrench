@@ -331,23 +331,23 @@ model Rehearsal {
 // ---------------------------------------------------------------------------
 
 model Band {
-  id                  String       @id @default(cuid())
+  id                  String         @id @default(cuid())
   // Used in nothing public; a stable handle for scripts ("monkee-business")
-  slug                String       @unique
+  slug                String         @unique
   name                String // "Monkee Business"
   // What the app is called for this band: header, tab title, home screen
-  appName             String       @default("Bandstand")
+  appName             String         @default("Bandstand")
   // Rehearsal times and "today" are in this zone (IANA name)
-  timezone            String       @default("America/Los_Angeles")
+  timezone            String         @default("America/Los_Angeles")
   // The band's group chat (Discord, WhatsApp...), linked from the menu
   chatUrl             String?
   // For a tribute band: the act it covers. A proposal with no artist is
   // theirs, and their songs don't get an "Originally by" note.
   tributeTo           String?
-  voteThreshold       Int          @default(2)
+  voteThreshold       Int            @default(2)
   // The scheduling tool (availability, suggested days). Off: Rehearsals
   // just lists the rehearsals; the availability API answers 404.
-  scheduling          Boolean      @default(true)
+  scheduling          Boolean        @default(true)
   // The hosted service (bandstand.info, BANDSTAND_HOSTED=1): the band can
   // make changes until this; after it, read-only until someone renews.
   // Null: never billed (every self-hosted band; bands the owner comps).
@@ -356,9 +356,13 @@ model Band {
   // "canceled"…), or "canceling": cancelled, paid until the period ends
   subscriptionStatus  String?
   polarCustomerId     String?
-  polarSubscriptionId String?      @unique
+  polarSubscriptionId String?        @unique
   // The last checkout started, to find the band if Polar's metadata is lost
   polarCheckoutId     String?
+  // Started on the hosted service's free trial (sign-up), for the owner's
+  // trial-conversion numbers; null for bands made any other way
+  trialStartedAt      DateTime?
+  billingEvents       BillingEvent[]
   // Home-screen icon; null = the default Bandstand icon
   iconAt              DateTime?
   icon                BandIcon?
@@ -369,7 +373,7 @@ model Band {
   rehearsals          Rehearsal[]
   proposals           Proposal[]
   activities          Activity[]
-  createdAt           DateTime     @default(now())
+  createdAt           DateTime       @default(now())
 }
 
 /// A 512px square PNG, kept out of Band so loading bands never pulls bytes.
@@ -482,4 +486,20 @@ model EmailToken {
   createdAt DateTime       @default(now())
 
   @@index([userId])
+}
+
+// What Polar reported about a band's subscription, as it happened: the
+// owner's history of subscriptions, cancellations and renewals.
+model BillingEvent {
+  id             String   @id @default(cuid())
+  band           Band?    @relation(fields: [bandId], references: [id], onDelete: SetNull)
+  bandId         String?
+  // Polar's event ("subscription.active"…) and the subscription's status
+  type           String
+  status         String?
+  subscriptionId String?
+  createdAt      DateTime @default(now())
+
+  @@index([bandId, createdAt])
+  @@index([createdAt])
 }

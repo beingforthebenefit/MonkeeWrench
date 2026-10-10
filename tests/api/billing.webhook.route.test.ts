@@ -5,6 +5,8 @@ const hoisted = vi.hoisted(() => ({
   readWebhook: async (body: string): Promise<unknown> => JSON.parse(body),
 }))
 const {applySubscription} = hoisted
+const created = vi.hoisted(() => vi.fn(async (_a: unknown) => ({})))
+vi.mock('@/lib/db', () => ({prisma: {billingEvent: {create: created}}}))
 vi.mock('@/lib/billing', () => ({
   applySubscription: hoisted.applySubscription,
   readWebhook: (body: string) => hoisted.readWebhook(body),
@@ -30,6 +32,15 @@ describe('POST /api/billing/webhook', () => {
     const res = await POST(post({type: 'subscription.updated', data}))
     expect(res.status).toBe(202)
     expect(applySubscription).toHaveBeenCalledWith(data)
+    // …and keeps it in the owner's history
+    expect(created).toHaveBeenCalledWith({
+      data: {
+        bandId: 'b1',
+        type: 'subscription.updated',
+        status: 'active',
+        subscriptionId: 'sub_1',
+      },
+    })
   })
 
   it('accepts and ignores other events', async () => {

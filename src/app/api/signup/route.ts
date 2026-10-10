@@ -32,7 +32,7 @@ async function newBand(name: string, userId: string) {
     slug = `${base}-${n}`
   return prisma.$transaction(async (tx) => {
     const band = await tx.band.create({
-      data: {name, slug, paidUntil: trialEnd()},
+      data: {name, slug, paidUntil: trialEnd(), trialStartedAt: new Date()},
     })
     await tx.membership.create({data: {userId, bandId: band.id, isAdmin: true}})
     // Something to open straight away, and for the tour to show
