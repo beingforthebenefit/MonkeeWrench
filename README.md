@@ -97,6 +97,44 @@ echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)" > .env
 docker compose up -d
 ```
 
+Already run a compose stack? The two services it needs (the full file adds nightly backups and optional HTTPS):
+
+```yaml
+services:
+  bandstand-db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bandstand
+      POSTGRES_PASSWORD: ${BANDSTAND_DB_PASSWORD:?}
+      POSTGRES_DB: bandstand
+    volumes:
+      - bandstand_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U bandstand -d bandstand']
+      interval: 10s
+      retries: 30
+
+  bandstand:
+    image: ghcr.io/beingforthebenefit/bandstand:latest
+    restart: unless-stopped
+    depends_on:
+      bandstand-db:
+        condition: service_healthy
+    ports:
+      - '3000:3000'
+    environment:
+      NEXTAUTH_URL: https://band.example.com # the address people use
+      AUTH_TRUST_HOST: 'true'
+      DATABASE_URL: postgresql://bandstand:${BANDSTAND_DB_PASSWORD}@bandstand-db:5432/bandstand?schema=public
+    volumes:
+      - bandstand_data:/data # the session secret and push keys it makes
+
+volumes:
+  bandstand_pgdata:
+  bandstand_data:
+```
+
 Open <http://localhost:3000> (or the machine's address). A fresh install shows **Set up Bandstand**: your band's name, your name, email and a password. That account runs the install (the owner page, more bands); everyone else is added from **Band members**.
 
 - **The address people use**: `APP_URL=https://band.example.com` in `.env` (sign-in, calendar feeds and emails use it). Port: `PORT=3000`.
