@@ -213,6 +213,20 @@ describe('pages', () => {
     expect(screen.getAllByText(/expired|used|link/i).length).toBeGreaterThan(0)
   })
 
+  it('the band layout on the hosted service: a new account with no band goes to start one', async () => {
+    vi.resetModules()
+    vi.stubEnv('BANDSTAND_HOSTED', '1')
+    const Layout = (await import('@/app/(band)/layout')).default
+    hdrs.set('x-pathname', '/songs')
+    serverSession = {user: {email: 'rosa@x.com'}}
+    db.user.findUnique.mockResolvedValue({id: 'u5', isOwner: false})
+    await expect(Layout({children: <p>child</p>})).rejects.toThrow(
+      'REDIRECT /start',
+    )
+    vi.unstubAllEnvs()
+    vi.resetModules()
+  })
+
   it('the band layout: signed out, unknown, no band picked, or the app around the page', async () => {
     const Layout = (await import('@/app/(band)/layout')).default
     hdrs.set('x-pathname', '/setlists')

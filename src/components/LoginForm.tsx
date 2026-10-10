@@ -29,7 +29,7 @@ export default function LoginForm({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(
     params.get('error') === 'NotMember'
-      ? 'That Google account isn’t on the band list. Sign in with your email and password, or ask your band’s admin to add that address.'
+      ? 'No account here uses that Google address. Sign in with your email and password, or ask your band’s admin to add that address.'
       : null,
   )
   const [google, setGoogle] = useState(false)
@@ -153,8 +153,8 @@ export default function LoginForm({
             New here?{' '}
             <Link href="/start" className="text-sky">
               Start your band
-            </Link>{' '}
-            — free for 30 days.
+            </Link>
+            , free for 30 days.
           </p>
         )}
       </form>
@@ -162,7 +162,7 @@ export default function LoginForm({
   )
 }
 
-function GoogleG() {
+export function GoogleG() {
   return (
     <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
       <path

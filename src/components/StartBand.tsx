@@ -1,13 +1,26 @@
 'use client'
 
 import {useState} from 'react'
+import {signIn, signOut} from 'next-auth/react'
 import {field, label, primary} from './auth-styles'
+import {GoogleG} from './LoginForm'
 
 /**
  * Start a band on the hosted service. Signed in: it's yours at once.
- * Otherwise an email follows, to choose a password.
+ * Otherwise either Google (it signs them up, then back here for the band's
+ * name) or an email follows, to choose a password.
  */
-export default function StartBand({signedIn}: {signedIn: boolean}) {
+export default function StartBand({
+  signedIn,
+  google = false,
+  newAccount,
+}: {
+  signedIn: boolean
+  /** "Sign in with Google" is set up here */
+  google?: boolean
+  /** Signed in with no band yet (just signed up with Google): their email */
+  newAccount?: string
+}) {
   const [bandName, setBandName] = useState('')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -59,6 +72,37 @@ export default function StartBand({signedIn}: {signedIn: boolean}) {
 
   return (
     <form onSubmit={submit}>
+      {newAccount && (
+        <p className="mt-4 rounded-xl bg-panel p-4 text-sm text-muted">
+          Signed in as <strong className="text-text">{newAccount}</strong>.
+          Joining a band that’s already here? Ask its admin to add this address,
+          or{' '}
+          <button
+            type="button"
+            onClick={() => signOut({callbackUrl: '/login'})}
+            className="text-sky underline"
+          >
+            sign in with another account
+          </button>
+          .
+        </p>
+      )}
+      {!signedIn && google && (
+        <>
+          <button
+            type="button"
+            onClick={() => signIn('google', {callbackUrl: '/start'})}
+            className="mt-6 flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-line-2 bg-panel font-semibold"
+          >
+            <GoogleG /> Start with Google
+          </button>
+          <div className="mt-5 flex items-center gap-3 text-sm text-faint">
+            <span className="h-px flex-1 bg-line" />
+            or with your email
+            <span className="h-px flex-1 bg-line" />
+          </div>
+        </>
+      )}
       <label className={label}>
         Band name
         <input

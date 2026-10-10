@@ -27,9 +27,13 @@ export default async function BandLayout({children}: {children: ReactNode}) {
     where: {email: session.user.email},
   })
   if (!user) redirect('/login')
-  const {band} = await currentBand(user.id)
-  // In several bands and none picked on this device yet
-  if (!band) redirect('/bands?next=' + encodeURIComponent(path))
+  const {band, bands} = await currentBand(user.id)
+  if (!band) {
+    // Signed up with Google and no band yet: start one
+    if (!bands.length && HOSTED) redirect('/start')
+    // In several bands and none picked on this device yet
+    redirect('/bands?next=' + encodeURIComponent(path))
+  }
   const billing = HOSTED ? await bandBilling(band.id) : null
   const isAdmin = band.isAdmin || user.isOwner
   // Just its first member: the nudge to add the rest

@@ -153,6 +153,40 @@ describe('Google sign-in', () => {
       ).toBe('/login?error=NotMember')
   })
 
+  it('on the hosted service, signs up a new verified address with no band', async () => {
+    vi.resetModules()
+    vi.stubEnv('BANDSTAND_HOSTED', '1')
+    prisma.user.create = vi.fn(async ({data}: any) => ({id: 'u9', ...data}))
+    const {authOptions} = await import('@/lib/auth')
+    const ok = await authOptions.callbacks!.signIn!({
+      account: {provider: 'google'},
+      profile: {
+        email: 'New.Player@Example.com',
+        email_verified: true,
+        name: 'Rosa Diaz',
+      },
+    } as any)
+    expect(ok).toBe(true)
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        email: 'new.player@example.com',
+        name: 'Rosa Diaz',
+        displayName: 'Rosa',
+      }),
+    })
+    // Still never for an address Google hasn't verified
+    prisma.user.create.mockClear()
+    expect(
+      await authOptions.callbacks!.signIn!({
+        account: {provider: 'google'},
+        profile: {email: 'x@example.com', email_verified: false},
+      } as any),
+    ).toBe('/login?error=NotMember')
+    expect(prisma.user.create).not.toHaveBeenCalled()
+    vi.unstubAllEnvs()
+    vi.resetModules()
+  })
+
   it('maps the Google account to the member by email in the token', async () => {
     const {authOptions} = await import('@/lib/auth')
     const token = await authOptions.callbacks!.jwt!({

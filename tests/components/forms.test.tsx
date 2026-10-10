@@ -466,6 +466,35 @@ describe('StartBand', () => {
     })
     expect(assign).toHaveBeenCalledWith('/members')
   })
+  it('offers Google to start, coming back here for the band’s name', async () => {
+    const {signIn} = await nextAuth()
+    render(<StartBand signedIn={false} google />)
+    await userEvent.click(
+      screen.getByRole('button', {name: 'Start with Google'}),
+    )
+    expect(signIn).toHaveBeenCalledWith('google', {callbackUrl: '/start'})
+  })
+  it('no Google button when it isn’t set up, or once signed in', () => {
+    const {rerender} = render(<StartBand signedIn={false} />)
+    expect(
+      screen.queryByRole('button', {name: 'Start with Google'}),
+    ).not.toBeInTheDocument()
+    rerender(<StartBand signedIn google />)
+    expect(
+      screen.queryByRole('button', {name: 'Start with Google'}),
+    ).not.toBeInTheDocument()
+  })
+  it('a new account with no band: says how to join one instead', async () => {
+    const {signOut} = await nextAuth()
+    render(<StartBand signedIn newAccount="rosa@example.com" />)
+    expect(screen.getByText(/Signed in as/)).toHaveTextContent(
+      'rosa@example.com',
+    )
+    await userEvent.click(
+      screen.getByRole('button', {name: 'sign in with another account'}),
+    )
+    expect(signOut).toHaveBeenCalledWith({callbackUrl: '/login'})
+  })
   it('shows a refusal', async () => {
     mockFetch({
       'POST /api/signup': {status: 429, body: {error: 'Try tomorrow.'}},

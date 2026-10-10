@@ -5,12 +5,16 @@ import {prisma} from './db'
 import {verifyPassword} from './password'
 import {clearFailures, isThrottled, recordFailure} from './login-throttle'
 import {avatarUrl} from './avatars'
+import {HOSTED} from './hosted'
 
 /**
  * Email + password sign-in, plus "Sign in with Google" for members who have a
- * Google account. Either way the person must already be a member (an admin
- * adds them on /members): Google only proves who they are, it never creates
- * an account. Not everyone in the band has Google, hence the passwords.
+ * Google account. To join a band the person must already be a member (an
+ * admin adds them on /members): Google only proves who they are. On the
+ * hosted service an address Google has verified but nobody here uses gets
+ * an account with no band, and goes on to start one (/start). A self-hosted
+ * install stays invite-only. Not everyone in the band has Google, hence the
+ * passwords.
  *
  * Sessions are JWTs (the credentials provider requires it). Each token
  * carries the user's sessionVersion at sign-in; resetting or changing a
@@ -92,8 +96,23 @@ export const authOptions: NextAuthOptions = {
         | undefined
       if (!p?.email || p.email_verified === false)
         return '/login?error=NotMember'
-      const member = await findMember(p.email)
-      return member ? true : '/login?error=NotMember'
+      if (await findMember(p.email)) return true
+      if (!HOSTED) return '/login?error=NotMember'
+      const name = (p as {name?: string}).name?.trim() || null
+      try {
+        await prisma.user.create({
+          data: {
+            email: p.email.trim().toLowerCase(),
+            name,
+            displayName: name?.split(' ')[0] ?? null,
+            emailVerified: new Date(),
+          },
+        })
+      } catch {
+        // Two sign-ins at once: the other one made it
+        if (!(await findMember(p.email))) return '/login?error=NotMember'
+      }
+      return true
     },
     async jwt({token, user, account}) {
       if (user) {
